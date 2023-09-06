@@ -53,7 +53,7 @@ namespace rg3::llvm::visitors
 		for (const auto& enumerator : enumDecl->enumerators())
 		{
 			const std::string sEntryName = enumerator->getNameAsString();
-			int64_t iEntryValue = enumerator->getInitVal().getSExtValue();
+			int64_t iEntryValue = enumerator->getInitVal().getExtValue();
 			entries.emplace_back(sEntryName, iEntryValue);
 		}
 
