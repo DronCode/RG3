@@ -18,7 +18,7 @@
 
 namespace rg3::llvm::visitors
 {
-	CxxTypeVisitor::CxxTypeVisitor(std::vector<rg3::cpp::TypeBasePtr>& collectedTypes) : m_collectedTypes(collectedTypes)
+	CxxTypeVisitor::CxxTypeVisitor(std::vector<rg3::cpp::TypeBasePtr>& collectedTypes, const CompilerConfig& cc) : m_collectedTypes(collectedTypes), compilerConfig(cc)
 	{
 	}
 
@@ -36,7 +36,7 @@ namespace rg3::llvm::visitors
 		cpp::Tags tags = cpp::Tag::parseFromCommentString(rawCommentStr);
 
 		// Check this somewhere else
-		if (!tags.hasTag(std::string(rg3::cpp::BuiltinTags::kRuntime)))
+		if (!tags.hasTag(std::string(rg3::cpp::BuiltinTags::kRuntime)) && !compilerConfig.bAllowCollectNonRuntimeTypes)
 			return true;
 
 		// Create entry
@@ -88,7 +88,7 @@ namespace rg3::llvm::visitors
 	bool CxxTypeVisitor::VisitCXXRecordDecl(clang::CXXRecordDecl* cxxRecordDecl)
 	{
 		// Logic is too huge, we need to move logic into another unit
-		visitors::CxxClassTypeVisitor cppVisitor {};
+		visitors::CxxClassTypeVisitor cppVisitor { compilerConfig };
 		cppVisitor.TraverseDecl(cxxRecordDecl);
 
 		if (!cppVisitor.sClassName.empty())

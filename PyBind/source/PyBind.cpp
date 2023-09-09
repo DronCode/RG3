@@ -187,6 +187,10 @@ BOOST_PYTHON_MODULE(rg3py_ext)
 
 		.add_property("types", make_function(&rg3::pybind::PyCodeAnalyzerBuilder::getFoundTypes, return_value_policy<copy_const_reference>()))
 		.add_property("issues", make_function(&rg3::pybind::PyCodeAnalyzerBuilder::getFoundIssues, return_value_policy<copy_const_reference>()))
+		.add_property("ignore_runtime",
+					  &rg3::pybind::PyCodeAnalyzerBuilder::isNonRuntimeTypesAllowedToBeCollected,
+					  &rg3::pybind::PyCodeAnalyzerBuilder::setAllowToCollectNonRuntimeTypes,
+					  "Allow to ignore @runtime tag near type decl")
 
 		.def("set_code", &rg3::pybind::PyCodeAnalyzerBuilder::setSourceCode)
 		.def("set_file", &rg3::pybind::PyCodeAnalyzerBuilder::setSourceFile)

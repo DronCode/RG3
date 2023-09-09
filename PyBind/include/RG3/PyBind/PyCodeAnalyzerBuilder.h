@@ -27,6 +27,9 @@ namespace rg3::pybind
 		void setCompilerIncludeDirs(const std::vector<rg3::llvm::IncludeInfo>& includes);
 		void addIncludeDir(const rg3::llvm::IncludeInfo& includeInfo);
 		void addProjectIncludeDir(const std::string& includeDir);
+		void setAllowToCollectNonRuntimeTypes(bool value);
+		[[nodiscard]] bool isNonRuntimeTypesAllowedToBeCollected() const;
+
 		void analyze();
 
 		const boost::python::list& getFoundTypes() const;

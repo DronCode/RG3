@@ -3,6 +3,7 @@
 #include <clang/AST/RecursiveASTVisitor.h>
 #include <clang/AST/ASTConsumer.h>
 
+#include <RG3/LLVM/CompilerConfig.h>
 #include <RG3/Cpp/TypeClass.h>
 #include <vector>
 
@@ -12,6 +13,8 @@ namespace rg3::llvm::visitors
 	class CxxClassTypeVisitor : public clang::RecursiveASTVisitor<CxxClassTypeVisitor>
 	{
 	 public:
+		explicit CxxClassTypeVisitor(const CompilerConfig& cc);
+
 		bool VisitCXXRecordDecl(clang::CXXRecordDecl* cxxRecordDecl);
 		bool VisitFieldDecl(clang::FieldDecl* cxxFieldDecl);
 		bool VisitCXXMethodDecl(clang::CXXMethodDecl* cxxMethodDecl);
@@ -25,5 +28,8 @@ namespace rg3::llvm::visitors
 		bool bIsStruct { false };
 		bool bTriviallyConstructible { false };
 		std::vector<cpp::TypeReference> parentClasses {};
+
+	 private:
+		const CompilerConfig& compilerConfig;
 	};
 }

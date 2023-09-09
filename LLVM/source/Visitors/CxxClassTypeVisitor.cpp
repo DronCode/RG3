@@ -5,6 +5,11 @@
 
 namespace rg3::llvm::visitors
 {
+	CxxClassTypeVisitor::CxxClassTypeVisitor(const rg3::llvm::CompilerConfig& cc)
+		: compilerConfig(cc)
+	{
+	}
+
 	bool CxxClassTypeVisitor::VisitCXXRecordDecl(clang::CXXRecordDecl* cxxRecordDecl)
 	{
 		// Extract comment
@@ -12,14 +17,14 @@ namespace rg3::llvm::visitors
 		clang::SourceManager& sm = ctx.getSourceManager();
 
 		const clang::RawComment* rawComment = ctx.getRawCommentForDeclNoCache(cxxRecordDecl);
-		if (!rawComment)
-			return true;
 
-		const auto rawCommentStr = rawComment->getFormattedText(sm, ctx.getDiagnostics());
-		vTags = cpp::Tag::parseFromCommentString(rawCommentStr);
+		if (rawComment)
+		{
+			const auto rawCommentStr = rawComment->getFormattedText(sm, ctx.getDiagnostics());
+			vTags = cpp::Tag::parseFromCommentString(rawCommentStr);
+		}
 
-		// Check this somewhere else
-		if (!vTags.hasTag(std::string(rg3::cpp::BuiltinTags::kRuntime)))
+		if (!vTags.hasTag(std::string(rg3::cpp::BuiltinTags::kRuntime)) && !compilerConfig.bAllowCollectNonRuntimeTypes)
 			return true;
 
 		// Create entry

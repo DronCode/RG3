@@ -51,6 +51,16 @@ namespace rg3::pybind
 		addIncludeDir(rg3::llvm::IncludeInfo(includeDir, rg3::llvm::IncludeKind::IK_PROJECT));
 	}
 
+	void PyCodeAnalyzerBuilder::setAllowToCollectNonRuntimeTypes(bool value)
+	{
+		m_pAnalyzerInstance->getCompilerConfig().bAllowCollectNonRuntimeTypes = value;
+	}
+
+	bool PyCodeAnalyzerBuilder::isNonRuntimeTypesAllowedToBeCollected() const
+	{
+		return m_pAnalyzerInstance->getCompilerConfig().bAllowCollectNonRuntimeTypes;
+	}
+
 	void PyCodeAnalyzerBuilder::analyze()
 	{
 		auto analyzeInfo = m_pAnalyzerInstance->analyze();

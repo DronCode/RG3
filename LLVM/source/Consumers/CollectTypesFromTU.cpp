@@ -4,8 +4,8 @@
 
 namespace rg3::llvm::consumers
 {
-	CollectTypesFromTUConsumer::CollectTypesFromTUConsumer(std::vector<rg3::cpp::TypeBasePtr>& vCollectedTypes)
-		: clang::ASTConsumer(), collectedTypes(vCollectedTypes)
+	CollectTypesFromTUConsumer::CollectTypesFromTUConsumer(std::vector<rg3::cpp::TypeBasePtr>& vCollectedTypes, const CompilerConfig& cc)
+		: clang::ASTConsumer(), collectedTypes(vCollectedTypes), compilerConfig(cc)
 	{
 	}
 
@@ -18,7 +18,7 @@ namespace rg3::llvm::consumers
 
 	void CollectTypesFromTUConsumer::HandleTranslationUnit(clang::ASTContext& ctx)
 	{
-		rg3::llvm::visitors::CxxTypeVisitor visitor { collectedTypes };
+		rg3::llvm::visitors::CxxTypeVisitor visitor { collectedTypes, compilerConfig };
 		visitor.TraverseDecl(ctx.getTranslationUnitDecl());
 	}
 }

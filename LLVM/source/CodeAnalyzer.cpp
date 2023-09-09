@@ -188,7 +188,7 @@ namespace rg3::llvm
 
 		// Run actions
 		{
-			rg3::llvm::actions::ExtractTypesFromTUAction findTypesAction { result.vFoundTypes };
+			rg3::llvm::actions::ExtractTypesFromTUAction findTypesAction { result.vFoundTypes, m_compilerConfig };
 			if (!compilerInstance.ExecuteAction(findTypesAction))
 			{
 				result.vIssues.push_back(

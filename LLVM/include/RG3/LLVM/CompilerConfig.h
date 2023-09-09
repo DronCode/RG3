@@ -13,5 +13,6 @@ namespace rg3::llvm
 		CxxStandard cppStandard { CxxStandard::CC_DEFAULT };
 		IncludeVector vIncludes {};
 		std::vector<std::string> vCompilerArgs;
+		bool bAllowCollectNonRuntimeTypes { false };
 	};
 }
