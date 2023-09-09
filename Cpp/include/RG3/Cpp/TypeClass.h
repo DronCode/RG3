@@ -1,5 +1,6 @@
 #pragma once
 
+#include <RG3/Cpp/Tag.h>
 #include <RG3/Cpp/TypeBase.h>
 #include <RG3/Cpp/TypeReference.h>
 #include <vector>
@@ -22,6 +23,7 @@ namespace rg3::cpp
 		std::string sAlias {};
 		TypeReference sTypeName {};
 		ClassEntryVisibility eVisibility { ClassEntryVisibility::CEV_PRIVATE };
+		Tags vTags {};
 
 		bool operator==(const ClassProperty& other) const;
 		bool operator!=(const ClassProperty& other) const;
@@ -32,6 +34,7 @@ namespace rg3::cpp
 		std::string sName {}; /// Name of function
 		std::string sOwnerClassName {}; /// Owner class name
 		ClassEntryVisibility eVisibility { ClassEntryVisibility::CEV_PRIVATE }; /// Visibility level of entry
+		Tags vTags {}; /// List of tags of function decl
 		bool bIsStatic { false }; /// Is static entry
 		bool bIsConst { false }; /// Is const method (for static method doesn't matter)
 

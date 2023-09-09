@@ -15,7 +15,7 @@ namespace rg3::llvm::visitors
 		if (!rawComment)
 			return true;
 
-		std::string rawCommentStr = rawComment->getRawText(sm).data();
+		const auto rawCommentStr = rawComment->getFormattedText(sm, ctx.getDiagnostics());
 		vTags = cpp::Tag::parseFromCommentString(rawCommentStr);
 
 		// Check this somewhere else
@@ -49,6 +49,16 @@ namespace rg3::llvm::visitors
 		newProperty.sAlias = newProperty.sName = cxxFieldDecl->getNameAsString();
 		newProperty.sTypeName = cpp::TypeReference(cxxFieldDecl->getType().getAsString());
 
+		clang::ASTContext& ctx = cxxFieldDecl->getASTContext();
+		clang::SourceManager& sm = ctx.getSourceManager();
+
+		const clang::RawComment* rawComment = ctx.getRawCommentForDeclNoCache(cxxFieldDecl);
+		if (rawComment)
+		{
+			const auto rawCommentStr = rawComment->getFormattedText(sm, ctx.getDiagnostics());
+			newProperty.vTags = cpp::Tag::parseFromCommentString(rawCommentStr);
+		}
+
 		switch (cxxFieldDecl->getVisibility())
 		{
 			case clang::HiddenVisibility:
@@ -73,6 +83,16 @@ namespace rg3::llvm::visitors
 		newFunction.bIsStatic = cxxMethodDecl->isStatic();
 		newFunction.sOwnerClassName = sClassName;
 		newFunction.bIsConst = cxxMethodDecl->isConst();
+
+		clang::ASTContext& ctx = cxxMethodDecl->getASTContext();
+		clang::SourceManager& sm = ctx.getSourceManager();
+
+		const clang::RawComment* rawComment = ctx.getRawCommentForDeclNoCache(cxxMethodDecl);
+		if (rawComment)
+		{
+			const auto rawCommentStr = rawComment->getFormattedText(sm, ctx.getDiagnostics());
+			newFunction.vTags = cpp::Tag::parseFromCommentString(rawCommentStr);
+		}
 
 		switch (cxxMethodDecl->getVisibility())
 		{
