@@ -59,18 +59,7 @@ namespace rg3::llvm::visitors
 			newProperty.vTags = cpp::Tag::parseFromCommentString(rawCommentStr);
 		}
 
-		switch (cxxFieldDecl->getVisibility())
-		{
-			case clang::HiddenVisibility:
-				newProperty.eVisibility = cpp::ClassEntryVisibility::CEV_PRIVATE;
-				break;
-			case clang::ProtectedVisibility:
-				newProperty.eVisibility = cpp::ClassEntryVisibility::CEV_PROTECTED;
-				break;
-			case clang::DefaultVisibility:
-				newProperty.eVisibility = bIsStruct ? cpp::ClassEntryVisibility::CEV_PUBLIC : cpp::ClassEntryVisibility::CEV_PRIVATE;
-				break;
-		}
+		newProperty.eVisibility = Utils::getDeclVisibilityLevel(cxxFieldDecl);
 
 		return true;
 	}
@@ -94,18 +83,7 @@ namespace rg3::llvm::visitors
 			newFunction.vTags = cpp::Tag::parseFromCommentString(rawCommentStr);
 		}
 
-		switch (cxxMethodDecl->getVisibility())
-		{
-		case clang::HiddenVisibility:
-			newFunction.eVisibility = cpp::ClassEntryVisibility::CEV_PRIVATE;
-			break;
-		case clang::ProtectedVisibility:
-			newFunction.eVisibility = cpp::ClassEntryVisibility::CEV_PROTECTED;
-			break;
-		case clang::DefaultVisibility:
-			newFunction.eVisibility = bIsStruct ? cpp::ClassEntryVisibility::CEV_PUBLIC : cpp::ClassEntryVisibility::CEV_PRIVATE;
-			break;
-		}
+		newFunction.eVisibility = Utils::getDeclVisibilityLevel(cxxMethodDecl);
 
 		return true;
 	}

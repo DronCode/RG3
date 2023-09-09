@@ -49,4 +49,19 @@ namespace rg3::llvm
 			static_cast<int>(offset)
 		};
 	}
+
+	cpp::ClassEntryVisibility Utils::getDeclVisibilityLevel(const clang::Decl* decl)
+	{
+		if (decl->getAccess() == clang::AS_public)
+			return cpp::ClassEntryVisibility::CEV_PUBLIC;
+
+		if (decl->getAccess() == clang::AS_private)
+			return cpp::ClassEntryVisibility::CEV_PRIVATE;
+
+		if (decl->getAccess() == clang::AS_protected)
+			return cpp::ClassEntryVisibility::CEV_PROTECTED;
+
+		// Unknown case
+		return cpp::ClassEntryVisibility::CEV_PRIVATE;
+	}
 }

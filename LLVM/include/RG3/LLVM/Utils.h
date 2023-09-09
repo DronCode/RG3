@@ -2,6 +2,7 @@
 
 #include <RG3/Cpp/CppNamespace.h>
 #include <RG3/Cpp/DefinitionLocation.h>
+#include <RG3/Cpp/TypeClass.h>
 #include <clang/AST/Decl.h>
 
 #include <filesystem>
@@ -15,5 +16,7 @@ namespace rg3::llvm
 		static void getDeclInfo(const clang::Decl* decl, rg3::cpp::CppNamespace& nameSpace);
 
 		static cpp::DefinitionLocation getDeclDefinitionInfo(const clang::Decl* decl);
+
+		static cpp::ClassEntryVisibility getDeclVisibilityLevel(const clang::Decl* decl);
 	};
 }
