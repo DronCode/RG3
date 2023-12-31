@@ -1,3 +1,7 @@
+"""
+This file contains all public available symbols & definitions for PyBind (rg3py_ext.pyd)
+Follow PyBind/source/PyBind.cpp for details
+"""
 from typing import List
 
 

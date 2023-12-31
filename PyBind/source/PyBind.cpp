@@ -25,6 +25,7 @@ BOOST_PYTHON_MODULE(rg3py_ext)
 {
 	/**
 	 * Register base and trivial types here, other in impls
+	 * Please, don't forget to add your public available types into PyBind/rg3py_ext.pyi file!!!
 	 */
 	/// ----------- ENUMS -----------
 	enum_<rg3::cpp::TypeKind>("CppTypeKind")

@@ -27,7 +27,7 @@ When everything is done your plugin file `rg3ext_py.pyd` will be in `build` fold
 Usage:
 ------
 
-Just put `rg3ext_py.pyd` near to your python source file and it will be ready to use.
+Just copy `rg3ext_py.pyi` (hints for IDE) and `rg3ext_py.pyd` (native extension itself) into folder with your python code.
 
 Sample code:
 
@@ -66,3 +66,12 @@ Project state
 Now I'm working on first MVP and will use this project for codegen in my own engine.
 
 Stay tuned :) 
+
+Current limitations
+-------------------
+
+ * Currently I'm focused on Windows support. Linux & MacOS support will be later.
+ * Project WILL NOT support code inside function scope. I'm focused only on header analysis. Feel free to fork with project and make which analysis what you want.
+ * Multithreading: not supported now, but will be supported later.
+ * Context: not supported. Will do it later. 
+   * Workaround: main context focused in CodeAnalyzer, so you able to make 1 context per thread, that should be enough. 
