@@ -192,6 +192,9 @@ BOOST_PYTHON_MODULE(rg3py_ext)
 					  &rg3::pybind::PyCodeAnalyzerBuilder::setAllowToCollectNonRuntimeTypes,
 					  "Allow to ignore @runtime tag near type decl")
 
+		.def("set_ignore_non_runtime_types", &rg3::pybind::PyCodeAnalyzerBuilder::setAllowToCollectNonRuntimeTypes)
+		.def("is_non_runtime_types_ignored", &rg3::pybind::PyCodeAnalyzerBuilder::isNonRuntimeTypesAllowedToBeCollected)
+
 		.def("set_code", &rg3::pybind::PyCodeAnalyzerBuilder::setSourceCode)
 		.def("set_file", &rg3::pybind::PyCodeAnalyzerBuilder::setSourceFile)
 		.def("set_cpp_standard", &rg3::pybind::PyCodeAnalyzerBuilder::setCppStandard)

@@ -51,12 +51,12 @@ namespace rg3::llvm
 
 	void CodeAnalyzer::setSourceCode(const std::string& sourceCode)
 	{
-		m_source = sourceCode;
+		m_source.emplace<std::string>(sourceCode);
 	}
 
 	void CodeAnalyzer::setSourceFile(const std::filesystem::path& sourceFile)
 	{
-		m_source = sourceFile;
+		m_source.emplace<std::filesystem::path>(sourceFile);
 	}
 
 	CompilerConfig& CodeAnalyzer::getCompilerConfig()
@@ -84,7 +84,7 @@ namespace rg3::llvm
 		auto invocation = std::make_shared<clang::CompilerInvocation>();
 		clang::CompilerInvocation::CreateFromArgs(
 			*invocation,
-			::llvm::ArrayRef<const char*>(vCompilerArgs.data(), vCompilerArgs.data() + vCompilerArgs.size()),
+			::llvm::ArrayRef<const char*>(vCompilerArgs.data(), vCompilerArgs.size()),
 			compilerInstance.getDiagnostics()
 		);
 
@@ -118,6 +118,8 @@ namespace rg3::llvm
 				break;
 		}
 
+		langOptions->LangStd = langKind;
+
 		{
 			std::vector<std::string> vIncs;
 
@@ -149,16 +151,20 @@ namespace rg3::llvm
 
 			void operator()(const std::filesystem::path& path)
 			{
-				clang::FrontendInputFile(
-					::llvm::StringRef(path.string()),
-					clang::InputKind(
-						clang::Language::CXX,
-						clang::InputKind::Format::Source,
-						false, // NOT preprocessed
-						clang::InputKind::HeaderUnitKind::HeaderUnit_User,
-						true // is Header = true
-					),
-					false
+				std::string absolutePath = std::filesystem::absolute(path).string();
+
+				compilerOptions.Inputs.push_back(
+					clang::FrontendInputFile(
+						absolutePath,
+						clang::InputKind(
+							clang::Language::CXX,
+							clang::InputKind::Format::Source,
+							false, // NOT preprocessed
+							clang::InputKind::HeaderUnitKind::HeaderUnit_User,
+							true // is Header = true
+						),
+						false // IsSystem = false
+					)
 				);
 			}
 
@@ -177,7 +183,7 @@ namespace rg3::llvm
 							clang::InputKind::HeaderUnitKind::HeaderUnit_User,
 							true // is Header = true
 						),
-						false
+						false // IsSystem = false
 					)
 				);
 			}
@@ -191,6 +197,7 @@ namespace rg3::llvm
 			rg3::llvm::actions::ExtractTypesFromTUAction findTypesAction { result.vFoundTypes, m_compilerConfig };
 			if (!compilerInstance.ExecuteAction(findTypesAction))
 			{
+//				auto& diagEngine = compilerInstance.getDiagnostics();
 				result.vIssues.push_back(
 					AnalyzerResult::CompilerIssue(
 						AnalyzerResult::CompilerIssue::IssueKind::IK_ERROR,
