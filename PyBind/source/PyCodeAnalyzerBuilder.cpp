@@ -31,14 +31,28 @@ namespace rg3::pybind
 		m_pAnalyzerInstance->getCompilerConfig().cppStandard = standard;
 	}
 
-	void PyCodeAnalyzerBuilder::setCompilerArgs(const std::vector<std::string>& args)
+	void PyCodeAnalyzerBuilder::setCompilerArgs(const boost::python::list& args)
 	{
-		m_pAnalyzerInstance->getCompilerConfig().vCompilerArgs = args;
+		std::vector<std::string> cxxArgs;
+
+		for (int i = 0; i < boost::python::len(args); i++)
+		{
+			cxxArgs.emplace_back(boost::python::extract<std::string>(args[i]));
+		}
+
+		m_pAnalyzerInstance->getCompilerConfig().vCompilerArgs = cxxArgs;
 	}
 
-	void PyCodeAnalyzerBuilder::setCompilerIncludeDirs(const std::vector<rg3::llvm::IncludeInfo>& includes)
+	void PyCodeAnalyzerBuilder::setCompilerIncludeDirs(const boost::python::list& includes)
 	{
-		m_pAnalyzerInstance->getCompilerConfig().vIncludes = includes;
+		std::vector<rg3::llvm::IncludeInfo> cxxIncludes;
+
+		for (int i = 0; i < boost::python::len(includes); i++)
+		{
+			cxxIncludes.emplace_back(boost::python::extract<rg3::llvm::IncludeInfo>(includes[i]));
+		}
+
+		m_pAnalyzerInstance->getCompilerConfig().vIncludes = cxxIncludes;
 	}
 
 	void PyCodeAnalyzerBuilder::addIncludeDir(const rg3::llvm::IncludeInfo& includeInfo)

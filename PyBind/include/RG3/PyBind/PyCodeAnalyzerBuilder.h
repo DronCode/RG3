@@ -23,8 +23,8 @@ namespace rg3::pybind
 		void setSourceCode(const std::string& sourceCode);
 		void setSourceFile(const std::string& pathToFile);
 		void setCppStandard(rg3::llvm::CxxStandard standard);
-		void setCompilerArgs(const std::vector<std::string>& args);
-		void setCompilerIncludeDirs(const std::vector<rg3::llvm::IncludeInfo>& includes);
+		void setCompilerArgs(const boost::python::list& args);
+		void setCompilerIncludeDirs(const boost::python::list& includes);
 		void addIncludeDir(const rg3::llvm::IncludeInfo& includeInfo);
 		void addProjectIncludeDir(const std::string& includeDir);
 		void setAllowToCollectNonRuntimeTypes(bool value);
