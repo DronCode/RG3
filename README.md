@@ -32,7 +32,7 @@ Just copy `rg3ext_py.pyi` (hints for IDE) and `rg3ext_py.pyd` (native extension 
 Sample code:
 
 ```python
-from rg3py_ext import CodeAnalyzer, CppStandard, CppCompilerIssueKind
+from rg3py import CodeAnalyzer, CppStandard, CppCompilerIssueKind
 
 analyzer: CodeAnalyzer = CodeAnalyzer.make()
 analyzer.set_code("""

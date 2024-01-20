@@ -1,5 +1,10 @@
 project(RG3_LLVM)
 
+# ------- Boost
+set(Boost_USE_STATIC_LIBS ON)
+find_package(Boost COMPONENTS system filesystem REQUIRED)
+message(STATUS "Found boost ${BOOST_VERSION}")
+
 # ------- LLVM BACKEND
 find_package(LLVM REQUIRED CONFIG)
 find_package(CLANG REQUIRED CONFIG)
@@ -14,6 +19,7 @@ target_include_directories(RG3_LLVM PUBLIC ${CLANG_INCLUDE_DIRS})
 target_include_directories(RG3_LLVM PUBLIC ${LLVM_INCLUDE_DIRS})
 
 target_link_libraries(RG3_LLVM PUBLIC
+        # LLVM
         LLVMCore
         LLVMSupport
         clangAST
@@ -24,6 +30,8 @@ target_link_libraries(RG3_LLVM PUBLIC
         clangToolingCore
         clangSerialization
         clangASTMatchers
-
+        # Boost
+        ${Boost_LIBRARIES}
+        # RG3
         RG3::Cpp
 )

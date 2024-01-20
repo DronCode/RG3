@@ -19,11 +19,11 @@ namespace rg3::pybind
 		explicit PyTypeClass(std::unique_ptr<cpp::TypeBase>&& base);
 
 		/// Another implementations
-		const boost::python::list& pyGetClassProperties() const;
-		const boost::python::list& pyGetClassFunctions() const;
-		const boost::python::list& pyGetClassParentsTypeNamesList() const;
-		bool pyIsStruct() const;
-		bool pyIsTriviallyConstructible() const;
+		[[nodiscard]] const boost::python::list& pyGetClassProperties() const;
+		[[nodiscard]] const boost::python::list& pyGetClassFunctions() const;
+		[[nodiscard]] const boost::python::list& pyGetClassParentsTypeNamesList() const;
+		[[nodiscard]] bool pyIsStruct() const;
+		[[nodiscard]] bool pyIsTriviallyConstructible() const;
 
 	 private:
 		[[nodiscard]] cpp::TypeClass* getBase();

@@ -15,17 +15,18 @@
 #include <RG3/PyBind/PyTypeEnum.h>
 #include <RG3/PyBind/PyTypeClass.h>
 #include <RG3/PyBind/PyTag.h>
+#include <RG3/PyBind/PyAnalyzerContext.h>
 
 
 
 using namespace boost::python;
 
 
-BOOST_PYTHON_MODULE(rg3py_ext)
+BOOST_PYTHON_MODULE(rg3py)
 {
 	/**
 	 * Register base and trivial types here, other in impls
-	 * Please, don't forget to add your public available types into PyBind/rg3py_ext.pyi file!!!
+	 * Please, don't forget to add your public available types into PyBind/rg3py.pyi file!!!
 	 */
 	/// ----------- ENUMS -----------
 	enum_<rg3::cpp::TypeKind>("CppTypeKind")
@@ -133,7 +134,6 @@ BOOST_PYTHON_MODULE(rg3py_ext)
 	;
 
 	class_<rg3::llvm::IncludeInfo>("CppIncludeInfo")
-		.def(init<std::string>(args("path")))
 		.def(init<std::string, rg3::llvm::IncludeKind>(args("path", "kind")))
 		.add_property("path", make_getter(&rg3::llvm::IncludeInfo::sFsLocation))
 		.add_property("kind", make_getter(&rg3::llvm::IncludeInfo::eKind))
@@ -193,6 +193,11 @@ BOOST_PYTHON_MODULE(rg3py_ext)
 					  &rg3::pybind::PyCodeAnalyzerBuilder::setAllowToCollectNonRuntimeTypes,
 					  "Allow to ignore @runtime tag near type decl")
 
+		.add_property("definitions",
+					  &rg3::pybind::PyCodeAnalyzerBuilder::getCompilerDefinitions,
+					  &rg3::pybind::PyCodeAnalyzerBuilder::setCompilerDefinitions,
+					  "")
+
 		.def("set_ignore_non_runtime_types", &rg3::pybind::PyCodeAnalyzerBuilder::setAllowToCollectNonRuntimeTypes)
 		.def("is_non_runtime_types_ignored", &rg3::pybind::PyCodeAnalyzerBuilder::isNonRuntimeTypesAllowedToBeCollected)
 
@@ -203,6 +208,26 @@ BOOST_PYTHON_MODULE(rg3py_ext)
 		.def("set_compiler_include_dirs", &rg3::pybind::PyCodeAnalyzerBuilder::setCompilerIncludeDirs)
 		.def("add_include_dir", &rg3::pybind::PyCodeAnalyzerBuilder::addIncludeDir)
 		.def("add_project_include_dir", &rg3::pybind::PyCodeAnalyzerBuilder::addProjectIncludeDir)
+		.def("get_definitions", &rg3::pybind::PyCodeAnalyzerBuilder::getCompilerDefinitions)
+		.def("set_definitions", &rg3::pybind::PyCodeAnalyzerBuilder::setCompilerDefinitions)
 		.def("analyze", &rg3::pybind::PyCodeAnalyzerBuilder::analyze)
+	;
+
+	class_<rg3::pybind::PyAnalyzerContext, boost::noncopyable , boost::shared_ptr<rg3::pybind::PyAnalyzerContext>>("AnalyzerContext", no_init)
+		.def("make", &rg3::pybind::PyAnalyzerContext::makeInstance)
+		.staticmethod("make")
+
+		// Properties
+		.add_property("workers_count", &rg3::pybind::PyAnalyzerContext::getWorkersCount, &rg3::pybind::PyAnalyzerContext::setWorkersCount, "Count of workers which will prepare incoming sources")
+		.add_property("types", make_function(&rg3::pybind::PyAnalyzerContext::getFoundTypes, return_value_policy<copy_const_reference>()))
+		.add_property("issues", make_function(&rg3::pybind::PyAnalyzerContext::getFoundIssues, return_value_policy<copy_const_reference>()))
+		.add_property("headers", &rg3::pybind::PyAnalyzerContext::getHeaders, &rg3::pybind::PyAnalyzerContext::setHeaders, "List of headers")
+		.add_property("include_directories", &rg3::pybind::PyAnalyzerContext::getCompilerIncludeDirs, &rg3::pybind::PyAnalyzerContext::setCompilerIncludeDirs, "Include directories for compiler instance")
+		.add_property("cpp_standard", &rg3::pybind::PyAnalyzerContext::getCppStandard, &rg3::pybind::PyAnalyzerContext::setCppStandard, "Set C++ standard")
+		.add_property("compiler_args", &rg3::pybind::PyAnalyzerContext::getCompilerArgs, &rg3::pybind::PyAnalyzerContext::setCompilerArgs, "Set clang compiler arguments list")
+		.add_property("ignore_runtime_tag", &rg3::pybind::PyAnalyzerContext::isRuntimeTagIgnored, &rg3::pybind::PyAnalyzerContext::setIgnoreRuntimeTag, "Should context ignore @runtime tag on 'collect types' stage")
+
+		// Functions
+		.def("analyze", &rg3::pybind::PyAnalyzerContext::analyze)
 	;
 }

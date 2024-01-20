@@ -75,6 +75,28 @@ namespace rg3::pybind
 		return m_pAnalyzerInstance->getCompilerConfig().bAllowCollectNonRuntimeTypes;
 	}
 
+	void PyCodeAnalyzerBuilder::setCompilerDefinitions(const boost::python::list& compilerDefs)
+	{
+		m_pAnalyzerInstance->getCompilerConfig().vCompilerDefs.clear();
+
+		for (int i = 0; i < boost::python::len(compilerDefs); i++)
+		{
+			m_pAnalyzerInstance->getCompilerConfig().vCompilerDefs.emplace_back(boost::python::extract<std::string>(compilerDefs[i]));
+		}
+	}
+
+	boost::python::list PyCodeAnalyzerBuilder::getCompilerDefinitions() const
+	{
+		boost::python::list result;
+
+		for (const auto& ent : m_pAnalyzerInstance->getCompilerConfig().vCompilerDefs)
+		{
+			result.append(ent);
+		}
+
+		return result;
+	}
+
 	void PyCodeAnalyzerBuilder::analyze()
 	{
 		auto analyzeInfo = m_pAnalyzerInstance->analyze();

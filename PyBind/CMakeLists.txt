@@ -17,4 +17,4 @@ target_link_libraries(RG3_PyBind PUBLIC RG3::Cpp RG3::LLVM)
 target_link_libraries(RG3_PyBind PUBLIC ${Boost_LIBRARIES} ${PYTHON_LIBRARIES})
 target_include_directories(RG3_PyBind PUBLIC ${PYTHON_INCLUDE_DIRS})
 
-set_target_properties(RG3_PyBind PROPERTIES OUTPUT_NAME "rg3py_ext" SUFFIX ".pyd")
+set_target_properties(RG3_PyBind PROPERTIES OUTPUT_NAME "rg3py" SUFFIX ".pyd")

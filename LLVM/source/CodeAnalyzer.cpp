@@ -8,15 +8,20 @@
 #include <clang/Frontend/CompilerInstance.h>
 #include <clang/Frontend/CompilerInvocation.h>
 #include <clang/Frontend/FrontendActions.h>
+#include <clang/Lex/PreprocessorOptions.h>
 #include <clang/Tooling/Tooling.h>
 #include <clang/Basic/LangOptions.h>
+#include <clang/Basic/TargetInfo.h>
 
 #include <llvm/Support/CommandLine.h>
 #include <llvm/Support/FileSystem.h>
 #include <llvm/Support/raw_os_ostream.h>
 #include <llvm/Support/MemoryBufferRef.h>
+#include <llvm/Support/Host.h>
 #include <llvm/ADT/StringRef.h>
 #include <llvm/TargetParser/Triple.h>
+
+#include <RG3/LLVM/CompilerConfigDetector.h>
 
 #include <algorithm>
 #include <utility>
@@ -24,6 +29,50 @@
 
 namespace rg3::llvm
 {
+	struct Visitor
+	{
+		clang::FrontendOptions& compilerOptions;
+
+		void operator()(const std::filesystem::path& path)
+		{
+			std::string absolutePath = std::filesystem::absolute(path).string();
+
+			compilerOptions.Inputs.push_back(
+				clang::FrontendInputFile(
+					absolutePath,
+					clang::InputKind(
+						clang::Language::CXX,
+						clang::InputKind::Format::Source,
+						false, // NOT preprocessed
+						clang::InputKind::HeaderUnitKind::HeaderUnit_User,
+						true // is Header = true
+						),
+					false // IsSystem = false
+					)
+			);
+		}
+
+		void operator()(const std::string& buffer)
+		{
+			compilerOptions.Inputs.push_back(
+				clang::FrontendInputFile(
+					::llvm::MemoryBufferRef(
+						::llvm::StringRef(buffer.data()),
+						::llvm::StringRef("id0.hpp")
+							),
+					clang::InputKind(
+						clang::Language::CXX,
+						clang::InputKind::Format::Source,
+						false, // NOT preprocessed
+						clang::InputKind::HeaderUnitKind::HeaderUnit_User,
+						true // is Header = true
+						),
+					false // IsSystem = false
+					)
+			);
+		}
+	};
+
 	AnalyzerResult::operator bool() const
 	{
 		return std::count_if(
@@ -64,20 +113,65 @@ namespace rg3::llvm
 		return m_compilerConfig;
 	}
 
+	std::string sourceToString(const std::variant<std::filesystem::path, std::string>& src)
+	{
+		struct
+		{
+			std::string repr;
+
+			void operator()(const std::filesystem::path& p)
+			{
+				repr = p.string();
+			}
+
+			void operator()(const std::string& s)
+			{
+				repr = s;
+			}
+		} v;
+
+		std::visit(v, src);
+		return v.repr;
+	};
 
 	AnalyzerResult CodeAnalyzer::analyze()
 	{
 		AnalyzerResult result;
+
 		// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+		// Run platform env detector
+		const auto compilerEnvironment = CompilerConfigDetector::detectSystemCompilerEnvironment();
+		if (auto pEnvFailure = std::get_if<CompilerEnvError>(&compilerEnvironment))
+		{
+			// Fatal error
+			result.vIssues.emplace_back(AnalyzerResult::CompilerIssue::IssueKind::IK_ERROR, sourceToString(m_source), pEnvFailure->message);
+			return result;
+		}
+
+		const auto* pCompilerEnv = std::get_if<CompilerEnvironment>(&compilerEnvironment);
+
+		// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 		clang::CompilerInstance compilerInstance;
 		compilerInstance.createDiagnostics();
 
-		std::vector<const char*> vCompilerArgs;
-		vCompilerArgs.resize(m_compilerConfig.vCompilerArgs.size());
+		// Set up FileManager and SourceManager
+		compilerInstance.createFileManager();
+		compilerInstance.createSourceManager(compilerInstance.getFileManager());
 
-		for (size_t i = 0; i < m_compilerConfig.vCompilerArgs.size(); i++)
+		std::vector<std::string> vProxyArgs = m_compilerConfig.vCompilerArgs;
+#ifdef _WIN32
+		vProxyArgs.emplace_back("-fms-extensions");
+		vProxyArgs.emplace_back("-fdelayed-template-parsing");
+		vProxyArgs.emplace_back("-fms-compatibility-version=19");
+#endif
+
+		std::vector<const char*> vCompilerArgs;
+		vCompilerArgs.resize(vProxyArgs.size());
+
+		for (size_t i = 0; i < vProxyArgs.size(); i++)
 		{
-			vCompilerArgs[i] = m_compilerConfig.vCompilerArgs[i].c_str();
+			vCompilerArgs[i] = vProxyArgs[i].c_str();
 		}
 
 		// Set up CompilerInvocation
@@ -120,24 +214,42 @@ namespace rg3::llvm
 
 		langOptions->LangStd = langKind;
 
+#ifdef _WIN32
+		compilerInstance.getPreprocessorOpts().addMacroDef("_MSC_VER=1932");
+		compilerInstance.getPreprocessorOpts().addMacroDef("_MSC_FULL_VER=193231329");
+		compilerInstance.getPreprocessorOpts().addMacroDef("_MSC_EXTENSIONS");
+#endif
+
+		std::shared_ptr<clang::TargetOptions> targetOpts = nullptr;
+
+		// Setup triple
+		if (!pCompilerEnv || pCompilerEnv->triple.empty())
 		{
+			// Use default triple
+			targetOpts = std::make_shared<clang::TargetOptions>();
+			targetOpts->Triple = ::llvm::sys::getDefaultTargetTriple();
+			clang::TargetInfo* targetInfo = clang::TargetInfo::CreateTargetInfo(compilerInstance.getDiagnostics(), targetOpts);
+			compilerInstance.setTarget(targetInfo);
+
+			auto triple = targetInfo->getTriple();
+
 			std::vector<std::string> vIncs;
+			clang::LangOptions::setLangDefaults(*langOptions, clang::Language::CXX, triple, vIncs, langKind);
+		}
+		else
+		{
+			targetOpts = std::make_shared<clang::TargetOptions>();
+			targetOpts->Triple = ::llvm::Triple::normalize(pCompilerEnv->triple);
+			clang::TargetInfo* targetInfo = clang::TargetInfo::CreateTargetInfo(compilerInstance.getDiagnostics(), targetOpts);
+			compilerInstance.setTarget(targetInfo);
 
-			::llvm::Triple triple;
-			triple.setArch(::llvm::Triple::ArchType::x86_64, ::llvm::Triple::SubArchType::NoSubArch);
-			triple.setEnvironment(::llvm::Triple::EnvironmentType::MSVC);
-			triple.setOS(::llvm::Triple::OSType::Win32);
-			triple.setVendor(::llvm::Triple::VendorType::UnknownVendor);
-			triple.setObjectFormat(::llvm::Triple::ObjectFormatType::COFF);
+			auto triple = targetInfo->getTriple();
 
+			std::vector<std::string> vIncs;
 			clang::LangOptions::setLangDefaults(*langOptions, clang::Language::CXX, triple, vIncs, langKind);
 		}
 
 		compilerInstance.setInvocation(invocation);
-
-		// Set up FileManager and SourceManager
-		compilerInstance.createFileManager();
-		compilerInstance.createSourceManager(compilerInstance.getFileManager());
 
 		// Set up FrontendOptions
 		clang::FrontendOptions &opts = compilerInstance.getFrontendOpts();
@@ -145,52 +257,32 @@ namespace rg3::llvm
 
 		opts.Inputs.clear();
 
-		struct Visitor
-		{
-			clang::FrontendOptions& compilerOptions;
-
-			void operator()(const std::filesystem::path& path)
-			{
-				std::string absolutePath = std::filesystem::absolute(path).string();
-
-				compilerOptions.Inputs.push_back(
-					clang::FrontendInputFile(
-						absolutePath,
-						clang::InputKind(
-							clang::Language::CXX,
-							clang::InputKind::Format::Source,
-							false, // NOT preprocessed
-							clang::InputKind::HeaderUnitKind::HeaderUnit_User,
-							true // is Header = true
-						),
-						false // IsSystem = false
-					)
-				);
-			}
-
-			void operator()(const std::string& buffer)
-			{
-				compilerOptions.Inputs.push_back(
-					clang::FrontendInputFile(
-						::llvm::MemoryBufferRef(
-							::llvm::StringRef(buffer.data()),
-							::llvm::StringRef("id0.hpp")
-						),
-						clang::InputKind(
-							clang::Language::CXX,
-							clang::InputKind::Format::Source,
-							false, // NOT preprocessed
-							clang::InputKind::HeaderUnitKind::HeaderUnit_User,
-							true // is Header = true
-						),
-						false // IsSystem = false
-					)
-				);
-			}
-		};
-
 		// Prepare compiler instance
 		std::visit(Visitor(opts), m_source);
+
+		// Set macros
+		clang::PreprocessorOptions& preprocessorOptions = compilerInstance.getPreprocessorOpts();
+		for (const auto& compilerDef : m_compilerConfig.vCompilerDefs)
+		{
+			preprocessorOptions.addMacroDef(compilerDef);
+		}
+
+		// Setup header dirs source
+		clang::HeaderSearchOptions& headerSearchOptions = compilerInstance.getHeaderSearchOpts();
+		{
+			for (const auto& sysInc : (pCompilerEnv ? pCompilerEnv->config.vSystemIncludes : m_compilerConfig.vSystemIncludes))
+			{
+				const auto absolutePath = std::filesystem::absolute(sysInc.sFsLocation);
+				headerSearchOptions.AddPath(absolutePath.string(), clang::frontend::IncludeDirGroup::CXXSystem, false, false);
+			}
+
+			for (const auto& incInfo : m_compilerConfig.vIncludes)
+			{
+				// Convert path to absolute
+				const auto absolutePath = std::filesystem::absolute(incInfo.sFsLocation);
+				headerSearchOptions.AddPath(absolutePath.string(), clang::frontend::IncludeDirGroup::Angled, false, false);
+			}
+		}
 
 		// Run actions
 		{

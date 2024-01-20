@@ -17,7 +17,7 @@ namespace rg3::llvm
 			enum class IssueKind { IK_NONE, IK_WARNING, IK_INFO, IK_ERROR };
 
 			IssueKind kind { IssueKind::IK_NONE };
-			std::filesystem::path sSourceFile;
+			std::string sSourceFile;
 			std::string sMessage;
 		};
 
