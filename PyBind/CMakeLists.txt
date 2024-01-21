@@ -3,7 +3,7 @@ project(RG3_PyBind)
 set(Boost_USE_STATIC_LIBS ON)
 
 # ------- LLVM BACKEND
-find_package(PythonLibs 3.10 REQUIRED)
+find_package(PythonLibs 3.10...3.99 REQUIRED)   # 3.99 to support all 3.x Python versions (dev based on 3.10)
 find_package(Boost COMPONENTS python filesystem REQUIRED)
 
 # ------- RG3 PyBind frontend
