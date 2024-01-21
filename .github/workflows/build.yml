@@ -22,6 +22,10 @@ jobs:
         with:
           submodules: "recursive"
 
+       # Setup msbuild
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v1.0.1
+
       # Setup Ninja
       - name: Get latests Ninja
         uses: ashutoshvarma/setup-ninja@master
