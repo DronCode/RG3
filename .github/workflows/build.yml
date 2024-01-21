@@ -28,7 +28,21 @@ jobs:
 
       # Check cache of Boost & LLVM - take if exists
       # Build Boost 1.81.0
-      # Build LLVM 15.0.0
+      - name: Install Boost 1.81.0
+        uses: MarkusJx/install-boost@v2.4.4
+        id: install-boost
+        with:
+          boost_version: 1.81.0
+          toolset: msvc
+          link: static
+
+      # Build LLVM 16.0.4
+      - name: Download LLVM
+        uses: llvm/actions/get-llvm-project-src@main
+        with:
+          ref: "llvmorg-16.0.4"
+
       # Build project via cmake
-      # Compress artifacts
+      # Build python whl packages
+      # Compress things
       # Send artifacts to GitHub
