@@ -28,10 +28,6 @@ jobs:
         with:
           msbuild-architecture: x64
 
-      # Setup Ninja
-      - name: Get latests Ninja
-        uses: ashutoshvarma/setup-ninja@master
-
       # Check cache of Boost & LLVM - take if exists
       # Build Boost 1.81.0
       - name: Install Boost 1.81.0
@@ -65,16 +61,17 @@ jobs:
           ref: "llvmorg-16.0.4"
           path: "llvm_repo"
 
+      # Build LLVM (very slow process, lmao) TODO: Add support of Ninja build system!!!
       - name: Build LLVM
         if: steps.cache-llvm-binaries.outputs.cache-hit != 'true'
         working-directory: llvm_repo
         run: |
           mkdir build
-          cmake -DLLVM_ENABLE_PROJECTS="clang" -DCMAKE_BUILD_TYPE="MinSizeRel" -S llvm -B build -G Ninja
+          cmake -DLLVM_ENABLE_PROJECTS="clang" -DCMAKE_BUILD_TYPE="MinSizeRel" -S llvm -B build -G "Visual Studio 17 2022"
           cd build
           cmake --build . --config MinSizeRel
 
-      # Build our project
+      # Build our project. TODO: Add support of Ninja build system!!!
       - name: Build RG3
         env:
           LLVM_DIR: ${{ github.workspace }}/llvm_repo/build/lib/cmake/llvm
@@ -82,16 +79,20 @@ jobs:
           BOOST_ROOT: ${{ steps.install-boost.outputs.BOOST_ROOT }}
         run: |
           mkdir build
-          cmake -DCMAKE_BUILD_TYPE="MinSizeRel" -B build -G Ninja
+          cmake -DCMAKE_BUILD_TYPE="MinSizeRel" -B build -G "Visual Studio 17 2022"
           cd build
           cmake -- build . --config MinSizeRel
 
+      # Make python packages (whl)
+
+      # Make dist folder with pyd & pyi files.
       - name: Create distribution package
         run: |
           mkdir dist
           mv PyBind/rg3py.pyi dist
           mv build/PyBind/rg3py.pyd dist
 
+      # Upload artifacts. TODO: Upload whl artifacts too!
       - name: Upload RG3 artifacts
         uses: actions/upload-artifact@v2
         with:
