@@ -203,9 +203,25 @@ namespace rg3::llvm
 				break;
 			case CxxStandard::CC_20:
 				langOptions->CPlusPlus20 = 1;
-				langOptions->CPlusPlus2b = 1;
 				langKind = clang::LangStandard::Kind::lang_cxx20;
 				break;
+#if LLVM_VERSION_MAJOR >= 17
+			case CxxStandard::CC_23:
+				langOptions->CPlusPlus23 = 1;
+				langKind = clang::LangStandard::Kind::lang_cxx23;
+				break;
+			case CxxStandard::CC_26:
+				langOptions->CPlusPlus26 = 1;
+				langKind = clang::LangStandard::Kind::lang_cxx26;
+				break;
+#else
+			case CxxStandard::CC_23:
+			case CxxStandard::CC_26:
+				assert(false && "Unsupported Cxx standard! Used C++20 instead!");
+				langOptions->CPlusPlus20 = 1;
+				langKind = clang::LangStandard::Kind::lang_cxx20;
+				break;
+#endif
 			default:
 				langOptions->CPlusPlus11 = 1;
 				langKind = clang::LangStandard::Kind::lang_cxx11;

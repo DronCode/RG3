@@ -5,7 +5,6 @@ set(Boost_USE_STATIC_LIBS ON)
 # ------- LLVM BACKEND
 find_package(PythonLibs 3.10 REQUIRED)
 find_package(Boost COMPONENTS python filesystem REQUIRED)
-message(STATUS "Found boost ${BOOST_VERSION}")
 
 # ------- RG3 PyBind frontend
 file(GLOB_RECURSE RG3_PYBIND_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/source/*.cpp")

@@ -267,3 +267,8 @@ class CppCompilerIssue:
 
 class CppTypeReference:
     def __init__(self, path: str): ...
+
+
+class ClangRuntime:
+    @staticmethod
+    def get_version() -> str: ...

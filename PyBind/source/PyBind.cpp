@@ -16,6 +16,7 @@
 #include <RG3/PyBind/PyTypeClass.h>
 #include <RG3/PyBind/PyTag.h>
 #include <RG3/PyBind/PyAnalyzerContext.h>
+#include <RG3/PyBind/PyClangRuntime.h>
 
 
 
@@ -192,7 +193,6 @@ BOOST_PYTHON_MODULE(rg3py)
 					  &rg3::pybind::PyCodeAnalyzerBuilder::isNonRuntimeTypesAllowedToBeCollected,
 					  &rg3::pybind::PyCodeAnalyzerBuilder::setAllowToCollectNonRuntimeTypes,
 					  "Allow to ignore @runtime tag near type decl")
-
 		.add_property("definitions",
 					  &rg3::pybind::PyCodeAnalyzerBuilder::getCompilerDefinitions,
 					  &rg3::pybind::PyCodeAnalyzerBuilder::setCompilerDefinitions,
@@ -229,5 +229,10 @@ BOOST_PYTHON_MODULE(rg3py)
 
 		// Functions
 		.def("analyze", &rg3::pybind::PyAnalyzerContext::analyze)
+	;
+
+	class_<rg3::pybind::PyClangRuntime, boost::noncopyable>("ClangRuntime")
+	    .def("get_version", &rg3::pybind::PyClangRuntime::getRuntimeInfo)
+		.staticmethod("get_version")
 	;
 }

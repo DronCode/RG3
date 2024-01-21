@@ -3,12 +3,11 @@ project(RG3_LLVM)
 # ------- Boost
 set(Boost_USE_STATIC_LIBS ON)
 find_package(Boost COMPONENTS system filesystem REQUIRED)
-message(STATUS "Found boost ${BOOST_VERSION}")
 
 # ------- LLVM BACKEND
 find_package(LLVM REQUIRED CONFIG)
 find_package(CLANG REQUIRED CONFIG)
-message(STATUS "Found CLANG ${LLVM_VERSION}")
+message(STATUS "Found CLANG ${LLVM_VERSION} (${LLVM_DIR})")
 
 # ------- RG3 LLVM
 file(GLOB_RECURSE RG3_LLVM_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/source/*.cpp")
