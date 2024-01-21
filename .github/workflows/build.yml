@@ -81,7 +81,7 @@ jobs:
           mkdir build
           cmake -DCMAKE_BUILD_TYPE="MinSizeRel" -B build -G "Visual Studio 17 2022"
           cd build
-          cmake -- build . --config MinSizeRel
+          cmake --build . --config MinSizeRel
 
       # Make python packages (whl)
 
