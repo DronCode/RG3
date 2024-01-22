@@ -28,6 +28,12 @@ jobs:
         with:
           msbuild-architecture: x64
 
+      # Setup Python of specific version
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
       # Check cache of Boost & LLVM - take if exists
       # Build Boost 1.81.0
       - name: Install Boost 1.81.0
@@ -75,9 +81,6 @@ jobs:
 
       # Build our project. TODO: Add support of Ninja build system!!!
       - name: Build RG3
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
         env:
           LLVM_DIR: ${{ github.workspace }}/llvm_repo/build/lib/cmake/llvm
           CLANG_DIR: ${{ github.workspace }}/llvm_repo/build/lib/cmake/clang
