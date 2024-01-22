@@ -3,7 +3,7 @@ project(RG3_PyBind)
 set(Boost_USE_STATIC_LIBS ON)
 
 # ------- LLVM BACKEND
-#find_package(PythonLibs REQUIRED)
+find_package(PythonLibs REQUIRED)
 find_package(Boost COMPONENTS python filesystem REQUIRED)
 
 # ------- RG3 PyBind frontend
