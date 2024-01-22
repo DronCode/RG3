@@ -30,6 +30,7 @@ jobs:
 
       # Setup Python of specific version
       - name: Install Python
+        id: install-python3
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
@@ -56,6 +57,7 @@ jobs:
             llvm_repo/build/MinSizeRel
             llvm_repo/build/include
             llvm_repo/build/lib
+            llvm_repo/build/tools/clang/include
             llvm_repo/llvm
             llvm_repo/clang
 
@@ -80,29 +82,30 @@ jobs:
           cmake --build . --config MinSizeRel
 
       # Build our project. TODO: Add support of Ninja build system!!!
-      - name: Build RG3
-        env:
-          LLVM_DIR: ${{ github.workspace }}/llvm_repo/build/lib/cmake/llvm
-          CLANG_DIR: ${{ github.workspace }}/llvm_repo/build/lib/cmake/clang
-          BOOST_ROOT: ${{ steps.install-boost.outputs.BOOST_ROOT }}
-        run: |
-          mkdir build
-          cmake -DCMAKE_BUILD_TYPE="MinSizeRel" -B build -G "Visual Studio 17 2022"
-          cd build
-          cmake --build . --config MinSizeRel
+#      - name: Build RG3
+#        env:
+#          LLVM_DIR: ${{ github.workspace }}/llvm_repo/build/lib/cmake/llvm
+#          CLANG_DIR: ${{ github.workspace }}/llvm_repo/build/lib/cmake/clang
+#          BOOST_ROOT: ${{ steps.install-boost.outputs.BOOST_ROOT }}
+#          Python3_ROOT_DIR: ${{ steps.install-python3.outputs.Python3_ROOT_DIR }}
+#        run: |
+#          mkdir build
+#          cmake -DCMAKE_BUILD_TYPE="MinSizeRel" -B build -G "Visual Studio 17 2022"
+#          cd build
+#          cmake --build . --config MinSizeRel
 
       # Make python packages (whl)
 
       # Make dist folder with pyd & pyi files.
-      - name: Create distribution package
-        run: |
-          mkdir dist
-          mv PyBind/rg3py.pyi dist
-          mv build/PyBind/MinSizeRel/rg3py.pyd dist
+#      - name: Create distribution package
+#        run: |
+#          mkdir dist
+#          mv PyBind/rg3py.pyi dist
+#          mv build/PyBind/MinSizeRel/rg3py.pyd dist
 
       # Upload artifacts. TODO: Upload whl artifacts too!
-      - name: Upload RG3 artifacts
-        uses: actions/upload-artifact@v2
-        with:
-          name: "RG3"
-          path: dist
+#      - name: Upload RG3 artifacts
+#        uses: actions/upload-artifact@v2
+#        with:
+#          name: "RG3"
+#          path: dist
