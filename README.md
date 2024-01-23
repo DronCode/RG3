@@ -1,16 +1,20 @@
 RG3
 ====
 
+![Build Status](https://github.com/DronCode/RG3/actions/workflows/build.yml/badge.svg)
+
 RG3 - is a backend & frontend for processing & analyzing C++ code. It provides information about types into Python frontend to future codegen stage.
 
 Requirements
 ------------
 
- * Compiled LLVM (>= 15.0.0) on local machine and environment variables `CLANG_DIR` and `LLVM_DIR`
+ * Compiled LLVM (>= 16.0.0) on local machine and environment variables `CLANG_DIR` and `LLVM_DIR`
    * My `CLANG_DIR` is `B:/Projects/llvm/build/lib/cmake/clang`
    * My `LLVM_DIR` is `B:/Projects/llvm/build/lib/cmake/llvm`
- * Statically compiled Boost (>=1.18.0) with boost python and environment variable `BOOST_ROOT`
+ * Statically compiled Boost (>=1.81.0) with boost python and environment variable `BOOST_ROOT`
    * My `BOOST_ROOT` is `B:/Projects/Boost/build_binaries`
+ * Python 3.10 (or later) with development files
+ * Installed clang instance (allowed to have latest stable version)
 
 Build
 -----
@@ -22,12 +26,12 @@ cmake -DCMAKE_BUILD_TYPE=Release ..
 cmake --build . --config Release
 ```
 
-When everything is done your plugin file `rg3ext_py.pyd` will be in `build` folder.
+When everything is done your plugin file `rg3py.pyd` will be in `build` folder.
 
 Usage:
 ------
 
-Just copy `rg3ext_py.pyi` (hints for IDE) and `rg3ext_py.pyd` (native extension itself) into folder with your python code.
+Just copy `rg3py.pyi` (hints for IDE) and `rg3py.pyd` (native extension itself) into folder with your python code.
 
 Sample code:
 
@@ -63,9 +67,19 @@ We have a type my::cool::name_space::ECoolEnum (TK_ENUM)
 Project state
 -------------
 
-Now I'm working on first MVP and will use this project for codegen in my own engine.
+Now project ready to discover medium code bases. Supported STL discover on Windows via installed clang (it's required!).
 
-Stay tuned :) 
+Feature Checklist
+-----------------
+
+ - [ ] Implement multithread for analyzer
+ - [ ] Add support of async operations on Python side
+ - [ ] Add releases from CI jobs into PyPi
+ - [ ] Support template deduction & aliasing
+ - [ ] Implement integration tests & embed it into GitHub Actions
+ - [ ] Support macOS & OSX Frameworks (lookup via `xcrun`)
+ - [ ] Support Linux & support GCC as source for SDK paths
+
 
 Current limitations
 -------------------
