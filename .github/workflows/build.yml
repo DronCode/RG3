@@ -87,7 +87,6 @@ jobs:
           LLVM_DIR: ${{ github.workspace }}/llvm_repo/build/lib/cmake/llvm
           CLANG_DIR: ${{ github.workspace }}/llvm_repo/build/lib/cmake/clang
           BOOST_ROOT: ${{ steps.install-boost.outputs.BOOST_ROOT }}
-          Python3_ROOT_DIR: ${{ steps.install-python3.outputs.Python3_ROOT_DIR }}
           Python3_USE_STATIC_LIBS: "TRUE"
         run: |
           mkdir build
