@@ -116,6 +116,8 @@ jobs:
       # Make python packages (WHL)
       - name: Create WHL distribution (Win64)
         run: |
+          pip install wheel
+          pip install --upgrade setuptools
           cp PyBind/rg3py.pyi Extension/rg3py/rg3py.pyi
           cp build/PyBind/MinSizeRel/rg3py.pyd Extension/rg3py/rg3py.pyd
           cd Extension
