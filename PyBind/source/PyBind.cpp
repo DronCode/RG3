@@ -234,5 +234,8 @@ BOOST_PYTHON_MODULE(rg3py)
 	class_<rg3::pybind::PyClangRuntime, boost::noncopyable>("ClangRuntime")
 	    .def("get_version", &rg3::pybind::PyClangRuntime::getRuntimeInfo)
 		.staticmethod("get_version")
+
+		.def("detect_system_include_sources", &rg3::pybind::PyClangRuntime::detectSystemIncludeSources)
+		.staticmethod("detect_system_include_sources")
 	;
 }

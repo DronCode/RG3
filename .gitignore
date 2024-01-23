@@ -2,3 +2,8 @@ cmake-build-*
 .idea
 build
 venv
+Extension/build
+Extension/dist
+Extension/rg3py/rg3py.pyd
+Extension/rg3py/rg3py.pyi
+Extension/rg3py.egg-info

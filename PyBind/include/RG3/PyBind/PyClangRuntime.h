@@ -9,5 +9,7 @@ namespace rg3::pybind
 	struct PyClangRuntime
 	{
 		static boost::python::str getRuntimeInfo();
+
+		static boost::python::object detectSystemIncludeSources();
 	};
 }

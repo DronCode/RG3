@@ -2,7 +2,7 @@
 This file contains all public available symbols & definitions for PyBind (rg3py.pyd)
 Follow PyBind/source/PyBind.cpp for details
 """
-from typing import List
+from typing import List, Union
 
 
 class CppStandard:
@@ -11,6 +11,7 @@ class CppStandard:
     CXX_17 = 17
     CXX_20 = 20
     CXX_23 = 23
+    CXX_26 = 26
     CXX_DEFAULT = 11
 
 
@@ -272,3 +273,7 @@ class CppTypeReference:
 class ClangRuntime:
     @staticmethod
     def get_version() -> str: ...
+
+    @staticmethod
+    def detect_system_include_sources() -> Union[str, List[str]]: ...
+
