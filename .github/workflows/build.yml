@@ -141,7 +141,7 @@ jobs:
       - name: Upload WHL artifacts
         uses: actions/upload-artifact@v2
         with:
-          name: RG3_${{ runner.os }}_Python310
+          name: RG3_${{ runner.os }}_Python310_Package
           path: Extension/dist/rg3py-0.1-py3-none-win_amd64.whl
 
       # TODO: Add support of release WHL to PyPI
