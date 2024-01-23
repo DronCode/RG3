@@ -88,6 +88,7 @@ jobs:
           CLANG_DIR: ${{ github.workspace }}/llvm_repo/build/lib/cmake/clang
           BOOST_ROOT: ${{ steps.install-boost.outputs.BOOST_ROOT }}
           Python3_ROOT_DIR: ${{ steps.install-python3.outputs.Python3_ROOT_DIR }}
+          Python3_USE_STATIC_LIBS: "TRUE"
         run: |
           mkdir build
           cmake -DCMAKE_BUILD_TYPE="MinSizeRel" -B build -G "Visual Studio 17 2022"
