@@ -94,7 +94,24 @@ jobs:
           cd build
           cmake --build . --config MinSizeRel
 
-      # Make python packages (whl)
+      # Install Clang 16.0.4 (for testing env)
+      - name: Install Clang TestEnv
+        uses: egor-tensin/setup-clang@v1
+        with:
+          version: "16.0.4"
+          platform: x64
+
+      - name: Print Clang Info
+        run: clang++ --version
+
+      # Run Unit Tests
+      - name: RG3 Run unit tests
+        run: |
+          cd build
+          ctest . --verbose --output-on-failure
+
+      # Run Integration Tests TODO
+      # Make python packages (whl) TODO
 
       # Make dist folder with pyd & pyi files.
       - name: Create distribution package
@@ -103,9 +120,11 @@ jobs:
           mv PyBind/rg3py.pyi dist
           mv build/PyBind/MinSizeRel/rg3py.pyd dist
 
-      # Upload artifacts. TODO: Upload whl artifacts too!
+      # Upload artifacts
       - name: Upload RG3 artifacts
         uses: actions/upload-artifact@v2
         with:
-          name: "RG3"
+          name: RG3_${{ runner.os }}_Python310
           path: dist
+
+      # Upload WHL artifacts
