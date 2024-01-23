@@ -94,21 +94,23 @@ jobs:
           cd build
           cmake --build . --config MinSizeRel
 
-      # Install Clang 16.0.4 (for testing env)
+      # Install Clang Latest (for testing env)
       - name: Install Clang TestEnv
         uses: egor-tensin/setup-clang@v1
         with:
-          version: "16.0.4"
+          version: latest
           platform: x64
 
-      - name: Print Clang Info
-        run: clang++ --version
+      # Check that Clang installed correctly and available to lookup for STL paths
+      - name: Check Clang (print version, dump lookup paths)
+        run: |
+          '' | clang++ -x c++-header -v -E -
 
       # Run Unit Tests
       - name: RG3 Run unit tests
         run: |
           cd build
-          ctest . --verbose --output-on-failure
+          ctest . -C MinSizeRel --verbose --output-on-failure
 
       # Run Integration Tests TODO
       # Make python packages (whl) TODO
