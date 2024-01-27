@@ -1,4 +1,4 @@
-name: Build
+name: Build RG3
 
 on:
   push:
