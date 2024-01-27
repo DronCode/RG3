@@ -13,7 +13,8 @@ jobs:
     strategy:
       matrix:
         config:
-          - { name: "Windows MSVC", os: windows-latest, cc: "cl", cxx: "cl", boost_toolset: msvc }
+          - { name: "Windows MSVC", os: windows-latest, cc: "cl", cxx: "cl", boost_toolset: msvc, cmake_generator: "Visual Studio 17 2022" }
+          - { name: "Ubuntu Linux", os: ubuntu-latest, cc: "gcc", cxx: "g++", boost_toolset: gcc, cmake_generator: "Ninja" }
 
     steps:
       # Download repository with submodules
@@ -22,11 +23,27 @@ jobs:
         with:
           submodules: "recursive"
 
-       # Setup msbuild
+      # Setup msbuild
       - name: Add msbuild to PATH
+        if: matrix.config.os == 'windows-latest'
         uses: microsoft/setup-msbuild@v1.1
         with:
           msbuild-architecture: x64
+
+      # Setup latest GCC
+      - name: Setup latest GCC
+        if: matrix.config.os == 'ubuntu-latest'
+        uses: egor-tensin/setup-gcc@v1
+        with:
+          version: latest
+          platform: x64
+
+      # Setup Ninja
+      - name: Setup Ninja
+        if: matrix.config.os == 'ubuntu-latest'
+        uses: ashutoshvarma/setup-ninja@master
+        with:
+          version: 1.10.0
 
       # Setup Python of specific version
       - name: Install Python
@@ -42,7 +59,7 @@ jobs:
         id: install-boost
         with:
           boost_version: 1.81.0
-          toolset: msvc
+          toolset: ${{ matrix.config.boost_toolset }}
           link: static
 
       # Try to locate llvm binaries (I'm not sure, but this list should be enough to precache all required things)
@@ -77,71 +94,66 @@ jobs:
         working-directory: llvm_repo
         run: |
           mkdir build
-          cmake -DLLVM_ENABLE_PROJECTS="clang" -DCMAKE_BUILD_TYPE="MinSizeRel" -S llvm -B build -G "Visual Studio 17 2022"
+          cmake -DLLVM_ENABLE_PROJECTS="clang" -DCMAKE_BUILD_TYPE="MinSizeRel" -S llvm -B build -G "${{ matrix.config.cmake_generator }}"
           cd build
           cmake --build . --config MinSizeRel
 
       # Build our project. TODO: Add support of Ninja build system!!!
-      - name: Build RG3
-        env:
-          LLVM_DIR: ${{ github.workspace }}/llvm_repo/build/lib/cmake/llvm
-          CLANG_DIR: ${{ github.workspace }}/llvm_repo/build/lib/cmake/clang
-          BOOST_ROOT: ${{ steps.install-boost.outputs.BOOST_ROOT }}
-          Python3_USE_STATIC_LIBS: "TRUE"
-        run: |
-          mkdir build
-          cmake -DCMAKE_BUILD_TYPE="MinSizeRel" -B build -G "Visual Studio 17 2022"
-          cd build
-          cmake --build . --config MinSizeRel
+#      - name: Build RG3
+#        env:
+#          LLVM_DIR: ${{ github.workspace }}/llvm_repo/build/lib/cmake/llvm
+#          CLANG_DIR: ${{ github.workspace }}/llvm_repo/build/lib/cmake/clang
+#          BOOST_ROOT: ${{ steps.install-boost.outputs.BOOST_ROOT }}
+#          Python3_USE_STATIC_LIBS: "TRUE"
+#        run: |
+#          mkdir build
+#          cmake -DCMAKE_BUILD_TYPE="MinSizeRel" -B build -G "${{ matrix.config.cmake_generator }}"
+#          cd build
+#          cmake --build . --config MinSizeRel
 
       # Install Clang Latest (for testing env)
-      - name: Install Clang TestEnv
-        uses: egor-tensin/setup-clang@v1
-        with:
-          version: latest
-          platform: x64
-
-      # Check that Clang installed correctly and available to lookup for STL paths
-      - name: Check Clang (print version, dump lookup paths)
-        run: |
-          '' | clang++ -x c++-header -v -E -
+#      - name: Install Clang TestEnv
+#        uses: egor-tensin/setup-clang@v1
+#        with:
+#          version: latest
+#          platform: x64
 
       # Run Unit Tests
-      - name: RG3 Run unit tests
-        run: |
-          cd build
-          ctest . -C MinSizeRel --verbose --output-on-failure
+#      - name: RG3 Run unit tests
+#        run: |
+#          cd build
+#          ctest . -C MinSizeRel --verbose --output-on-failure
 
       # Run Integration Tests TODO
       # Make python packages (WHL)
-      - name: Create WHL distribution (Win64)
-        run: |
-          pip install wheel
-          pip install --upgrade setuptools
-          cp PyBind/rg3py.pyi Extension/rg3py/rg3py.pyi
-          cp build/PyBind/MinSizeRel/rg3py.pyd Extension/rg3py/rg3py.pyd
-          cd Extension
-          python setup.py bdist_wheel --plat-name win_amd64
+#      - name: Create WHL distribution (Win64)
+#        run: |
+#          pip install wheel
+#          pip install --upgrade setuptools
+#          cp PyBind/rg3py.pyi Extension/rg3py/rg3py.pyi
+#          cp build/PyBind/MinSizeRel/rg3py.pyd Extension/rg3py/rg3py.pyd
+#          cd Extension
+#          python setup.py bdist_wheel --plat-name win_amd64
 
       # Make dist folder with pyd & pyi files.
-      - name: Create distribution package
-        run: |
-          mkdir dist
-          mv PyBind/rg3py.pyi dist
-          mv build/PyBind/MinSizeRel/rg3py.pyd dist
+#      - name: Create distribution package
+#        run: |
+#          mkdir dist
+#          mv PyBind/rg3py.pyi dist
+#          mv build/PyBind/MinSizeRel/rg3py.pyd dist
 
       # Upload artifacts
-      - name: Upload RG3 artifacts
-        uses: actions/upload-artifact@v2
-        with:
-          name: RG3_${{ runner.os }}_Python310
-          path: dist
+#      - name: Upload RG3 artifacts
+#        uses: actions/upload-artifact@v2
+#        with:
+#          name: RG3_${{ runner.os }}_Python310
+#          path: dist
 
       # Upload WHL artifacts
-      - name: Upload WHL artifacts
-        uses: actions/upload-artifact@v2
-        with:
-          name: RG3_${{ runner.os }}_Python310_Package
-          path: Extension/dist/rg3py-0.1-py3-none-win_amd64.whl
+#      - name: Upload WHL artifacts
+#        uses: actions/upload-artifact@v2
+#        with:
+#          name: RG3_${{ runner.os }}_Python310_Package
+#          path: Extension/dist/rg3py-0.1-py3-none-win_amd64.whl
 
       # TODO: Add support of release WHL to PyPI

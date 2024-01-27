@@ -5,9 +5,9 @@ set(Boost_USE_STATIC_LIBS ON)
 find_package(Boost COMPONENTS system filesystem REQUIRED)
 
 # ------- LLVM BACKEND
-find_package(LLVM REQUIRED CONFIG)
-find_package(CLANG REQUIRED CONFIG)
-message(STATUS "Found CLANG ${LLVM_VERSION} (${LLVM_DIR})")
+find_package(LLVM REQUIRED CONFIG HINTS $ENV{LLVM_DIR})
+find_package(Clang REQUIRED CONFIG HINTS $ENV{CLANG_DIR})
+message(STATUS "Found Clang ${LLVM_VERSION} (${LLVM_DIR})")
 
 # ------- RG3 LLVM
 file(GLOB_RECURSE RG3_LLVM_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/source/*.cpp")
@@ -34,3 +34,9 @@ target_link_libraries(RG3_LLVM PUBLIC
         # RG3
         RG3::Cpp
 )
+
+if (UNIX)
+    # It's required for Linux instance (maybe macOS too)
+    message("RG3::LLVM Disable RTTI")
+    target_compile_options(RG3_LLVM PUBLIC -fno-rtti)
+endif()
