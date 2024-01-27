@@ -93,6 +93,9 @@ jobs:
       - name: Build LLVM
         if: steps.cache-llvm-binaries.outputs.cache-hit != 'true'
         working-directory: llvm_repo
+        env:
+          CC: ${{ matrix.config.cc }}
+          CXX: ${{ matrix.config.cxx }}
         run: |
           mkdir build
           cmake -DLLVM_ENABLE_PROJECTS="clang" -DCMAKE_BUILD_TYPE="MinSizeRel" -S llvm -B build -G "${{ matrix.config.cmake_generator }}"
