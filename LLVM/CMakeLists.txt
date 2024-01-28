@@ -34,9 +34,3 @@ target_link_libraries(RG3_LLVM PUBLIC
         # RG3
         RG3::Cpp
 )
-
-if (UNIX)
-    # It's required for Linux instance (maybe macOS too)
-    message("RG3::LLVM Disable RTTI")
-    target_compile_options(RG3_LLVM PUBLIC -fno-rtti)
-endif()
