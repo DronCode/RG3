@@ -24,3 +24,8 @@ set_target_properties(RG3_PyBind PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
+
+if (MSVC)
+    # Hacky way to move result .pyd into specific folder. It's only for GitHub actions builds
+    set_target_properties(RG3_PyBind PROPERTIES LIBRARY_OUTPUT_DIRECTORY_MINSIZEREL ${CMAKE_CURRENT_SOURCE_DIR})
+endif()
