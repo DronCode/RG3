@@ -17,14 +17,22 @@ target_link_libraries(RG3_PyBind PUBLIC RG3::Cpp RG3::LLVM)
 target_link_libraries(RG3_PyBind PUBLIC ${Boost_LIBRARIES} ${Python3_LIBRARIES})
 target_include_directories(RG3_PyBind PUBLIC ${Python3_INCLUDE_DIRS})
 
-set_target_properties(RG3_PyBind PROPERTIES
-        OUTPUT_NAME "rg3py"
-        SUFFIX ".pyd"
-        PREFIX ""
-)
+if (WIN32)
+    set_target_properties(RG3_PyBind PROPERTIES
+            OUTPUT_NAME "rg3py"
+            SUFFIX ".pyd"
+            PREFIX ""
+    )
+else()
+    set_target_properties(RG3_PyBind PROPERTIES
+            OUTPUT_NAME "rg3py"
+            SUFFIX ".so"
+            PREFIX ""
+    )
+endif()
 
 # After build
-message(STATUS "[CI|POST_BUILD] Copy rg3py.pyd to ${CMAKE_CURRENT_SOURCE_DIR}")
+message(STATUS "[CI|POST_BUILD] Copy native extension to ${CMAKE_CURRENT_SOURCE_DIR}")
 add_custom_command(
         TARGET RG3_PyBind
         POST_BUILD

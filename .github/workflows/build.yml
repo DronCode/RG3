@@ -164,12 +164,21 @@ jobs:
           ctest . -C MinSizeRel --verbose --output-on-failure
 
       # Run Integration Tests TODO
+
       # Make dist folder with pyd & pyi files.
-      - name: Create distribution package
+      - name: Create distribution package (Windows)
+        if: matrix.config.os_id == 'windows'
         run: |
           mkdir dist
           mv PyBind/rg3py.pyi dist
           mv PyBind/rg3py.pyd dist
+
+      - name: Create distribution package (not Windows)
+        if: matrix.config.os_id != 'windows'
+        run: |
+          mkdir dist
+          mv PyBind/rg3py.pyi dist
+          mv PyBind/rg3py.so dist
 
       # Upload artifacts
       - name: Upload RG3 artifacts
