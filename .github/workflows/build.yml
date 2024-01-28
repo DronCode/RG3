@@ -165,17 +165,15 @@ jobs:
 
       # Run Integration Tests TODO
       # Make dist folder with pyd & pyi files.
-#      - name: Create distribution package
-#        run: |
-#          mkdir dist
-#          mv PyBind/rg3py.pyi dist
-#          mv build/PyBind/MinSizeRel/rg3py.pyd dist
+      - name: Create distribution package
+        run: |
+          mkdir dist
+          mv PyBind/rg3py.pyi dist
+          mv build/PyBind/MinSizeRel/rg3py.pyd dist
 
       # Upload artifacts
-#      - name: Upload RG3 artifacts
-#        uses: actions/upload-artifact@v2
-#        with:
-#          name: RG3_${{ runner.os }}
-#          path: dist
-
-      # TODO: Add support of release WHL to PyPI
+      - name: Upload RG3 artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: RG3_${{ runner.os }}
+          path: dist
