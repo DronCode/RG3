@@ -55,7 +55,7 @@ jobs:
       - name: Setup Ninja (Linux, macOS)
         if: matrix.config.os == 'ubuntu-latest'
         run: |
-          sudo apt-get install -y ninja-build
+          sudo apt-get install -y ninja-build gcc-13 g++-13
 
       # Setup Python of specific version
       - name: Install Python
