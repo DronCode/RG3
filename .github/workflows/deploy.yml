@@ -6,8 +6,8 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    needs: build_rg3
     steps:
+      # I really don't like it, but artifacts could be outdated
       - name: Download windows artifacts
         uses: actions/download-artifact@v4
         with:
