@@ -21,11 +21,11 @@ set_target_properties(RG3_PyBind PROPERTIES
         OUTPUT_NAME "rg3py"
         SUFFIX ".pyd"
         PREFIX ""
-        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-        LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-if (MSVC)
-    # Hacky way to move result .pyd into specific folder. It's only for GitHub actions builds
-    set_target_properties(RG3_PyBind PROPERTIES LIBRARY_OUTPUT_DIRECTORY_MINSIZEREL ${CMAKE_CURRENT_SOURCE_DIR})
-endif()
+# After build
+message(STATUS "[CI|POST_BUILD] Copy rg3py.pyd to ${CMAKE_CURRENT_SOURCE_DIR}")
+add_custom_command(
+        TARGET RG3_PyBind
+        POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:RG3_PyBind> ${CMAKE_CURRENT_SOURCE_DIR}/$<TARGET_FILE_NAME:RG3_PyBind>)
