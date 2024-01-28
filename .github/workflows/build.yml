@@ -91,7 +91,7 @@ jobs:
           Invoke-WebRequest -Uri "https://boostorg.jfrog.io/artifactory/main/release/1.81.0/source/boost_1_81_0.tar.gz" -OutFile "boost_1_81_0.tar.gz"
           tar xzf boost_1_81_0.tar.gz
           cd boost_1_81_0
-          .\bootstrap.bat --with-libraries=system,filesystem,python --with-python=$(which python3)
+          .\bootstrap.bat --with-libraries=system,filesystem,python
           .\b2 link=static variant=release
 
       # ---------------
