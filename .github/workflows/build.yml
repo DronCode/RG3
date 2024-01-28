@@ -27,8 +27,8 @@ jobs:
           - {
             name: "Ubuntu Linux",
             os: ubuntu-latest,
-            cc: "gcc",
-            cxx: "g++",
+            cc: "gcc-13",
+            cxx: "g++-13",
             boost_toolset: gcc,
             cmake_generator: "Ninja",
             llvm_tag: "llvmorg-16.0.4",
