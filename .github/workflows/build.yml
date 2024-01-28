@@ -150,19 +150,18 @@ jobs:
           cd build
           cmake --build . --config MinSizeRel
 
-      # Install Clang Latest (for testing env; Windows only)
-#      - name: Install Clang TestEnv (Windows only)
-#        if: matrix.config.os_id == 'windows'
-#        uses: egor-tensin/setup-clang@v1
-#        with:
-#          version: latest
-#          platform: x64
+      # Install Clang Latest (for testing env)
+      - name: Install Clang TestEnv
+        uses: egor-tensin/setup-clang@v1
+        with:
+          version: latest
+          platform: x64
 
       # Run Unit Tests
-#      - name: RG3 Run unit tests
-#        run: |
-#          cd build
-#          ctest . -C MinSizeRel --verbose --output-on-failure
+      - name: RG3 Run unit tests
+        run: |
+          cd build
+          ctest . -C MinSizeRel --verbose --output-on-failure
 
       # Run Integration Tests TODO
       # Make dist folder with pyd & pyi files.
