@@ -106,24 +106,24 @@ jobs:
           CXX: ${{ matrix.config.cxx }}
         run: |
           mkdir build
-          cmake -DLLVM_ENABLE_PROJECTS="clang" -DCMAKE_BUILD_TYPE="MinSizeRel" -S llvm -B build -G "${{ matrix.config.cmake_generator }}"
+          cmake -DLLVM_ENABLE_PROJECTS="clang" -DCMAKE_BUILD_TYPE="MinSizeRel" -DLLVM_ENABLE_RTTI=ON -DLLVM_INCLUDE_BENCHMARKS=OFF -DLLVM_INCLUDE_EXAMPLES=OFF -DLLVM_INCLUDE_TESTS=OFF -DLLVM_INCLUDE_TOOLS=ON -S llvm -B build -G "${{ matrix.config.cmake_generator }}"
           cd build
           cmake --build . --config MinSizeRel
 
       # Build our project
-      - name: Build RG3
-        env:
-          LLVM_DIR: ${{ github.workspace }}/llvm_repo/build/lib/cmake/llvm
-          CLANG_DIR: ${{ github.workspace }}/llvm_repo/build/lib/cmake/clang
-          BOOST_ROOT: ${{ steps.install-boost.outputs.BOOST_ROOT }}
-          Python3_USE_STATIC_LIBS: "TRUE"
-          CC: ${{ matrix.config.cc }}
-          CXX: ${{ matrix.config.cxx }}
-        run: |
-          mkdir build
-          cmake -DCMAKE_BUILD_TYPE="MinSizeRel" -B build -G "${{ matrix.config.cmake_generator }}"
-          cd build
-          cmake --build . --config MinSizeRel
+#      - name: Build RG3
+#        env:
+#          LLVM_DIR: ${{ github.workspace }}/llvm_repo/build/lib/cmake/llvm
+#          CLANG_DIR: ${{ github.workspace }}/llvm_repo/build/lib/cmake/clang
+#          BOOST_ROOT: ${{ steps.install-boost.outputs.BOOST_ROOT }}
+#          Python3_USE_STATIC_LIBS: "TRUE"
+#          CC: ${{ matrix.config.cc }}
+#          CXX: ${{ matrix.config.cxx }}
+#        run: |
+#          mkdir build
+#          cmake -DCMAKE_BUILD_TYPE="MinSizeRel" -B build -G "${{ matrix.config.cmake_generator }}"
+#          cd build
+#          cmake --build . --config MinSizeRel
 
       # Install Clang Latest (for testing env)
 #      - name: Install Clang TestEnv
