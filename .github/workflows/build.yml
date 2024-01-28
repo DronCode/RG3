@@ -169,7 +169,7 @@ jobs:
         run: |
           mkdir dist
           mv PyBind/rg3py.pyi dist
-          mv build/PyBind/MinSizeRel/rg3py.pyd dist
+          mv PyBind/rg3py.pyd dist
 
       # Upload artifacts
       - name: Upload RG3 artifacts

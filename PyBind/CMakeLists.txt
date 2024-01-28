@@ -17,4 +17,10 @@ target_link_libraries(RG3_PyBind PUBLIC RG3::Cpp RG3::LLVM)
 target_link_libraries(RG3_PyBind PUBLIC ${Boost_LIBRARIES} ${Python3_LIBRARIES})
 target_include_directories(RG3_PyBind PUBLIC ${Python3_INCLUDE_DIRS})
 
-set_target_properties(RG3_PyBind PROPERTIES OUTPUT_NAME "rg3py" SUFFIX ".pyd")
+set_target_properties(RG3_PyBind PROPERTIES
+        OUTPUT_NAME "rg3py"
+        SUFFIX ".pyd"
+        PREFIX ""
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
