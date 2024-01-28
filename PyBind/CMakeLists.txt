@@ -4,7 +4,8 @@ set(Boost_USE_STATIC_LIBS ON)
 
 # ------- LLVM BACKEND
 find_package(Python3 COMPONENTS Interpreter Development.Module REQUIRED)
-find_package(Boost COMPONENTS python filesystem REQUIRED)
+find_package(Boost COMPONENTS python filesystem REQUIRED HINTS $ENV{Boost_ROOT})
+message("Boost found at $ENV{Boost_ROOT}")
 
 # ------- RG3 PyBind frontend
 file(GLOB_RECURSE RG3_PYBIND_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/source/*.cpp")

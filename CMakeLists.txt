@@ -1,8 +1,12 @@
 cmake_minimum_required(VERSION 3.26)
 project(RG3)
 
-
 set(CMAKE_CXX_STANDARD 20)
+
+if (UNIX)
+    message(STATUS "-- Enabled -fPIC for UNIX based OS")
+    set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
+endif()
 
 add_subdirectory(Cpp)
 add_subdirectory(LLVM)
