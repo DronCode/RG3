@@ -17,6 +17,7 @@ jobs:
           - {
             name: "Windows MSVC",
             os: windows-2022,
+            os_id: "windows",
             cc: "cl",
             cxx: "cl",
             boost_toolset: msvc,
@@ -28,6 +29,7 @@ jobs:
           - {
             name: "Ubuntu Linux",
             os: ubuntu-22.04,
+            os_id: "linux",
             cc: "gcc-13",
             cxx: "g++-13",
             boost_toolset: gcc,
@@ -46,14 +48,14 @@ jobs:
 
       # Setup msbuild
       - name: Add msbuild to PATH (Windows only)
-        if: matrix.config.os == 'windows-latest'
+        if: matrix.config.os_id == 'windows'
         uses: microsoft/setup-msbuild@v1.1
         with:
           msbuild-architecture: x64
 
       # Setup Ninja
       - name: Setup Ninja (Linux, macOS)
-        if: matrix.config.os == 'ubuntu-latest'
+        if: matrix.config.os_id == 'linux'
         run: |
           sudo apt-get install -y ninja-build gcc-13 g++-13
 
@@ -133,7 +135,7 @@ jobs:
 
       # Install Clang Latest (for testing env; Windows only)
 #      - name: Install Clang TestEnv (Windows only)
-#        if: matrix.config.os == 'windows-latest'
+#        if: matrix.config.os_id == 'windows'
 #        uses: egor-tensin/setup-clang@v1
 #        with:
 #          version: latest
