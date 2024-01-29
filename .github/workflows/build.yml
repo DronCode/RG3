@@ -8,6 +8,9 @@ on:
     tags:
       - "*"
 
+  pull_request:
+    types: [ opened, synchronize, reopened ]
+
 jobs:
   build_rg3:
     runs-on: ${{ matrix.config.os }}
@@ -186,3 +189,98 @@ jobs:
         with:
           name: RG3_${{ runner.os }}
           path: dist
+
+  create_release:
+    name: Create release
+    needs: [build_rg3]
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Get version
+        id: get_version
+        run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
+
+      - name: Create release
+        id: release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.get_version.outputs.VERSION }}
+          release_name: ${{ steps.get_version.outputs.VERSION }}
+          draft: true
+          prerelease: ${{ contains(github.ref, '-pre') }}
+
+    outputs:
+      upload_url: ${{ steps.release.outputs.upload_url }}
+
+  upload_release_assets:
+    name: Upload release assets
+    needs: [create_release]
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        artifact: [ "RG3_Windows", "RG3_Linux" ]
+
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.artifact }}
+
+      - name: Package artifact for release
+        run: |
+          cd ${{ matrix.artifact }}
+          zip -r ${{ matrix.artifact }}.zip *
+
+      - name: Upload release asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create_release.outputs.upload_url }}
+          asset_path: ${{ matrix.artifact }}/${{ matrix.artifact }}.zip
+          asset_name: ${{ matrix.artifact }}.zip
+          asset_content_type: application/zip
+
+  deploy:
+    name: Deploy PyPI
+    needs: [upload_release_assets]
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Python
+        id: install-python3
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install setuptools wheel twine
+
+      - name: Download windows artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: RG3_Windows
+          path: ${{ github.workspace }}/Extension/windows_dist
+
+      - name: Download linux artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: RG3_Linux
+          path: ${{ github.workspace }}/Extension/linux_dist
+
+      - name: Build and publish
+        working-directory: Extension
+        env:
+          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+        run: |
+          python setup.py sdist bdist_wheel
+          twine upload dist/*
