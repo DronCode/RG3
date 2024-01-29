@@ -9,21 +9,24 @@
 namespace rg3::llvm
 {
 	/**
-	 * @brief Run abstract command sequence. For Windows - Powershell, for Linux/MacOS - /bin/bash
+	 * @brief Run abstract command sequence. For Windows - Powershell, for Linux - /usr/bin/bash, for macOS - idk
 	 * @param args - arguments for system shell
 	 * @return command output
 	 */
-	std::string runShellCommand(const boost::filesystem::path& clangPath, const std::vector<std::string>& args)
+	std::string runShellCommand(const boost::filesystem::path& compilerPath, const std::vector<std::string>& args)
 	{
-		// Try to invoke clang
 		namespace bp = boost::process;
 
+		std::string response {};
+#if defined(_WIN32)
+		// Windows specific impl
 		bp::ipstream is;
-		std::string line, response {};
+		std::string line {};
 
 		bp::child c {
-			bp::search_path("powershell.exe"), args, // TODO: use ifdef
-			bp::start_dir(clangPath.parent_path()),
+			bp::search_path("powershell.exe"),
+			args,
+			bp::start_dir(compilerPath.parent_path()),
 			bp::std_out > is,
 			bp::std_err > is
 		};
@@ -41,6 +44,63 @@ namespace rg3::llvm
 		}
 
 		c.wait();
+#elif defined(__linux__)
+		// Linux specific impl
+		// This impl works directly with compiler instance and working with it.
+		// Bad moment is all output from clang going through stderr. It looks weird, need to think how to fix that.
+		bp::ipstream stdErr, stdOut;
+		std::string stdErrLine, stdOutLine, stdErrResponse, stdOutResponse {};
+		std::vector<std::string> compilerArgs {};
+
+		if (args.size() > 1)
+		{
+			for (size_t i = 1; i < args.size(); i++)
+			{
+				compilerArgs.emplace_back(args[i]);
+			}
+		}
+
+		bp::child c {
+			compilerPath,
+			compilerArgs,
+			bp::std_err > stdErr,
+			bp::std_out > stdOut
+		};
+
+		bool bCanRead = false;
+		do
+		{
+			auto storeLine = [](std::string& line, std::string& out) {
+				while (!line.empty() && line.back() == '\r')
+					line.pop_back();
+
+				out.append(line);
+				out.push_back('\n');
+			};
+
+			const bool bHasStdErr = static_cast<bool>(std::getline(stdErr, stdErrLine));
+			const bool bHasStdOut = static_cast<bool>(std::getline(stdOut, stdOutLine));
+
+			if (!stdErrLine.empty())
+			{
+				storeLine(stdErrLine, stdErrResponse);
+			}
+
+			if (!stdOutLine.empty())
+			{
+				storeLine(stdOutLine, stdOutResponse);
+			}
+
+			bCanRead = c.running() || bHasStdErr || bHasStdOut;
+		} while (bCanRead);
+
+		c.wait();
+		response.append(stdOutResponse);
+		response.append(stdErrResponse);
+#else
+#		error Unsupported
+#endif
+
 		return response;
 	}
 
@@ -116,22 +176,25 @@ namespace rg3::llvm
 
 	CompilerEnvResult CompilerConfigDetector::detectSystemCompilerEnvironment()
 	{
-#if defined(__linux__) || defined(__APPLE__)
+#if defined(__APPLE__)
 		// On macOS we need to find xcrun instance and then find clang
 		// Smth like "xcrun", "--find", "clang++", nullptr
 		// Also, we need to find all 'frameworks' (macOS specific things)
-
-		// On linux we need to find gcc instance and use it like
-		// "gcc", "-Wp,-v", "-x", "c++", "/dev/null", "-fsyntax-only"
 
 		//Support it later!
 		return CompilerEnvError { "Current OS not supported yet. See README.md for details!", CompilerEnvError::ErrorKind::EK_UNSUPPORTED_OS };
 #endif
 
+#if defined(_WIN32)
+		constexpr const char* kCompilerInstanceExecutable = "clang++.exe";
+#elif defined(__APPLE__) || defined(__linux__)
+		constexpr const char* kCompilerInstanceExecutable = "clang++";
+#endif
+
 		// Detect where is located clang++.exe via PATH
 		const auto selfENV = boost::this_process::environment();
 
-		std::vector<boost::process::filesystem::path> pathLocations;
+		std::vector<boost::filesystem::path> pathLocations;
 		for (const auto& i : selfENV)
 		{
 			if (const auto& name = i.get_name(); name == "Path" || name == "PATH")
@@ -150,17 +213,32 @@ namespace rg3::llvm
 
 		// No PATH found (wtf?)
 		if (pathLocations.empty())
+		{
 			return CompilerEnvError { "PATH or Path system environment variable not found", CompilerEnvError::ErrorKind::EK_NO_PATHS };
+		}
 
 		// Trying to locate clang++ via PATH
-		const boost::filesystem::path clangLocation = boost::process::search_path("clang++", pathLocations);
-		if (clangLocation.empty())
-			return CompilerEnvError { "Failed to locate clang++ instance. Please, make sure that your os contains it. (MacOS: check that xcrun available and configured properly!)", CompilerEnvError::ErrorKind::EK_NO_CLANG_INSTANCE };
+		const boost::filesystem::path compilerLocation = boost::process::search_path(kCompilerInstanceExecutable, pathLocations);
+		if (compilerLocation.empty())
+		{
+			return CompilerEnvError {
+				std::format("Failed to locate {} instance. Please, make sure that your os contains it. (MacOS: check that xcrun available and configured properly!)", kCompilerInstanceExecutable),
+				CompilerEnvError::ErrorKind::EK_NO_CLANG_INSTANCE
+			};
+		}
 
-		const std::string response = runShellCommand(clangLocation, { "''", "|", "clang++.exe", "-x", "c++-header", "-v", "-E", "-" });
+#if defined(_WIN32)
+		const std::string response = runShellCommand(compilerLocation, { "''", "|", kCompilerInstanceExecutable, "-x", "c++-header", "-v", "-E", "-" });
+#elif defined(__linux__) || defined(__APPLE__)
+		const std::string response = runShellCommand(compilerLocation, { kCompilerInstanceExecutable, "-x", "c++-header", "/dev/null", "-v", "-E" });
+#else
+#		error Unsupported
+#endif
 
 		if (response.empty())
-			return CompilerEnvError { "Failed to invoke clang++ process", CompilerEnvError::ErrorKind::EK_BAD_CLANG_OUTPUT };
+		{
+			return CompilerEnvError { std::format("Failed to invoke '{}' executable", kCompilerInstanceExecutable), CompilerEnvError::ErrorKind::EK_BAD_CLANG_OUTPUT };
+		}
 
 		CompilerEnvironment compilerEnvironment {};
 		if (auto parseResult = parseClangOutput(compilerEnvironment, response); parseResult.has_value())

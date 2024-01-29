@@ -8,6 +8,9 @@ RG3 - is a backend & frontend for processing & analyzing C++ code. It provides i
 Requirements
 ------------
 
+Windows
+-------
+
  * Compiled LLVM (>= 16.0.0) on local machine and environment variables `CLANG_DIR` and `LLVM_DIR`
    * My `CLANG_DIR` is `B:/Projects/llvm/build/lib/cmake/clang`
    * My `LLVM_DIR` is `B:/Projects/llvm/build/lib/cmake/llvm`
@@ -15,6 +18,17 @@ Requirements
    * My `BOOST_ROOT` is `B:/Projects/Boost/build_binaries`
  * Python 3.10 (or later) with development files
  * Installed clang instance (allowed to have latest stable version)
+
+Linux
+------
+
+Tested on Ubuntu (apt based systems)
+
+ * Compiled LLVM (compiled manually)
+ * Boost >= 1.81 (`sudo apt-get install libboost-dev libboost-system-dev libboost-filesystem-dev libboost-python-dev`)
+ * Python 3.10 (or later) with development files (`sudo apt-get install python3.10 python3.10-dev python3.10-venv`) (**venv is optional**)
+ * Installed gcc instance (for Windows required `clang`, but for Linux `gcc` is enough)
+ * CMake & Ninja
 
 Build
 -----

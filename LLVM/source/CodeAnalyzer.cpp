@@ -17,7 +17,7 @@
 #include <llvm/Support/FileSystem.h>
 #include <llvm/Support/raw_os_ostream.h>
 #include <llvm/Support/MemoryBufferRef.h>
-#include <llvm/Support/Host.h>
+#include <llvm/TargetParser/Host.h>
 #include <llvm/ADT/StringRef.h>
 #include <llvm/TargetParser/Triple.h>
 
@@ -185,6 +185,7 @@ namespace rg3::llvm
 		// Use C++20
 		clang::LangStandard::Kind langKind;
 		auto* langOptions = invocation->getLangOpts();
+
 		langOptions->CPlusPlus = 1;
 
 		switch (m_compilerConfig.cppStandard)

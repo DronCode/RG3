@@ -1,9 +1,10 @@
-name: Build
+name: Build RG3
 
 on:
   push:
     branches:
-      - "*"
+      - main
+      - dev/*
     tags:
       - "*"
 
@@ -13,7 +14,30 @@ jobs:
     strategy:
       matrix:
         config:
-          - { name: "Windows MSVC", os: windows-latest, cc: "cl", cxx: "cl", boost_toolset: msvc }
+          - {
+            name: "Windows MSVC",
+            os: windows-2022,
+            os_id: "windows",
+            cc: "cl",
+            cxx: "cl",
+            boost_toolset: msvc,
+            cmake_generator: "Visual Studio 17 2022",
+            llvm_tag: "llvmorg-16.0.4",
+            python_version: "3.10",
+            os_version: "2022"
+          }
+          - {
+            name: "Ubuntu Linux",
+            os: ubuntu-22.04,
+            os_id: "linux",
+            cc: "gcc-13",
+            cxx: "g++-13",
+            boost_toolset: gcc,
+            cmake_generator: "Ninja",
+            llvm_tag: "llvmorg-16.0.4",
+            python_version: "3.10",
+            os_version: "22.04"
+          }
 
     steps:
       # Download repository with submodules
@@ -22,35 +46,62 @@ jobs:
         with:
           submodules: "recursive"
 
-       # Setup msbuild
-      - name: Add msbuild to PATH
+      # Setup msbuild
+      - name: Add msbuild to PATH (Windows only)
+        if: matrix.config.os_id == 'windows'
         uses: microsoft/setup-msbuild@v1.1
         with:
           msbuild-architecture: x64
+
+      # Setup Ninja
+      - name: Setup Ninja (Linux, macOS)
+        if: matrix.config.os_id == 'linux'
+        run: |
+          sudo apt-get install -y ninja-build gcc-13 g++-13 libboost-all-dev
 
       # Setup Python of specific version
       - name: Install Python
         id: install-python3
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: ${{ matrix.config.python_version }}
 
-      # Check cache of Boost & LLVM - take if exists
-      # Build Boost 1.81.0
-      - name: Install Boost 1.81.0
-        uses: MarkusJx/install-boost@v2.4.4
-        id: install-boost
+      # ---------------
+      # Boost
+      # ---------------
+      - name: Cache Boost binaries
+        id: cache-boost-binaries
+        uses: actions/cache@v3
         with:
-          boost_version: 1.81.0
-          toolset: msvc
-          link: static
+          key: ${{ runner.os }}-boost_1_81_0
+          path: boost_1_81_0
 
-      # Try to locate llvm binaries (I'm not sure, but this list should be enough to precache all required things)
+      - name: Download and build Boost (Linux, macOS)
+        if: steps.cache-boost-binaries.outputs.cache-hit != 'true' && matrix.config.os_id == 'linux'
+        run: |
+          wget https://boostorg.jfrog.io/artifactory/main/release/1.81.0/source/boost_1_81_0.tar.gz
+          tar xzf boost_1_81_0.tar.gz
+          cd boost_1_81_0
+          ./bootstrap.sh --with-libraries=system,filesystem,python --with-python=$(which python3)
+          ./b2 link=static variant=release cxxflags=-fPIC cflags=-fPIC
+
+      - name: Download and build Boost (Windows)
+        if: steps.cache-boost-binaries.outputs.cache-hit != 'true' && matrix.config.os_id == 'windows'
+        run: |
+          Invoke-WebRequest -Uri "https://boostorg.jfrog.io/artifactory/main/release/1.81.0/source/boost_1_81_0.tar.gz" -OutFile "boost_1_81_0.tar.gz"
+          tar xzf boost_1_81_0.tar.gz
+          cd boost_1_81_0
+          .\bootstrap.bat --with-libraries=system,filesystem,python
+          .\b2 link=static variant=release
+
+      # ---------------
+      # LLVM
+      # ---------------
       - name: Cache LLVM binaries
         id: cache-llvm-binaries
         uses: actions/cache@v3
         with:
-          key: "${{ runner.os }}-build-llvmorg-16.0.4"
+          key: "${{ runner.os }}-build-${{ matrix.config.llvm_tag }}"
           path: |
             llvm_repo/cmake
             llvm_repo/build/cmake
@@ -68,29 +119,34 @@ jobs:
         with:
           submodules: "recursive"
           repository: "llvm/llvm-project"
-          ref: "llvmorg-16.0.4"
+          ref: ${{ matrix.config.llvm_tag }}
           path: "llvm_repo"
 
-      # Build LLVM (very slow process, lmao) TODO: Add support of Ninja build system!!!
+      # Build LLVM
       - name: Build LLVM
         if: steps.cache-llvm-binaries.outputs.cache-hit != 'true'
         working-directory: llvm_repo
+        env:
+          CC: ${{ matrix.config.cc }}
+          CXX: ${{ matrix.config.cxx }}
         run: |
           mkdir build
-          cmake -DLLVM_ENABLE_PROJECTS="clang" -DCMAKE_BUILD_TYPE="MinSizeRel" -S llvm -B build -G "Visual Studio 17 2022"
+          cmake -DLLVM_ENABLE_PROJECTS="clang" -DCMAKE_BUILD_TYPE="MinSizeRel" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DLLVM_ENABLE_RTTI=ON -DLLVM_INCLUDE_BENCHMARKS=OFF -DLLVM_INCLUDE_EXAMPLES=OFF -DLLVM_INCLUDE_TESTS=OFF -DLLVM_INCLUDE_TOOLS=ON -DLLVM_TARGETS_TO_BUILD="host" -DLLVM_BUILD_32_BITS=OFF -DLLVM_ENABLE_BINDINGS=OFF -DLLVM_BUILD_DOCS=OFF -S llvm -B build -G "${{ matrix.config.cmake_generator }}"
           cd build
           cmake --build . --config MinSizeRel
 
-      # Build our project. TODO: Add support of Ninja build system!!!
+      # Build our project
       - name: Build RG3
         env:
           LLVM_DIR: ${{ github.workspace }}/llvm_repo/build/lib/cmake/llvm
           CLANG_DIR: ${{ github.workspace }}/llvm_repo/build/lib/cmake/clang
-          BOOST_ROOT: ${{ steps.install-boost.outputs.BOOST_ROOT }}
+          Boost_ROOT: ${{ github.workspace }}/boost_1_81_0/stage/lib/cmake/Boost-1.81.0
           Python3_USE_STATIC_LIBS: "TRUE"
+          CC: ${{ matrix.config.cc }}
+          CXX: ${{ matrix.config.cxx }}
         run: |
           mkdir build
-          cmake -DCMAKE_BUILD_TYPE="MinSizeRel" -B build -G "Visual Studio 17 2022"
+          cmake -DCMAKE_BUILD_TYPE="MinSizeRel" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -B build -G "${{ matrix.config.cmake_generator }}"
           cd build
           cmake --build . --config MinSizeRel
 
@@ -101,11 +157,6 @@ jobs:
           version: latest
           platform: x64
 
-      # Check that Clang installed correctly and available to lookup for STL paths
-      - name: Check Clang (print version, dump lookup paths)
-        run: |
-          '' | clang++ -x c++-header -v -E -
-
       # Run Unit Tests
       - name: RG3 Run unit tests
         run: |
@@ -113,35 +164,120 @@ jobs:
           ctest . -C MinSizeRel --verbose --output-on-failure
 
       # Run Integration Tests TODO
-      # Make python packages (WHL)
-      - name: Create WHL distribution (Win64)
-        run: |
-          pip install wheel
-          pip install --upgrade setuptools
-          cp PyBind/rg3py.pyi Extension/rg3py/rg3py.pyi
-          cp build/PyBind/MinSizeRel/rg3py.pyd Extension/rg3py/rg3py.pyd
-          cd Extension
-          python setup.py bdist_wheel --plat-name win_amd64
 
       # Make dist folder with pyd & pyi files.
-      - name: Create distribution package
+      - name: Create distribution package (Windows)
+        if: matrix.config.os_id == 'windows'
         run: |
           mkdir dist
           mv PyBind/rg3py.pyi dist
-          mv build/PyBind/MinSizeRel/rg3py.pyd dist
+          mv PyBind/rg3py.pyd dist
+
+      - name: Create distribution package (not Windows)
+        if: matrix.config.os_id != 'windows'
+        run: |
+          mkdir dist
+          mv PyBind/rg3py.pyi dist
+          mv PyBind/rg3py.so dist
 
       # Upload artifacts
       - name: Upload RG3 artifacts
         uses: actions/upload-artifact@v2
         with:
-          name: RG3_${{ runner.os }}_Python310
+          name: RG3_${{ runner.os }}
           path: dist
 
-      # Upload WHL artifacts
-      - name: Upload WHL artifacts
-        uses: actions/upload-artifact@v2
-        with:
-          name: RG3_${{ runner.os }}_Python310_Package
-          path: Extension/dist/rg3py-0.1-py3-none-win_amd64.whl
+  create_release:
+    name: Create release
+    needs: [build_rg3]
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
 
-      # TODO: Add support of release WHL to PyPI
+    steps:
+      - name: Get version
+        id: get_version
+        run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
+
+      - name: Create release
+        id: release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.get_version.outputs.VERSION }}
+          release_name: ${{ steps.get_version.outputs.VERSION }}
+          draft: true
+          prerelease: ${{ contains(github.ref, '-pre') }}
+
+    outputs:
+      upload_url: ${{ steps.release.outputs.upload_url }}
+
+  upload_release_assets:
+    name: Upload release assets
+    needs: [create_release]
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        artifact: [ "RG3_Windows", "RG3_Linux" ]
+
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.artifact }}
+
+      - name: Package artifact for release
+        run: |
+          cd ${{ matrix.artifact }}
+          zip -r ${{ matrix.artifact }}.zip *
+
+      - name: Upload release asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create_release.outputs.upload_url }}
+          asset_path: ${{ matrix.artifact }}/${{ matrix.artifact }}.zip
+          asset_name: ${{ matrix.artifact }}.zip
+          asset_content_type: application/zip
+
+  deploy:
+    name: Deploy PyPI
+    needs: [upload_release_assets]
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Python
+        id: install-python3
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install setuptools wheel twine
+
+      - name: Download windows artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: RG3_Windows
+          path: ${{ github.workspace }}/Extension/windows_dist
+
+      - name: Download linux artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: RG3_Linux
+          path: ${{ github.workspace }}/Extension/linux_dist
+
+      - name: Build and publish
+        working-directory: Extension
+        env:
+          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+        run: |
+          python setup.py sdist bdist_wheel
+          twine upload dist/*
