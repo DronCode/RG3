@@ -12,8 +12,8 @@ class PlatformTargetDesc:
 
 
 target_version: str = getenv('RG3_DEPLOY_VERSION', '0.0.1')
-platforms: List[PlatformTargetDesc] = [PlatformTargetDesc(id="Windows", dest_folder='windows_dist', native_ext='.pyd'),
-                                       PlatformTargetDesc(id="Linux", dest_folder='linux_dist', native_ext='.so')]
+platforms: List[PlatformTargetDesc] = [PlatformTargetDesc(id="Windows", dest_folder='RG3_Windows', native_ext='pyd'),
+                                       PlatformTargetDesc(id="Linux", dest_folder='RG3_Linux', native_ext='so')]
 platform_desc: PlatformTargetDesc
 
 print(f" *** RG3 Package builder for {target_version} (0.0.1 default) *** ")

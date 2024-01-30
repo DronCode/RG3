@@ -172,17 +172,15 @@ jobs:
         if: matrix.config.os_id == 'windows'
         run: |
           mkdir dist
-          mkdir dist/windows_dist
-          mv PyBind/rg3py.pyi dist/windows_dist
-          mv PyBind/rg3py.pyd dist/windows_dist
+          mv PyBind/rg3py.pyi dist
+          mv PyBind/rg3py.pyd dist
 
       - name: Create distribution package (not Windows)
         if: matrix.config.os_id != 'windows'
         run: |
           mkdir dist
-          mkdir dist/linux_dist
-          mv PyBind/rg3py.pyi dist/linux_dist
-          mv PyBind/rg3py.so dist/linux_dist
+          mv PyBind/rg3py.pyi dist
+          mv PyBind/rg3py.so dist
 
       # Upload artifacts
       - name: Upload RG3 artifacts
@@ -220,7 +218,7 @@ jobs:
         uses: actions/download-artifact@v4
 
       - name: Package artifact for release
-        run: zip -r ${{ matrix.artifact }}.zip *
+        run: zip -r RG3_Release_v${{ steps.get_version.outputs.VERSION }}.zip *
 
       - name: Upload release asset
         uses: actions/upload-release-asset@v1
@@ -228,8 +226,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.release.outputs.upload_url }}
-          asset_path: ${{ matrix.artifact }}/${{ matrix.artifact }}.zip
-          asset_name: ${{ matrix.artifact }}.zip
+          asset_path: ./RG3_Release_v${{ steps.get_version.outputs.VERSION }}.zip
+          asset_name: RG3_Release_v${{ steps.get_version.outputs.VERSION }}.zip
           asset_content_type: application/zip
 
       # --------------------------------------------------------------------
