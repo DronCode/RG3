@@ -172,30 +172,35 @@ jobs:
         if: matrix.config.os_id == 'windows'
         run: |
           mkdir dist
-          mv PyBind/rg3py.pyi dist
-          mv PyBind/rg3py.pyd dist
+          mkdir dist/windows_dist
+          mv PyBind/rg3py.pyi dist/windows_dist
+          mv PyBind/rg3py.pyd dist/windows_dist
 
       - name: Create distribution package (not Windows)
         if: matrix.config.os_id != 'windows'
         run: |
           mkdir dist
-          mv PyBind/rg3py.pyi dist
-          mv PyBind/rg3py.so dist
+          mkdir dist/linux_dist
+          mv PyBind/rg3py.pyi dist/linux_dist
+          mv PyBind/rg3py.so dist/linux_dist
 
       # Upload artifacts
       - name: Upload RG3 artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.config.artifact_id }}
           path: dist
 
-  create_release:
-    name: Create release
+  public_release_template:
+    name: Create release and public PyPI packages
     needs: [build_rg3]
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
 
     steps:
+      # --------------------------------------------------------------------
+      # Create GitHub release
+      # --------------------------------------------------------------------
       - name: Get version
         id: get_version
         run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
@@ -211,30 +216,11 @@ jobs:
           draft: true
           prerelease: ${{ contains(github.ref, '-pre') }}
 
-    outputs:
-      upload_url: ${{ steps.release.outputs.upload_url }}
-
-  upload_release_assets:
-    name: Upload release assets
-    needs: [create_release]
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
-    runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        artifact: [ "RG3_Windows", "RG3_Linux" ]
-
-    steps:
-      - name: Download artifact
+      - name: Download all artifact
         uses: actions/download-artifact@v4
-        with:
-          name: ${{ matrix.artifact }}
-          path: ${{ matrix.artifact }}
 
       - name: Package artifact for release
-        run: |
-          cd ${{ matrix.artifact }}
-          zip -r ${{ matrix.artifact }}.zip *
+        run: zip -r ${{ matrix.artifact }}.zip *
 
       - name: Upload release asset
         uses: actions/upload-release-asset@v1
@@ -246,36 +232,34 @@ jobs:
           asset_name: ${{ matrix.artifact }}.zip
           asset_content_type: application/zip
 
-  deploy:
-    name: Deploy PyPI
-    needs: [upload_release_assets]
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
-    runs-on: ubuntu-latest
-    steps:
+      # --------------------------------------------------------------------
+      # Publish PyPI libs
+      # --------------------------------------------------------------------
+      # Clone whole project with all submodules
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: "recursive"
+
+      # Install any python 3.x to run Extensions/setup.pys
       - name: Install Python
         id: install-python3
         uses: actions/setup-python@v5
         with:
           python-version: '3.x'
 
+      # Install build tools
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install setuptools wheel twine
 
-      - name: Download windows artifacts
+      # Download all available artifacts
+      - name: Download artifacts
         uses: actions/download-artifact@v4
-        with:
-          name: RG3_Windows
-          path: ${{ github.workspace }}/Extension/windows_dist
 
-      - name: Download linux artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: RG3_Linux
-          path: ${{ github.workspace }}/Extension/linux_dist
-
-      - name: Build and publish
+      # Build whl files for all platforms
+      - name: Build WHL and publish to PyPI
         working-directory: Extension
         env:
           TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
@@ -284,3 +268,6 @@ jobs:
         run: |
           python setup.py sdist bdist_wheel
           twine upload dist/*
+
+    outputs:
+      upload_url: ${{ steps.release.outputs.upload_url }}
