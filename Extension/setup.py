@@ -1,22 +1,28 @@
 from setuptools import setup
 from typing import List
 from dataclasses import dataclass
+from os import getenv
 
 
 @dataclass
 class PlatformTargetDesc:
+    id: str
     dest_folder: str
     native_ext: str
 
 
-platforms: List[PlatformTargetDesc] = [PlatformTargetDesc(dest_folder='windows_dist', native_ext='.pyd'),
-                                       PlatformTargetDesc(dest_folder='linux_dist', native_ext='.so')]
-
+target_version: str = getenv('RG3_DEPLOY_VERSION', '0.0.1')
+platforms: List[PlatformTargetDesc] = [PlatformTargetDesc(id="Windows", dest_folder='windows_dist', native_ext='.pyd'),
+                                       PlatformTargetDesc(id="Linux", dest_folder='linux_dist', native_ext='.so')]
 platform_desc: PlatformTargetDesc
+
+print(f" *** RG3 Package builder for {target_version} (0.0.1 default) *** ")
+
 for platform_desc in platforms:
+    print(f"Run for platform {platform_desc.id} (rg3py.{platform_desc.native_ext})")
     setup(
         name='rg3py',
-        version='0.1',
+        version=target_version,
         author='DronCode',
         author_email='alexandrleutin@gmail.com',
         description='RG3 is a C/C++ analyzer framework',
