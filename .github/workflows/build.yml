@@ -24,7 +24,8 @@ jobs:
             cmake_generator: "Visual Studio 17 2022",
             llvm_tag: "llvmorg-16.0.4",
             python_version: "3.10",
-            os_version: "2022"
+            os_version: "2022",
+            artifact_id: "RG3_Windows"
           }
           - {
             name: "Ubuntu Linux",
@@ -36,7 +37,8 @@ jobs:
             cmake_generator: "Ninja",
             llvm_tag: "llvmorg-16.0.4",
             python_version: "3.10",
-            os_version: "22.04"
+            os_version: "22.04",
+            artifact_id: "RG3_Linux"
           }
 
     steps:
@@ -184,7 +186,7 @@ jobs:
       - name: Upload RG3 artifacts
         uses: actions/upload-artifact@v2
         with:
-          name: RG3_${{ runner.os }}
+          name: ${{ matrix.config.artifact_id }}
           path: dist
 
   create_release:
