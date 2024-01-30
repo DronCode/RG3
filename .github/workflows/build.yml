@@ -227,7 +227,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ needs.create_release.outputs.upload_url }}
+          upload_url: ${{ steps.release.outputs.upload_url }}
           asset_path: ${{ matrix.artifact }}/${{ matrix.artifact }}.zip
           asset_name: ${{ matrix.artifact }}.zip
           asset_content_type: application/zip
@@ -268,6 +268,3 @@ jobs:
         run: |
           python setup.py sdist bdist_wheel
           twine upload dist/*
-
-    outputs:
-      upload_url: ${{ steps.release.outputs.upload_url }}
