@@ -263,7 +263,9 @@ jobs:
         run: |
           mv RG3_Linux/rg3py.so Extension/rg3py
           mv RG3_Linux/rg3py.pyi Extension/rg3py
+          cd Extension
           python setup.py bdist_wheel
+          cd ..
 
       - name: Build WHL for Windows
         env:
@@ -272,7 +274,9 @@ jobs:
         run: |
           mv RG3_Windows/rg3py.pyd Extension/rg3py
           mv RG3_Windows/rg3py.pyi Extension/rg3py
+          cd Extension
           python setup.py bdist_wheel --plat-name win_amd64
+          cd ..
 
       - name: Upload wheels
         env:
