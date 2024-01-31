@@ -194,6 +194,11 @@ jobs:
     needs: [build_rg3]
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/rg3py
+    permissions:
+      id-token: write
 
     steps:
       # --------------------------------------------------------------------
@@ -256,13 +261,28 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v4
 
-      # Build whl files for all platforms
-      - name: Build WHL and publish to PyPI
-        working-directory: Extension
+      - name: Build WHL for Linux
+        env:
+          RG3_DEPLOY_VERSION: ${{ steps.get_version.outputs.VERSION }}
+          RG3_DEPLOY_OS: 'linux'
+        run: |
+          mv RG3_Linux/rg3py.so Extension/rg3py
+          mv RG3_Linux/rg3py.pyi Extension/rg3py
+          python setup.py bdist_wheel
+
+      - name: Build WHL for Windows
+        env:
+          RG3_DEPLOY_VERSION: ${{ steps.get_version.outputs.VERSION }}
+          RG3_DEPLOY_OS: 'windows'
+        run: |
+          mv RG3_Windows/rg3py.pyd Extension/rg3py
+          mv RG3_Windows/rg3py.pyi Extension/rg3py
+          python setup.py bdist_wheel --plat-name win_amd64
+
+      - name: Upload wheels
         env:
           TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
           TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
-          RG3_DEPLOY_VERSION: ${{ steps.get_version.outputs.VERSION }}
+        working-directory: Extension
         run: |
-          python setup.py sdist bdist_wheel
           twine upload dist/*
