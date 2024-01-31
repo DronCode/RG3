@@ -1,7 +1,8 @@
 RG3
 ====
 
-![Build Status](https://github.com/DronCode/RG3/actions/workflows/build.yml/badge.svg)
+[![Build RG3](https://github.com/DronCode/RG3/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/DronCode/RG3/actions/workflows/build.yml)
+![RG3 PyPU](https://img.shields.io/pypi/v/rg3py)
 
 RG3 - is a backend & frontend for processing & analyzing C++ code. It provides information about types into Python frontend to future codegen stage.
 
@@ -12,7 +13,7 @@ Windows
 -------
 
  * Compiled LLVM (>= 16.0.0) on local machine and environment variables `CLANG_DIR` and `LLVM_DIR`
-   * My `CLANG_DIR` is `B:/Projects/llvm/build/lib/cmake/clang`
+   * My `Clang_DIR` is `B:/Projects/llvm/build/lib/cmake/clang`
    * My `LLVM_DIR` is `B:/Projects/llvm/build/lib/cmake/llvm`
  * Statically compiled Boost (>=1.81.0) with boost python and environment variable `BOOST_ROOT`
    * My `BOOST_ROOT` is `B:/Projects/Boost/build_binaries`
@@ -25,13 +26,21 @@ Linux
 Tested on Ubuntu (apt based systems)
 
  * Compiled LLVM (compiled manually)
- * Boost >= 1.81 (`sudo apt-get install libboost-dev libboost-system-dev libboost-filesystem-dev libboost-python-dev`)
+ * Boost >= 1.81 (`sudo apt-get install libboost-dev libboost-system-dev libboost-filesystem-dev libboost-python-dev`). **NOTE:** You able to install boost and link it dynamically, but official rg3py build uses own compiled boost for static linkage with `-fPIC` flag.
  * Python 3.10 (or later) with development files (`sudo apt-get install python3.10 python3.10-dev python3.10-venv`) (**venv is optional**)
  * Installed gcc instance (for Windows required `clang`, but for Linux `gcc` is enough)
  * CMake & Ninja
 
 Build
 -----
+
+**Recommended way:** Since version 0.0.1 package is available on [PyPI](https://pypi.org/project/rg3py/) and you able to install it 
+
+```
+pip install rg3py
+```
+
+**Build from source code:**
 
 ```shell
 mkdir build
@@ -40,12 +49,12 @@ cmake -DCMAKE_BUILD_TYPE=Release ..
 cmake --build . --config Release
 ```
 
-When everything is done your plugin file `rg3py.pyd` will be in `build` folder.
+When everything is done your plugin file `rg3py.pyd` or `rg3py.so` will be in `build` folder.
 
 Usage:
 ------
 
-Just copy `rg3py.pyi` (hints for IDE) and `rg3py.pyd` (native extension itself) into folder with your python code.
+Copy binaries or install [PyPI package](https://pypi.org/project/rg3py/)
 
 Sample code:
 
@@ -88,17 +97,14 @@ Feature Checklist
 
  - [ ] Implement multithread for analyzer
  - [ ] Add support of async operations on Python side
- - [ ] Add releases from CI jobs into PyPi
  - [ ] Support template deduction & aliasing
  - [ ] Implement integration tests & embed it into GitHub Actions
  - [ ] Support macOS & OSX Frameworks (lookup via `xcrun`)
- - [ ] Support Linux & support GCC as source for SDK paths
 
 
 Current limitations
 -------------------
 
- * Currently I'm focused on Windows support. Linux & MacOS support will be later.
  * Project WILL NOT support code inside function scope. I'm focused only on header analysis. Feel free to fork with project and make which analysis what you want.
  * Multithreading: not supported now, but will be supported later.
  * Context: not supported. Will do it later. 
