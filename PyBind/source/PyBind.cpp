@@ -97,6 +97,7 @@ BOOST_PYTHON_MODULE(rg3py)
 		.add_property("value", make_getter(&rg3::cpp::EnumEntry::iValue), "Value of entry")
 	;
 
+	// TODO: Need create wrapper type PyClassProperty
 	class_<rg3::cpp::ClassProperty>("CppClassProperty")
 		.add_property("name", make_getter(&rg3::cpp::ClassProperty::sName))
 		.add_property("alias", make_getter(&rg3::cpp::ClassProperty::sAlias))
@@ -106,6 +107,7 @@ BOOST_PYTHON_MODULE(rg3py)
 		.def("__ne__", make_function(&rg3::cpp::ClassProperty::operator!=, return_value_policy<return_by_value>()))
 	;
 
+	// TODO: Need create wrapper type PyClassProperty
 	class_<rg3::cpp::ClassFunction>("CppClassFunction")
 		.add_property("name", make_getter(&rg3::cpp::ClassFunction::sName))
 		.add_property("owner", make_getter(&rg3::cpp::ClassFunction::sOwnerClassName))

@@ -8,3 +8,5 @@ Extension/rg3py/rg3py.pyd
 Extension/rg3py/rg3py.so
 Extension/rg3py/rg3py.pyi
 Extension/rg3py.egg-info
+Tests/PyIntegration/venv
+Tests/PyIntegration/.idea

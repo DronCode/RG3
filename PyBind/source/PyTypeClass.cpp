@@ -1,4 +1,5 @@
 #include <RG3/PyBind/PyTypeClass.h>
+#include <RG3/PyBind/PyTag.h>
 
 
 namespace rg3::pybind
@@ -12,14 +13,16 @@ namespace rg3::pybind
 		if (auto self = getBase())
 		{
 			// Functions
-			for (const auto& function : self->getProperties())
+			for (const auto& function : self->getFunctions())
 			{
+				// Need convert to PyCppFunction
 				m_functions.append(function);
 			}
 
 			// Properties
 			for (const auto& property : self->getProperties())
 			{
+				// Need convert to PyClassPropertyy
 				m_properties.append(property);
 			}
 
