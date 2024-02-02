@@ -52,7 +52,7 @@ namespace rg3::llvm::visitors
 		cpp::ClassProperty& newProperty = foundProperties.emplace_back();
 
 		newProperty.sAlias = newProperty.sName = cxxFieldDecl->getNameAsString();
-		newProperty.sTypeName = cpp::TypeReference(cxxFieldDecl->getType().getAsString());
+		newProperty.sTypeName = cpp::TypeReference(rg3::llvm::Utils::getNormalizedTypeRef(cxxFieldDecl->getType().getAsString()));
 
 		clang::ASTContext& ctx = cxxFieldDecl->getASTContext();
 		clang::SourceManager& sm = ctx.getSourceManager();
@@ -62,6 +62,17 @@ namespace rg3::llvm::visitors
 		{
 			const auto rawCommentStr = rawComment->getFormattedText(sm, ctx.getDiagnostics());
 			newProperty.vTags = cpp::Tag::parseFromCommentString(rawCommentStr);
+		}
+
+		// Override alias if @property provided
+		if (newProperty.vTags.hasTag(std::string(rg3::cpp::BuiltinTags::kProperty)))
+		{
+			const auto& propDef = newProperty.vTags.getTag(std::string(rg3::cpp::BuiltinTags::kProperty));
+
+			if (propDef.hasArguments() && propDef.getArguments()[0].getHoldedType() == rg3::cpp::TagArgumentType::AT_STRING)
+			{
+				newProperty.sAlias = propDef.getArguments()[0].asString(newProperty.sName);
+			}
 		}
 
 		newProperty.eVisibility = Utils::getDeclVisibilityLevel(cxxFieldDecl);

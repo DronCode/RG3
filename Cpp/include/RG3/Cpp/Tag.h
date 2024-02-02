@@ -79,8 +79,11 @@ namespace rg3::cpp
 
 	class Tags
 	{
+	 public:
+		using Storage_t = std::map<std::string, Tag>;
+
 	 private:
-		std::map<std::string, Tag> m_tags;
+		Storage_t m_tags;
 
 	 public:
 		Tags();
@@ -88,6 +91,6 @@ namespace rg3::cpp
 
 		[[nodiscard]] bool hasTag(const std::string& tag) const;
 		[[nodiscard]] Tag getTag(const std::string& tag) const;
-		[[nodiscard]] const std::map<std::string, Tag>& getTags() const;
+		[[nodiscard]] const Storage_t& getTags() const;
 	};
 }

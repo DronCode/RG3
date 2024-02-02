@@ -18,5 +18,7 @@ namespace rg3::llvm
 		static cpp::DefinitionLocation getDeclDefinitionInfo(const clang::Decl* decl);
 
 		static cpp::ClassEntryVisibility getDeclVisibilityLevel(const clang::Decl* decl);
+
+		static std::string getNormalizedTypeRef(const std::string& typeName);
 	};
 }

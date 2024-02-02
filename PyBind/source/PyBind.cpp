@@ -4,7 +4,7 @@
 
 #define BOOST_PYTHON_STATIC_LIB  // required because we using boost.python as static library
 #include <boost/python.hpp>
-
+#include <boost/python/dict.hpp>
 
 #include <RG3/Cpp/CppNamespace.h>
 #include <RG3/Cpp/TypeClass.h>
@@ -14,13 +14,115 @@
 #include <RG3/PyBind/PyTypeBase.h>
 #include <RG3/PyBind/PyTypeEnum.h>
 #include <RG3/PyBind/PyTypeClass.h>
-#include <RG3/PyBind/PyTag.h>
 #include <RG3/PyBind/PyAnalyzerContext.h>
 #include <RG3/PyBind/PyClangRuntime.h>
 
 
 
 using namespace boost::python;
+
+
+namespace rg3::pybind::wrappers
+{
+	static boost::python::dict PyTypeBase_getTags(const boost::shared_ptr<rg3::pybind::PyTypeBase>& typeBase)
+	{
+		boost::python::dict d;
+
+		if (typeBase)
+		{
+			const auto& tags = typeBase->pyGetTags();
+
+			for (const auto& ent : tags.getTags())
+			{
+				d[ent.first] = ent.second;
+			}
+		}
+
+		return d;
+	}
+
+	static boost::python::dict CppClassProperty_getTags(const rg3::cpp::ClassProperty& classProperty)
+	{
+		boost::python::dict d;
+		for (const auto& [name, tag] : classProperty.vTags.getTags())
+		{
+			d[name] = tag;
+		}
+		return d;
+	}
+
+	static boost::python::str CppClassProperty_getTypeNameReference(const rg3::cpp::ClassProperty& classProperty)
+	{
+		return boost::python::str(classProperty.sTypeName.getRefName());
+	}
+
+	static boost::python::dict CppClassFunction_getTags(const rg3::cpp::ClassFunction& classFunction)
+	{
+		boost::python::dict d;
+		for (const auto& [name, tag] : classFunction.vTags.getTags())
+		{
+			d[name] = tag;
+		}
+		return d;
+	}
+
+	static boost::python::list Tag_getArguments(const rg3::cpp::Tag& tag)
+	{
+		boost::python::list l;
+
+		for (const auto& arg : tag.getArguments())
+		{
+			l.append(arg);
+		}
+
+		return l;
+	}
+
+	static boost::python::str TagArgument_getAsStringRepr(const rg3::cpp::TagArgument& arg)
+	{
+		switch (arg.getHoldedType())
+		{
+			case rg3::cpp::TagArgumentType::AT_TYPEREF:
+			{
+				static const rg3::cpp::TypeReference s_None {};
+				rg3::cpp::TypeReference rType = arg.asTypeRef(s_None);
+				return boost::python::str(std::format("TypeREF: {}", rType.getRefName()));
+			}
+			break;
+
+			case rg3::cpp::TagArgumentType::AT_BOOL:
+			{
+				return boost::python::str(arg.asBool(false));
+			}
+			break;
+
+			case rg3::cpp::TagArgumentType::AT_STRING:
+			{
+				static const std::string s_None {};
+				return boost::python::str(arg.asString(s_None));
+			}
+			break;
+
+			case rg3::cpp::TagArgumentType::AT_FLOAT:
+			{
+				return boost::python::str(arg.asFloat(.0f));
+			}
+			break;
+
+			case rg3::cpp::TagArgumentType::AT_I64:
+			{
+				return boost::python::str(arg.asI64(0));
+			}
+			break;
+
+			case rg3::cpp::TagArgumentType::AT_UNDEFINED:
+			default:
+				return boost::python::str("<UNDEFINED>");
+		}
+
+		return boost::python::str("<UNDEFINED>");
+	}
+}
 
 
 BOOST_PYTHON_MODULE(rg3py)
@@ -74,6 +176,7 @@ BOOST_PYTHON_MODULE(rg3py)
 	    .def(init<float>(arg("farg")))
 	    .def(init<std::int64_t>(arg("i64")))
 	    .def(init<std::string>(arg("string")))
+		.def("__str__", &rg3::pybind::wrappers::TagArgument_getAsStringRepr)
 		.def("get_type", &rg3::cpp::TagArgument::getHoldedType, "Returns holded type")
 		.def("as_bool", make_function(&rg3::cpp::TagArgument::asBool, return_value_policy<return_by_value>()))
 		.def("as_float", make_function(&rg3::cpp::TagArgument::asFloat, return_value_policy<return_by_value>()))
@@ -81,11 +184,11 @@ BOOST_PYTHON_MODULE(rg3py)
 		.def("as_string", make_function(&rg3::cpp::TagArgument::asString, return_value_policy<return_by_value>()))
 	;
 
-	class_<rg3::pybind::PyTag>("Tag")
-		.add_property("name", make_function(&rg3::pybind::PyTag::pyGetName, return_value_policy<copy_const_reference>()))
-		.add_property("arguments", make_function(&rg3::pybind::PyTag::pyGetArguments, return_value_policy<copy_const_reference>()))
-		.def("__eq__", make_function(&rg3::pybind::PyTag::__eq__, return_value_policy<return_by_value>()))
-		.def("__ne__", make_function(&rg3::pybind::PyTag::__ne__, return_value_policy<return_by_value>()))
+	class_<rg3::cpp::Tag>("Tag")
+	    .add_property("name", make_function(&rg3::cpp::Tag::getName, return_value_policy<copy_const_reference>()))
+		.add_property("arguments", make_function(&rg3::pybind::wrappers::Tag_getArguments, return_value_policy<return_by_value>()))
+		.def("__eq__", make_function(&rg3::cpp::Tag::operator==, return_value_policy<return_by_value>()))
+		.def("__ne__", make_function(&rg3::cpp::Tag::operator!=, return_value_policy<return_by_value>()))
 	;
 
 	class_<rg3::cpp::TypeReference>("CppTypeReference")
@@ -102,7 +205,8 @@ BOOST_PYTHON_MODULE(rg3py)
 		.add_property("name", make_getter(&rg3::cpp::ClassProperty::sName))
 		.add_property("alias", make_getter(&rg3::cpp::ClassProperty::sAlias))
 		.add_property("visibility", make_getter(&rg3::cpp::ClassProperty::eVisibility))
-		.add_property("tags", make_getter(&rg3::cpp::ClassProperty::vTags))
+		.add_property("tags", &rg3::pybind::wrappers::CppClassProperty_getTags)
+		.add_property("type_name", &rg3::pybind::wrappers::CppClassProperty_getTypeNameReference)
 		.def("__eq__", make_function(&rg3::cpp::ClassProperty::operator==, return_value_policy<return_by_value>()))
 		.def("__ne__", make_function(&rg3::cpp::ClassProperty::operator!=, return_value_policy<return_by_value>()))
 	;
@@ -112,7 +216,7 @@ BOOST_PYTHON_MODULE(rg3py)
 		.add_property("name", make_getter(&rg3::cpp::ClassFunction::sName))
 		.add_property("owner", make_getter(&rg3::cpp::ClassFunction::sOwnerClassName))
 		.add_property("visibility", make_getter(&rg3::cpp::ClassFunction::eVisibility))
-		.add_property("tags", make_getter(&rg3::cpp::ClassProperty::vTags))
+		.add_property("tags", &rg3::pybind::wrappers::CppClassFunction_getTags)
 		.add_property("is_static", make_getter(&rg3::cpp::ClassFunction::bIsStatic))
 		.add_property("is_const", make_getter(&rg3::cpp::ClassFunction::bIsConst))
 		.def("__eq__", make_function(&rg3::cpp::ClassFunction::operator==))
@@ -162,7 +266,7 @@ BOOST_PYTHON_MODULE(rg3py)
 		.add_property("namespace", make_function(&rg3::pybind::PyTypeBase::pyGetNamespace, return_value_policy<copy_const_reference>()), "Namespace where declared type")
 		.add_property("location", make_function(&rg3::pybind::PyTypeBase::pyGetLocation, return_value_policy<copy_const_reference>()), "Location where type declared")
 		.add_property("pretty_name", &rg3::pybind::PyTypeBase::pyGetPrettyName, "Pretty name of type with namespace")
-		.add_property("tags", make_function(&rg3::pybind::PyTypeBase::pyGetTags, return_value_policy<copy_const_reference>()), "Dict between tag and tag itself")
+		.add_property("tags", &rg3::pybind::wrappers::PyTypeBase_getTags, "Tags presented in type")
 
 		.def("__str__", make_function(&rg3::pybind::PyTypeBase::__str__, return_value_policy<copy_const_reference>()))
 		.def("__repr__", make_function(&rg3::pybind::PyTypeBase::__repr__, return_value_policy<copy_const_reference>()))
@@ -215,6 +319,7 @@ BOOST_PYTHON_MODULE(rg3py)
 		.def("analyze", &rg3::pybind::PyCodeAnalyzerBuilder::analyze)
 	;
 
+#if 0  // temporary disabled to use
 	class_<rg3::pybind::PyAnalyzerContext, boost::noncopyable , boost::shared_ptr<rg3::pybind::PyAnalyzerContext>>("AnalyzerContext", no_init)
 		.def("make", &rg3::pybind::PyAnalyzerContext::makeInstance)
 		.staticmethod("make")
@@ -232,6 +337,7 @@ BOOST_PYTHON_MODULE(rg3py)
 		// Functions
 		.def("analyze", &rg3::pybind::PyAnalyzerContext::analyze)
 	;
+#endif
 
 	class_<rg3::pybind::PyClangRuntime, boost::noncopyable>("ClangRuntime")
 	    .def("get_version", &rg3::pybind::PyClangRuntime::getRuntimeInfo)

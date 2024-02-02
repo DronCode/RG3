@@ -26,7 +26,7 @@ namespace rg3::pybind
 		[[nodiscard]] std::uint64_t __hash__() const;
 
 		/// Methods
-		[[nodiscard]] const boost::python::dict& pyGetTags() const;
+		[[nodiscard]] const rg3::cpp::Tags& pyGetTags() const;
 		[[nodiscard]] cpp::TypeKind pyGetTypeKind() const;
 		[[nodiscard]] boost::python::str pyGetName() const;
 		[[nodiscard]] boost::python::str pyGetPrettyName() const;
@@ -37,6 +37,5 @@ namespace rg3::pybind
 		boost::shared_ptr<cpp::TypeBase> m_base { nullptr };
 		boost::python::str m_str { "null" };
 		boost::python::str m_repr { "null" };
-		boost::python::dict m_tags {};
 	};
 }

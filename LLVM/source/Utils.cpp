@@ -64,4 +64,19 @@ namespace rg3::llvm
 		// Unknown case
 		return cpp::ClassEntryVisibility::CEV_PRIVATE;
 	}
+
+	std::string Utils::getNormalizedTypeRef(const std::string& typeName)
+	{
+		// Here stored known cases when we need to replace one type to another
+		static const std::unordered_map<std::string, std::string> s_Replacement {
+			{ "_Bool", "bool" }
+		};
+
+		if (auto it = s_Replacement.find(typeName); it != s_Replacement.end())
+		{
+			return it->second;
+		}
+
+		return typeName;
+	}
 }
