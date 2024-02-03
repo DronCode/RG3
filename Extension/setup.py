@@ -9,6 +9,12 @@ known_os_ext: Dict[str, str] = {
     'windows': 'pyd'
 }
 
+known_os_to_os_tag: Dict[str, str] = {
+    'linux': 'Linux',
+    'macos': 'MacOS',
+    'windows': 'Windows'
+}
+
 # Read env
 target_version: str = getenv('RG3_DEPLOY_VERSION', 'none')
 target_os: str = getenv('RG3_DEPLOY_OS', 'none')
@@ -43,5 +49,5 @@ setup(
         'Programming Language :: Python :: Implementation :: CPython',
     ],
     python_requires='>=3.10',
-    platforms=['Windows', 'Linux'],
+    platforms=[known_os_to_os_tag[target_os]],
 )

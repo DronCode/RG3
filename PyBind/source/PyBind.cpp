@@ -25,46 +25,9 @@ using namespace boost::python;
 
 namespace rg3::pybind::wrappers
 {
-	static boost::python::dict PyTypeBase_getTags(const boost::shared_ptr<rg3::pybind::PyTypeBase>& typeBase)
-	{
-		boost::python::dict d;
-
-		if (typeBase)
-		{
-			const auto& tags = typeBase->pyGetTags();
-
-			for (const auto& ent : tags.getTags())
-			{
-				d[ent.first] = ent.second;
-			}
-		}
-
-		return d;
-	}
-
-	static boost::python::dict CppClassProperty_getTags(const rg3::cpp::ClassProperty& classProperty)
-	{
-		boost::python::dict d;
-		for (const auto& [name, tag] : classProperty.vTags.getTags())
-		{
-			d[name] = tag;
-		}
-		return d;
-	}
-
 	static boost::python::str CppClassProperty_getTypeNameReference(const rg3::cpp::ClassProperty& classProperty)
 	{
 		return boost::python::str(classProperty.sTypeName.getRefName());
-	}
-
-	static boost::python::dict CppClassFunction_getTags(const rg3::cpp::ClassFunction& classFunction)
-	{
-		boost::python::dict d;
-		for (const auto& [name, tag] : classFunction.vTags.getTags())
-		{
-			d[name] = tag;
-		}
-		return d;
 	}
 
 	static boost::python::list Tag_getArguments(const rg3::cpp::Tag& tag)
@@ -122,6 +85,18 @@ namespace rg3::pybind::wrappers
 		}
 
 		return boost::python::str("<UNDEFINED>");
+	}
+
+	static boost::python::list Tags_getTagItemsList(const rg3::cpp::Tags& tags)
+	{
+		boost::python::list l;
+
+		for (const auto& [name, tag] : tags.getTags())
+		{
+			l.append(tag);
+		}
+
+		return l;
 	}
 }
 
@@ -192,6 +167,13 @@ BOOST_PYTHON_MODULE(rg3py)
 		.def("__ne__", make_function(&rg3::cpp::Tag::operator!=, return_value_policy<return_by_value>()))
 	;
 
+	class_<rg3::cpp::Tags>("Tags")
+	    .add_property("items", &rg3::pybind::wrappers::Tags_getTagItemsList, "List of tags inside this registry")
+		.def("__contains__", &rg3::cpp::Tags::hasTag)
+		.def("has_tag", &rg3::cpp::Tags::hasTag)
+		.def("get_tag", make_function(&rg3::cpp::Tags::getTag, return_value_policy<return_by_value>()))
+	;
+
 	class_<rg3::cpp::TypeReference>("CppTypeReference")
 		.def(init<std::string>(args("typename")))
 	;
@@ -206,7 +188,7 @@ BOOST_PYTHON_MODULE(rg3py)
 		.add_property("name", make_getter(&rg3::cpp::ClassProperty::sName))
 		.add_property("alias", make_getter(&rg3::cpp::ClassProperty::sAlias))
 		.add_property("visibility", make_getter(&rg3::cpp::ClassProperty::eVisibility))
-		.add_property("tags", &rg3::pybind::wrappers::CppClassProperty_getTags)
+		.add_property("tags", make_getter(&rg3::cpp::ClassProperty::vTags))
 		.add_property("type_name", &rg3::pybind::wrappers::CppClassProperty_getTypeNameReference)
 		.def("__eq__", make_function(&rg3::cpp::ClassProperty::operator==, return_value_policy<return_by_value>()))
 		.def("__ne__", make_function(&rg3::cpp::ClassProperty::operator!=, return_value_policy<return_by_value>()))
@@ -217,7 +199,7 @@ BOOST_PYTHON_MODULE(rg3py)
 		.add_property("name", make_getter(&rg3::cpp::ClassFunction::sName))
 		.add_property("owner", make_getter(&rg3::cpp::ClassFunction::sOwnerClassName))
 		.add_property("visibility", make_getter(&rg3::cpp::ClassFunction::eVisibility))
-		.add_property("tags", &rg3::pybind::wrappers::CppClassFunction_getTags)
+		.add_property("tags", make_getter(&rg3::cpp::ClassFunction::vTags))
 		.add_property("is_static", make_getter(&rg3::cpp::ClassFunction::bIsStatic))
 		.add_property("is_const", make_getter(&rg3::cpp::ClassFunction::bIsConst))
 		.def("__eq__", make_function(&rg3::cpp::ClassFunction::operator==))
@@ -267,7 +249,7 @@ BOOST_PYTHON_MODULE(rg3py)
 		.add_property("namespace", make_function(&rg3::pybind::PyTypeBase::pyGetNamespace, return_value_policy<copy_const_reference>()), "Namespace where declared type")
 		.add_property("location", make_function(&rg3::pybind::PyTypeBase::pyGetLocation, return_value_policy<copy_const_reference>()), "Location where type declared")
 		.add_property("pretty_name", &rg3::pybind::PyTypeBase::pyGetPrettyName, "Pretty name of type with namespace")
-		.add_property("tags", &rg3::pybind::wrappers::PyTypeBase_getTags, "Tags presented in type")
+		.add_property("tags", make_function(&rg3::pybind::PyTypeBase::pyGetTags, return_value_policy<copy_const_reference>()), "Tags presented in type")
 
 		.def("__str__", make_function(&rg3::pybind::PyTypeBase::__str__, return_value_policy<copy_const_reference>()))
 		.def("__repr__", make_function(&rg3::pybind::PyTypeBase::__repr__, return_value_policy<copy_const_reference>()))

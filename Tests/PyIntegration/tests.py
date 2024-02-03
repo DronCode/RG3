@@ -34,10 +34,10 @@ def test_code_analyzer_base():
     assert enum0_e2.name == "ENT_2"
     assert enum0_e2.value == 2
 
-    assert len(type0.tags) == 1
+    assert len(type0.tags.items) == 1
     assert 'runtime' in type0.tags
 
-    tag0: rg3py.Tag = type0.tags['runtime']
+    tag0: rg3py.Tag = type0.tags.get_tag('runtime')
     assert tag0.name == "runtime"
     assert len(tag0.arguments) == 0
 
@@ -75,19 +75,21 @@ def test_code_struct():
     assert struct0.properties[0].name == "i32"
     assert struct0.properties[0].alias == "i32"
     assert struct0.properties[0].visibility == rg3py.CppClassEntryVisibillity.CEV_PUBLIC
-    assert len(struct0.properties[0].tags) == 1
+    assert len(struct0.properties[0].tags.items) == 1
     assert 'my_prop' in struct0.properties[0].tags
-    assert len(struct0.properties[0].tags['my_prop'].arguments) == 3
-    assert str(struct0.properties[0].tags['my_prop'].arguments[0]) == '123'
-    assert str(struct0.properties[0].tags['my_prop'].arguments[1]) == '321'
-    assert str(struct0.properties[0].tags['my_prop'].arguments[2]) == 'True'
+    assert struct0.properties[0].tags.has_tag('my_prop')
+
+    assert len(struct0.properties[0].tags.get_tag('my_prop').arguments) == 3
+    assert str(struct0.properties[0].tags.get_tag('my_prop').arguments[0]) == '123'
+    assert str(struct0.properties[0].tags.get_tag('my_prop').arguments[1]) == '321'
+    assert str(struct0.properties[0].tags.get_tag('my_prop').arguments[2]) == 'True'
     assert struct0.properties[0].type_name == 'int'
 
     assert struct0.properties[1].name == "b8"
     assert struct0.properties[1].alias == "Awesome"
     assert struct0.properties[1].visibility == rg3py.CppClassEntryVisibillity.CEV_PUBLIC
-    assert len(struct0.properties[1].tags) == 1
+    assert len(struct0.properties[1].tags.items) == 1
     assert 'property' in struct0.properties[1].tags
-    assert len(struct0.properties[1].tags['property'].arguments) == 1
-    assert str(struct0.properties[1].tags['property'].arguments[0]) == 'Awesome'
+    assert len(struct0.properties[1].tags.get_tag('property').arguments) == 1
+    assert str(struct0.properties[1].tags.get_tag('property').arguments[0]) == 'Awesome'
     assert struct0.properties[1].type_name == 'bool'
