@@ -165,7 +165,25 @@ jobs:
           cd build
           ctest . -C MinSizeRel --verbose --output-on-failure
 
-      # Run Integration Tests TODO
+      # Run Python Unit Tests
+      - name: RG3 Run python unit tests (Windows)
+        if: matrix.config.os_id == 'windows'
+        run: |
+          cp PyBind/rg3py.pyd Tests/PyIntegration
+          cp PyBind/rg3py.pyi Tests/PyIntegration
+          cd Tests/PyIntegration
+          pip install pytest
+          pytest tests.py
+
+      # Run Python Unit Tests (Linux, macOS)
+      - name: RG3 Run python unit tests (Linux, macOS)
+        if: matrix.config.os_id == 'linux' || matrix.config.os_id == 'macos'
+        run: |
+          cp PyBind/rg3py.so Tests/PyIntegration
+          cp PyBind/rg3py.pyi Tests/PyIntegration
+          cd Tests/PyIntegration
+          pip install pytest
+          pytest tests.py
 
       # Make dist folder with pyd & pyi files.
       - name: Create distribution package (Windows)
