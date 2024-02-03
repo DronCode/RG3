@@ -83,7 +83,7 @@ def test_code_struct():
     assert str(struct0.properties[0].tags.get_tag('my_prop').arguments[0]) == '123'
     assert str(struct0.properties[0].tags.get_tag('my_prop').arguments[1]) == '321'
     assert str(struct0.properties[0].tags.get_tag('my_prop').arguments[2]) == 'True'
-    assert struct0.properties[0].type_name == 'int'
+    assert struct0.properties[0].type_info.name == 'int'
 
     assert struct0.properties[1].name == "b8"
     assert struct0.properties[1].alias == "Awesome"
@@ -92,4 +92,4 @@ def test_code_struct():
     assert 'property' in struct0.properties[1].tags
     assert len(struct0.properties[1].tags.get_tag('property').arguments) == 1
     assert str(struct0.properties[1].tags.get_tag('property').arguments[0]) == 'Awesome'
-    assert struct0.properties[1].type_name == 'bool'
+    assert struct0.properties[1].type_info.name == 'bool'

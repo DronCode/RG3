@@ -25,9 +25,15 @@ using namespace boost::python;
 
 namespace rg3::pybind::wrappers
 {
-	static boost::python::str CppClassProperty_getTypeNameReference(const rg3::cpp::ClassProperty& classProperty)
+	static boost::python::str CppTypeReference_getTypeName(const rg3::cpp::TypeReference& typeRef)
 	{
-		return boost::python::str(classProperty.sTypeName.getRefName());
+		return boost::python::str(typeRef.getRefName());
+	}
+
+	static boost::python::object CppTypeReference_getTypeInfo(const rg3::cpp::TypeReference& typeRef)
+	{
+		// TODO: Add support of work with internal type
+		return boost::python::object();
 	}
 
 	static boost::python::list Tag_getArguments(const rg3::cpp::Tag& tag)
@@ -175,7 +181,8 @@ BOOST_PYTHON_MODULE(rg3py)
 	;
 
 	class_<rg3::cpp::TypeReference>("CppTypeReference")
-		.def(init<std::string>(args("typename")))
+		.add_property("name", &rg3::pybind::wrappers::CppTypeReference_getTypeName)
+		.add_property("info", &rg3::pybind::wrappers::CppTypeReference_getTypeInfo)
 	;
 
 	class_<rg3::cpp::EnumEntry>("CppEnumEntry")
@@ -189,7 +196,7 @@ BOOST_PYTHON_MODULE(rg3py)
 		.add_property("alias", make_getter(&rg3::cpp::ClassProperty::sAlias))
 		.add_property("visibility", make_getter(&rg3::cpp::ClassProperty::eVisibility))
 		.add_property("tags", make_getter(&rg3::cpp::ClassProperty::vTags))
-		.add_property("type_name", &rg3::pybind::wrappers::CppClassProperty_getTypeNameReference)
+		.add_property("type_info", make_getter(&rg3::cpp::ClassProperty::sTypeName))
 		.def("__eq__", make_function(&rg3::cpp::ClassProperty::operator==, return_value_policy<return_by_value>()))
 		.def("__ne__", make_function(&rg3::cpp::ClassProperty::operator!=, return_value_policy<return_by_value>()))
 	;

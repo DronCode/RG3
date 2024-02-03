@@ -2,7 +2,7 @@
 This file contains all public available symbols & definitions for PyBind (rg3py.pyd)
 Follow PyBind/source/PyBind.cpp for details
 """
-from typing import List, Union, Dict
+from typing import List, Union, Optional
 
 
 class CppStandard:
@@ -196,7 +196,7 @@ class CppClassProperty:
     def tags(self) -> Tags: ...
 
     @property
-    def type_name(self) -> str: ...
+    def type_info(self) -> CppTypeReference: ...
 
     def __eq__(self, other) -> bool: ...
 
@@ -280,8 +280,11 @@ class CppCompilerIssue:
 
 
 class CppTypeReference:
-    def __init__(self, path: str): ...
+    @property
+    def name(self) -> str: ...
 
+    @property
+    def info(self) -> Optional[CppBaseType]: ...
 
 class ClangRuntime:
     @staticmethod
