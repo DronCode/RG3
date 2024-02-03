@@ -1,6 +1,7 @@
 #include <string>
 #include <vector>
 #include <variant>
+#include <format>
 
 #define BOOST_PYTHON_STATIC_LIB  // required because we using boost.python as static library
 #include <boost/python.hpp>
