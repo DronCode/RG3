@@ -8,6 +8,7 @@
 #include <RG3/Cpp/TypeEnum.h>
 #include <optional>
 #include <variant>
+#include <format>
 #include <thread>
 #include <deque>
 #include <mutex>
