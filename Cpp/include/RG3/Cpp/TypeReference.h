@@ -23,8 +23,7 @@ namespace rg3::cpp
 		bool operator==(const TypeReference& other) const;
 		bool operator!=(const TypeReference& other) const;
 
-	 private:
-		void resolveTypeRef() const;
+		void setResolvedType(TypeBase* pType);
 
 	 private:
 		std::string m_typeName {};

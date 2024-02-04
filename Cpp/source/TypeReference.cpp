@@ -16,11 +16,6 @@ namespace rg3::cpp
 
 	TypeBase* TypeReference::get()
 	{
-		if (!m_typeRef)
-		{
-			resolveTypeRef();
-		}
-
 		return m_typeRef;
 	}
 
@@ -49,8 +44,9 @@ namespace rg3::cpp
 		return m_typeName != other.m_typeName;
 	}
 
-	void TypeReference::resolveTypeRef() const
+	void TypeReference::setResolvedType(rg3::cpp::TypeBase* pType)
 	{
-		// TODO: Implement me
+		if (!m_typeRef && pType)
+			m_typeRef = pType;
 	}
 }

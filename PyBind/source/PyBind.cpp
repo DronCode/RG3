@@ -309,7 +309,6 @@ BOOST_PYTHON_MODULE(rg3py)
 		.def("analyze", &rg3::pybind::PyCodeAnalyzerBuilder::analyze)
 	;
 
-#if 0  // temporary disabled to use
 	class_<rg3::pybind::PyAnalyzerContext, boost::noncopyable , boost::shared_ptr<rg3::pybind::PyAnalyzerContext>>("AnalyzerContext", no_init)
 		.def("make", &rg3::pybind::PyAnalyzerContext::makeInstance)
 		.staticmethod("make")
@@ -327,7 +326,6 @@ BOOST_PYTHON_MODULE(rg3py)
 		// Functions
 		.def("analyze", &rg3::pybind::PyAnalyzerContext::analyze)
 	;
-#endif
 
 	class_<rg3::pybind::PyClangRuntime, boost::noncopyable>("ClangRuntime")
 	    .def("get_version", &rg3::pybind::PyClangRuntime::getRuntimeInfo)

@@ -162,7 +162,7 @@ namespace rg3::pybind
 		{
 			struct Visitor
 			{
-				bool& stopFlag;
+				bool* stopFlag;
 				PyFoundSubjects* pAnalyzerStorage { nullptr };
 
 				void operator()(NullTask)
@@ -173,7 +173,10 @@ namespace rg3::pybind
 				void operator()(const StopWorkerTask&)
 				{
 					// Stop current loop
-					stopFlag = true;
+					if (stopFlag != nullptr)
+					{
+						(*stopFlag) = true;
+					}
 				}
 
 				void operator()(const AnalyzeHeaderTask& analyzeHeader)
@@ -183,6 +186,7 @@ namespace rg3::pybind
 					rg3::llvm::AnalyzerResult analyzeResult = codeAnalyzer.analyze();
 
 					{
+						// Write results (write lock)
 						std::unique_lock<std::shared_mutex> guard { pAnalyzerStorage->lockMutex };
 
 						for (const auto& issue : analyzeResult.vIssues)
@@ -190,8 +194,10 @@ namespace rg3::pybind
 							pAnalyzerStorage->pyFoundIssues.append(issue);
 						}
 
+						// Iterate over types and trying to push 'em into types db
 						for (auto&& type : analyzeResult.vFoundTypes)
 						{
+							// Note: here we need to assume that type is complete type without any issues, otherwise this type should be ignored!
 							switch (type->getKind())
 							{
 								case cpp::TypeKind::TK_NONE:
@@ -201,19 +207,34 @@ namespace rg3::pybind
 								case cpp::TypeKind::TK_TRIVIAL:
 								{
 									auto object = boost::shared_ptr<PyTypeBase>(new PyTypeBase(std::move(type)));
-									pAnalyzerStorage->pyFoundTypes.append(object);
+									auto [_iter, bInserted] = pAnalyzerStorage->vFoundTypeInstances.try_emplace(object->getNative()->getPrettyName(), object);
+
+									if (bInserted)
+									{
+										pAnalyzerStorage->pyFoundTypes.append(object);
+									}
 								}
 								break;
 								case cpp::TypeKind::TK_ENUM:
 								{
 									auto object = boost::shared_ptr<PyTypeEnum>(new PyTypeEnum(std::move(type)));
-									pAnalyzerStorage->pyFoundTypes.append(object);
+									auto [_iter, bInserted] = pAnalyzerStorage->vFoundTypeInstances.try_emplace(object->getNative()->getPrettyName(), object);
+
+									if (bInserted)
+									{
+										pAnalyzerStorage->pyFoundTypes.append(object);
+									}
 								}
 								break;
 								case cpp::TypeKind::TK_STRUCT_OR_CLASS:
 								{
 									auto object = boost::shared_ptr<PyTypeClass>(new PyTypeClass(std::move(type)));
-									pAnalyzerStorage->pyFoundTypes.append(object);
+									auto [_iter, bInserted] = pAnalyzerStorage->vFoundTypeInstances.try_emplace(object->getNative()->getPrettyName(), object);
+
+									if (bInserted)
+									{
+										pAnalyzerStorage->pyFoundTypes.append(object);
+									}
 								}
 								break;
 							}
@@ -224,11 +245,14 @@ namespace rg3::pybind
 
 
 			bool bShouldStop = false;
-			Visitor v { bShouldStop, pAnalyzerStorage };
+			Visitor v { &bShouldStop, pAnalyzerStorage };
 
 			while (!bShouldStop)
 			{
+				// Try to extract task or take null task to do nothing
 				auto task = takeTask().value_or(NullTask());
+
+				// Run task
 				std::visit(v, task);
 			}
 		}
@@ -376,13 +400,13 @@ namespace rg3::pybind
 		return m_pySubjects.pyFoundTypes;
 	}
 
-	bool PyAnalyzerContext::analyze(bool bShouldWait)
+	bool PyAnalyzerContext::analyze()
 	{
 		if (m_bInProgress)
 			return false;
 
 		m_bInProgress = true;
-		const bool bResult = runAnalyze(bShouldWait);
+		const bool bResult = runAnalyze();
 		m_bInProgress = false;
 
 		return bResult;
@@ -398,11 +422,12 @@ namespace rg3::pybind
 		return m_bInProgress;
 	}
 
-	bool PyAnalyzerContext::runAnalyze(bool bShouldWait)
+	bool PyAnalyzerContext::runAnalyze()
 	{
 		// Cleanup known types
 		m_pySubjects.pyFoundTypes = {};
 		m_pySubjects.pyFoundIssues = {};
+		m_pySubjects.vFoundTypeInstances.clear();
 
 		// Create tasks
 		{
@@ -425,9 +450,122 @@ namespace rg3::pybind
 		// Re-create workers and run analyzer
 		if (m_pContext->runWorkers(m_iWorkersAmount))
 		{
-			if (bShouldWait)
+			m_pContext->waitAll();
+		}
+
+		return resolveTypeReferences();
+	}
+
+	void PyAnalyzerContext::pushResolverIssue(const ResolverContext& context, std::string&& errorMessage)
+	{
+		auto spaceToString = [](ResolverContext::ContextSpace eSpace) -> std::string
+		{
+			switch (eSpace)
 			{
-				m_pContext->waitAll();
+				case ResolverContext::ContextSpace::CS_UNDEFINED: return "UNDEFINED";
+				case ResolverContext::ContextSpace::CS_TYPE: return "CXX_TYPE";
+				case ResolverContext::ContextSpace::CS_PROPERTY: return "CXX_PROPERTY";
+				case ResolverContext::ContextSpace::CS_FUNCTION: return "CXX_TYPE_FUNC";
+			}
+
+			return "UNKNOWN";
+		};
+
+		rg3::llvm::AnalyzerResult::CompilerIssue issue;
+		issue.kind = rg3::llvm::AnalyzerResult::CompilerIssue::IssueKind::IK_ERROR;
+		issue.sSourceFile = context.pOwner->getDefinition().getPath();
+		issue.sMessage = std::format("RG3|ResolveTypeREF failed: {} (space {})", errorMessage, spaceToString(context.eSpace));
+
+		m_pySubjects.pyFoundIssues.append(issue);
+	}
+
+	bool PyAnalyzerContext::resolveTypeReferences()
+	{
+		// So, here we need to resolve cross-references between types.
+		// Known places where we have X-refs:
+		// 1. Tags - each tag could have full qualified type reference. Example: /// @my_cool_ref(@ecs::Entity)
+		// 2. ClassProperties - has own tags collection
+		// 3. ClassFunction - has own tags collection
+		//
+		for (const auto& [typeName, typeInstance] : m_pySubjects.vFoundTypeInstances)
+		{
+			const boost::shared_ptr<rg3::cpp::TypeBase> pNative = typeInstance->getNative();
+			ResolverContext resolverContext {};
+
+			// Switch to type
+			resolverContext.eSpace = ResolverContext::ContextSpace::CS_TYPE;
+			resolverContext.pOwner = pNative;
+
+			// Resolve tags
+			if (!resolveTags(resolverContext, pNative->getTags()))
+			{
+				return false;
+			}
+
+			// Ok, tags resolved. Now we've need to check what kind of type do we have
+			if (pNative->getKind() == cpp::TypeKind::TK_STRUCT_OR_CLASS)
+			{
+				auto pClassNative = boost::static_pointer_cast<cpp::TypeClass>(pNative);
+
+				// Oh, here we need to resolve 'abstract' references to parent types, aren't we?
+
+				// Resolve properties
+				for (auto& classProperty : pClassNative->getProperties())
+				{
+					// Push 'properties' space
+					resolverContext.eSpace = ResolverContext::ContextSpace::CS_PROPERTY;
+
+					if (!resolveTags(resolverContext, classProperty.vTags))
+					{
+						return false;
+					}
+				}
+
+				// Resolve functions
+				for (auto& classFunction : pClassNative->getFunctions())
+				{
+					// Push 'functions' space
+					resolverContext.eSpace = ResolverContext::ContextSpace::CS_FUNCTION;
+
+					if (!resolveTags(resolverContext, classFunction.vTags))
+					{
+						return false;
+					}
+				}
+
+				// Push context back
+				resolverContext.eSpace = ResolverContext::ContextSpace::CS_TYPE;
+			}
+		}
+
+		// Everything is fine
+		return true;
+	}
+
+	bool PyAnalyzerContext::resolveTags(const ResolverContext& context, rg3::cpp::Tags& tagsToResolve)
+	{
+		for (auto& [tagName, tag] : tagsToResolve.getTags())
+		{
+			if (!tag.hasArguments())
+				continue;
+
+			for (auto& tagArg : tag.getArguments())
+			{
+				if (auto pTypeRef = tagArg.asTypeRefMutable(); pTypeRef && pTypeRef->get() == nullptr)
+				{
+					// Ok, it holds type reference - need resolve if not resolved yet
+					if (auto it = m_pySubjects.vFoundTypeInstances.find(pTypeRef->getRefName()); it != m_pySubjects.vFoundTypeInstances.end())
+					{
+						// Resolved, push pointer to typeRef
+						pTypeRef->setResolvedType(it->second->getNative().get());
+					}
+					else
+					{
+						// Type reference not found in context of ...
+						pushResolverIssue(context, std::format("Reference '{}' not found in types db", pTypeRef->getRefName()));
+						return false;
+					}
+				}
 			}
 		}
 

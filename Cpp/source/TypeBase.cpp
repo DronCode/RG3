@@ -67,6 +67,11 @@ namespace rg3::cpp
 		return m_tags;
 	}
 
+	Tags& TypeBase::getTags()
+	{
+		return m_tags;
+	}
+
 	bool TypeBase::doAreSame(const TypeBase* pOther) const
 	{
 		return

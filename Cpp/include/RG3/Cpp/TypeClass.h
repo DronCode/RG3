@@ -52,7 +52,9 @@ namespace rg3::cpp
 		TypeClass(const std::string& name, const CppNamespace& aNamespace, const DefinitionLocation& aLocation, const Tags& tags, const ClassPropertyVector& aProperties, const ClassFunctionVector& aFunctions, bool bIsStruct, bool bTrivialConstructible, const std::vector<TypeReference>& parentTypes);
 
 		[[nodiscard]] const ClassPropertyVector& getProperties() const;
+		[[nodiscard]] ClassPropertyVector& getProperties();
 		[[nodiscard]] const ClassFunctionVector& getFunctions() const;
+		[[nodiscard]] ClassFunctionVector& getFunctions();
 		[[nodiscard]] bool isStruct() const;
 		[[nodiscard]] bool isTrivialConstructible() const;
 		[[nodiscard]] const std::vector<TypeReference>& getParentTypes() const;

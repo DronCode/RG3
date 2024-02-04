@@ -41,6 +41,10 @@ namespace rg3::cpp
 
 #undef RG3_GENERATE_METHOD_IMPL
 
+	TypeReference* TagArgument::asTypeRefMutable() {
+		return std::get_if<TypeReference>(&m_argValue);
+	}
+
 	TagArgumentType TagArgument::getHoldedType() const
 	{
 		return m_argType;

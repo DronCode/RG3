@@ -28,6 +28,7 @@ namespace rg3::cpp
 		[[nodiscard]] bool areSame(const TypeBase* pOther) const;
 
 		[[nodiscard]] const Tags& getTags() const;
+		[[nodiscard]] Tags& getTags();
 
 		[[nodiscard]] bool operator==(const TypeBase& other) const { return  areSame(&other); }
 		[[nodiscard]] bool operator!=(const TypeBase& other) const { return !areSame(&other); }

@@ -1,5 +1,6 @@
 #include <RG3/LLVM/CodeAnalyzer.h>
 #include <RG3/LLVM/Actions/ExtractTypesFromTU.h>
+#include <RG3/LLVM/Consumers/CompilerDiagnosticsConsumer.h>
 
 #include <clang/AST/ASTConsumer.h>
 #include <clang/AST/DeclCXX.h>
@@ -144,7 +145,7 @@ namespace rg3::llvm
 		if (auto pEnvFailure = std::get_if<CompilerEnvError>(&compilerEnvironment))
 		{
 			// Fatal error
-			result.vIssues.emplace_back(AnalyzerResult::CompilerIssue::IssueKind::IK_ERROR, sourceToString(m_source), pEnvFailure->message);
+			result.vIssues.emplace_back(AnalyzerResult::CompilerIssue::IssueKind::IK_ERROR, sourceToString(m_source), 0, 0, pEnvFailure->message);
 			return result;
 		}
 
@@ -154,6 +155,12 @@ namespace rg3::llvm
 
 		clang::CompilerInstance compilerInstance;
 		compilerInstance.createDiagnostics();
+
+		// Create custom diagnostics consumer and pass it into CompilerInstance
+		{
+			auto errorCollector = std::make_unique<consumers::CompilerDiagnosticsConsumer>(result);
+			compilerInstance.getDiagnostics().setClient(errorCollector.release(), false);
+		}
 
 		// Set up FileManager and SourceManager
 		compilerInstance.createFileManager();
@@ -304,21 +311,7 @@ namespace rg3::llvm
 		// Run actions
 		{
 			rg3::llvm::actions::ExtractTypesFromTUAction findTypesAction { result.vFoundTypes, m_compilerConfig };
-			if (!compilerInstance.ExecuteAction(findTypesAction))
-			{
-//				auto& diagEngine = compilerInstance.getDiagnostics();
-				result.vIssues.push_back(
-					AnalyzerResult::CompilerIssue(
-						AnalyzerResult::CompilerIssue::IssueKind::IK_ERROR,
-						{},
-						"Failed to run FindTypesAction<> on compiler instance!"
-					)
-				);
-			}
-			else
-			{
-				// TODO: Use findTypesAction.foundTypes
-			}
+			compilerInstance.ExecuteAction(findTypesAction);
 		}
 
 		// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

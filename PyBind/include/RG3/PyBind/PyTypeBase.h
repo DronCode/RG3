@@ -33,6 +33,9 @@ namespace rg3::pybind
 		[[nodiscard]] const cpp::CppNamespace& pyGetNamespace() const;
 		[[nodiscard]] const cpp::DefinitionLocation& pyGetLocation() const;
 
+		/// Native stuff (don't export this!)
+		[[nodiscard]] const boost::shared_ptr<cpp::TypeBase>& getNative() const { return m_base; }
+
 	 protected:
 		boost::shared_ptr<cpp::TypeBase> m_base { nullptr };
 		boost::python::str m_str { "null" };

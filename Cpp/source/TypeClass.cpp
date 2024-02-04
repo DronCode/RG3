@@ -46,7 +46,17 @@ namespace rg3::cpp
 		return m_properties;
 	}
 
+	ClassPropertyVector& TypeClass::getProperties()
+	{
+		return m_properties;
+	}
+
 	const ClassFunctionVector& TypeClass::getFunctions() const
+	{
+		return m_functions;
+	}
+
+	ClassFunctionVector& TypeClass::getFunctions()
 	{
 		return m_functions;
 	}
