@@ -577,14 +577,14 @@ namespace rg3::pybind
 				{
 					resolverContext.eSpace = ResolverContext::ContextSpace::CS_TYPE;
 
-					if (auto it = m_pySubjects.vFoundTypeInstances.find(parentType.getRefName()); it != m_pySubjects.vFoundTypeInstances.end())
+					if (auto it = m_pySubjects.vFoundTypeInstances.find(parentType.rParentType.getRefName()); it != m_pySubjects.vFoundTypeInstances.end())
 					{
 						// parent type found
-						parentType.setResolvedType(it->second->getNative().get());
+						parentType.rParentType.setResolvedType(it->second->getNative().get());
 					}
 					else
 					{
-						pushResolverIssue(resolverContext, std::format("Failed to find parent type '{}'", parentType.getRefName()));
+						pushResolverIssue(resolverContext, std::format("Failed to find parent type '{}'", parentType.rParentType.getRefName()));
 						return false;
 					}
 				}

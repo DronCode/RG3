@@ -27,7 +27,7 @@ namespace rg3::llvm::visitors
 		cpp::ClassFunctionVector foundFunctions {};
 		bool bIsStruct { false };
 		bool bTriviallyConstructible { false };
-		std::vector<cpp::TypeReference> parentClasses {};
+		std::vector<cpp::ClassParent> parentClasses {};
 
 	 private:
 		const CompilerConfig& compilerConfig;

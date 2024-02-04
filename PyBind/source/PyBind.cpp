@@ -200,6 +200,18 @@ BOOST_PYTHON_MODULE(rg3py)
 		.add_property("name", &rg3::pybind::wrappers::CppTypeReference_getTypeName)
 	;
 
+	enum_<rg3::cpp::InheritanceVisibility>("InheritanceVisibility")
+		.value("IV_PRIVATE", rg3::cpp::InheritanceVisibility::IV_PRIVATE)
+		.value("IV_PUBLIC", rg3::cpp::InheritanceVisibility::IV_PUBLIC)
+		.value("IV_PROTECTED", rg3::cpp::InheritanceVisibility::IV_PROTECTED)
+		.value("IV_VIRTUAL", rg3::cpp::InheritanceVisibility::IV_VIRTUAL)
+	;
+
+	class_<rg3::cpp::ClassParent>("ClassParent")
+	    .add_property("info", make_getter(&rg3::cpp::ClassParent::rParentType), "Parent type type reference")
+		.add_property("inheritance", make_getter(&rg3::cpp::ClassParent::eModifier), "Inheritance type")
+	;
+
 	class_<rg3::cpp::EnumEntry>("CppEnumEntry")
 		.add_property("name", make_getter(&rg3::cpp::EnumEntry::sName), "Name of entry")
 		.add_property("value", make_getter(&rg3::cpp::EnumEntry::iValue), "Value of entry")

@@ -12,9 +12,17 @@ namespace rg3::cpp
 {
 	enum class ClassEntryVisibility : uint8_t
 	{
-		CEV_PRIVATE,   ///< Private entry
-		CEV_PUBLIC,	   ///< Public entry
-		CEV_PROTECTED  ///< Protected entry
+		CEV_PUBLIC = 0,	   ///< Public entry
+		CEV_PRIVATE = 1,   ///< Private entry
+		CEV_PROTECTED = 2  ///< Protected entry
+	};
+
+	enum class InheritanceVisibility : uint8_t
+	{
+		IV_PUBLIC = 0,  ///< public inheritance (default for struct)
+		IV_PRIVATE = 1, ///< private inheritance (default for class)
+		IV_PROTECTED = 2, ///< protected inheritance
+		IV_VIRTUAL = 3  ///< virtual inheritance
 	};
 
 	struct ClassProperty
@@ -42,6 +50,12 @@ namespace rg3::cpp
 		bool operator!=(const ClassFunction& other) const;
 	};
 
+	struct ClassParent
+	{
+		TypeReference rParentType {};  /// inherited of what
+		InheritanceVisibility eModifier { InheritanceVisibility::IV_PRIVATE }; /// modifier mode
+	};
+
 	using ClassPropertyVector = std::vector<ClassProperty>;
 	using ClassFunctionVector = std::vector<ClassFunction>;
 
@@ -49,7 +63,7 @@ namespace rg3::cpp
 	{
 	 public:
 		TypeClass();
-		TypeClass(const std::string& name, const CppNamespace& aNamespace, const DefinitionLocation& aLocation, const Tags& tags, const ClassPropertyVector& aProperties, const ClassFunctionVector& aFunctions, bool bIsStruct, bool bTrivialConstructible, const std::vector<TypeReference>& parentTypes);
+		TypeClass(const std::string& name, const CppNamespace& aNamespace, const DefinitionLocation& aLocation, const Tags& tags, const ClassPropertyVector& aProperties, const ClassFunctionVector& aFunctions, bool bIsStruct, bool bTrivialConstructible, const std::vector<ClassParent>& parentTypes);
 
 		[[nodiscard]] const ClassPropertyVector& getProperties() const;
 		[[nodiscard]] ClassPropertyVector& getProperties();
@@ -57,8 +71,8 @@ namespace rg3::cpp
 		[[nodiscard]] ClassFunctionVector& getFunctions();
 		[[nodiscard]] bool isStruct() const;
 		[[nodiscard]] bool isTrivialConstructible() const;
-		[[nodiscard]] const std::vector<TypeReference>& getParentTypes() const;
-		[[nodiscard]] std::vector<TypeReference>& getParentTypes();
+		[[nodiscard]] const std::vector<ClassParent>& getParentTypes() const;
+		[[nodiscard]] std::vector<ClassParent>& getParentTypes();
 
 	 protected:
 		bool doAreSame(const TypeBase* pOther) const override;
@@ -68,6 +82,6 @@ namespace rg3::cpp
 		ClassFunctionVector m_functions {};
 		bool m_bIsStruct { false };
 		bool m_bIsTrivialConstructible { false };
-		std::vector<TypeReference> m_parentTypes {};
+		std::vector<ClassParent> m_parentTypes {};
 	};
 }

@@ -31,7 +31,7 @@ namespace rg3::cpp
 
 	TypeClass::TypeClass() = default;
 
-	TypeClass::TypeClass(const std::string& name, const rg3::cpp::CppNamespace& aNamespace, const rg3::cpp::DefinitionLocation& aLocation, const Tags& tags, const rg3::cpp::ClassPropertyVector& aProperties, const rg3::cpp::ClassFunctionVector& aFunctions, bool bIsStruct, bool bTrivialConstructible, const std::vector<TypeReference>& parentTypes)
+	TypeClass::TypeClass(const std::string& name, const rg3::cpp::CppNamespace& aNamespace, const rg3::cpp::DefinitionLocation& aLocation, const Tags& tags, const rg3::cpp::ClassPropertyVector& aProperties, const rg3::cpp::ClassFunctionVector& aFunctions, bool bIsStruct, bool bTrivialConstructible, const std::vector<ClassParent>& parentTypes)
 		: TypeBase(TypeKind::TK_STRUCT_OR_CLASS, name, aNamespace, aLocation, tags)
 		, m_properties(aProperties)
 		, m_functions(aFunctions)
@@ -71,12 +71,12 @@ namespace rg3::cpp
 		return m_bIsTrivialConstructible;
 	}
 
-	const std::vector<TypeReference>& TypeClass::getParentTypes() const
+	const std::vector<ClassParent>& TypeClass::getParentTypes() const
 	{
 		return m_parentTypes;
 	}
 
-	std::vector<TypeReference>& TypeClass::getParentTypes()
+	std::vector<ClassParent>& TypeClass::getParentTypes()
 	{
 		return m_parentTypes;
 	}

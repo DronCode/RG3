@@ -14,6 +14,11 @@ class CppStandard:
     CXX_26 = 26
     CXX_DEFAULT = 11
 
+class InheritanceVisibility:
+    IV_PUBLIC = 0
+    IV_PRIVATE = 1
+    IV_PROTECTED = 2
+    IV_VIRTUAL = 3
 
 class CppEnumEntry:
     @property
@@ -154,9 +159,9 @@ class CppBaseType:
 
 
 class CppClassEntryVisibillity:
-    CEV_PRIVATE = 0
-    CEV_PROTECTED = 1
-    CEV_PUBLIC = 2
+    CEV_PUBLIC = 0
+    CEV_PRIVATE = 1
+    CEV_PROTECTED = 2
 
 
 class CppClassFunction:
@@ -204,6 +209,14 @@ class CppClassProperty:
     def __ne__(self, other) -> bool: ...
 
 
+class ClassParent:
+    @property
+    def info(self) -> CppTypeReference: ...
+
+    @property
+    def inheritance(self) -> InheritanceVisibility: ...
+
+
 class CppClass:
     @property
     def properties(self) -> List[CppClassProperty]: ...
@@ -218,7 +231,7 @@ class CppClass:
     def is_trivial_constructible(self) -> bool: ...
 
     @property
-    def parent_types(self) -> List[CppTypeReference]: ...
+    def parent_types(self) -> List[ClassParent]: ...
 
 
 class CodeAnalyzer:

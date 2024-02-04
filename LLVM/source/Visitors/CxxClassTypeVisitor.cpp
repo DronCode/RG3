@@ -40,7 +40,24 @@ namespace rg3::llvm::visitors
 
 		// Collect parent class list
 		for (const clang::CXXBaseSpecifier& baseSpecifier : cxxRecordDecl->bases()) {
-			parentClasses.emplace_back(baseSpecifier.getType().getAsString());
+			cpp::ClassParent& parent = parentClasses.emplace_back();
+			parent.rParentType = cpp::TypeReference(baseSpecifier.getType().getAsString());
+
+			switch (baseSpecifier.getAccessSpecifier())
+			{
+				case clang::AS_public:
+					parent.eModifier = cpp::InheritanceVisibility::IV_PUBLIC;
+					break;
+				case clang::AS_protected:
+					parent.eModifier = cpp::InheritanceVisibility::IV_PROTECTED;
+					break;
+				case clang::AS_private:
+					parent.eModifier = cpp::InheritanceVisibility::IV_PRIVATE;
+					break;
+				case clang::AS_none:
+					parent.eModifier = bIsStruct ? cpp::InheritanceVisibility::IV_PUBLIC : cpp::InheritanceVisibility::IV_PRIVATE;
+					break;
+			}
 		}
 
 		return true;
