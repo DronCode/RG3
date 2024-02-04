@@ -185,7 +185,8 @@ def test_check_base_types():
     analyzer: rg3py.CodeAnalyzer = rg3py.CodeAnalyzer.make()
 
     analyzer.set_code("""
-            #include <cstdint>
+           #include <cstdint>
+           #include <cstddef>
             
             /// @runtime
             struct MyCoolStruct {
@@ -203,7 +204,9 @@ def test_check_base_types():
                 size_t sz;
             };
             """)
-    analyzer.set_cpp_standard(rg3py.CppStandard.CXX_17)
+
+    analyzer.set_compiler_args(["-x", "c++-header"])
+    analyzer.set_cpp_standard(rg3py.CppStandard.CXX_20)
     analyzer.analyze()
 
     assert len(analyzer.issues) == 0

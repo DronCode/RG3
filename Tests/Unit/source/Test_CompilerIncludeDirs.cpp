@@ -53,3 +53,38 @@ TEST_F(Tests_CompilerIncludeDirs, CheckStdIncludes)
 	ASSERT_EQ(analyzeResult.vFoundTypes.size(), 1) << "Only 1 type should be here";
 	// That's enough for this case
 }
+
+TEST_F(Tests_CompilerIncludeDirs, CheckStdIntegralTypes)
+{
+	g_Analyzer->getCompilerConfig().cppStandard = rg3::llvm::CxxStandard::CC_20;
+	g_Analyzer->setSourceCode(R"(
+#include <cstdint>
+#include <cstddef>
+
+/**
+ * @runtime
+ **/
+struct Sample
+{
+	bool b8;
+	size_t sz;
+};
+
+)");
+	g_Analyzer->getCompilerConfig().vCompilerArgs.emplace_back("-x");
+	g_Analyzer->getCompilerConfig().vCompilerArgs.emplace_back("c++-header");
+
+	auto analyzeResult = g_Analyzer->analyze();
+
+	ASSERT_TRUE(analyzeResult.vIssues.empty()) << "No issues should be here";
+	ASSERT_EQ(analyzeResult.vFoundTypes.size(), 1) << "Only 1 type should be here";
+
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getPrettyName(), "Sample");
+
+	auto asClass = static_cast<const rg3::cpp::TypeClass*>(analyzeResult.vFoundTypes[0].get());
+	ASSERT_EQ(asClass->getProperties().size(), 2);
+	ASSERT_EQ(asClass->getProperties()[0].sName, "b8");
+	ASSERT_EQ(asClass->getProperties()[0].sTypeName.getRefName(), "bool");
+	ASSERT_EQ(asClass->getProperties()[1].sName, "sz");
+	ASSERT_EQ(asClass->getProperties()[1].sTypeName.getRefName(), "size_t");
+}

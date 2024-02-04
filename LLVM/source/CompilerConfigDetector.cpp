@@ -187,7 +187,9 @@ namespace rg3::llvm
 
 #if defined(_WIN32)
 		constexpr const char* kCompilerInstanceExecutable = "clang++.exe";
-#elif defined(__APPLE__) || defined(__linux__)
+#elif defined(__linux__)
+		constexpr const char* kCompilerInstanceExecutable = "g++";
+#elif defined(__APPLE__)
 		constexpr const char* kCompilerInstanceExecutable = "clang++";
 #endif
 
@@ -229,7 +231,9 @@ namespace rg3::llvm
 
 #if defined(_WIN32)
 		const std::string response = runShellCommand(compilerLocation, { "''", "|", kCompilerInstanceExecutable, "-x", "c++-header", "-v", "-E", "-" });
-#elif defined(__linux__) || defined(__APPLE__)
+#elif defined(__linux__)
+		const std::string response = runShellCommand(compilerLocation, { kCompilerInstanceExecutable, "-x", "c++-header", "/dev/null", "-v", "-E" });
+#elif defined(__APPLE__)
 		const std::string response = runShellCommand(compilerLocation, { kCompilerInstanceExecutable, "-x", "c++-header", "/dev/null", "-v", "-E" });
 #else
 #		error Unsupported
@@ -245,6 +249,20 @@ namespace rg3::llvm
 		{
 			// report an error
 			return parseResult.value();
+		}
+
+		if (compilerEnvironment.triple.empty())
+		{
+#if defined(__linux__)
+			// Try to find triple by another way on linux with gcc
+			constexpr std::string_view sTargetDecl = "--target=";
+			if (auto it = response.find(sTargetDecl.data()); it != std::string::npos)
+			{
+				auto nextSpaceIt = response.find(' ', it);
+				const int predictedLength = std::min(static_cast<int>(response.length() - it), static_cast<int>(nextSpaceIt  - (it + sTargetDecl.length())));
+				compilerEnvironment.triple = response.substr(it + sTargetDecl.length(), predictedLength);
+			}
+#endif
 		}
 
 		// Everything is ok, return env
