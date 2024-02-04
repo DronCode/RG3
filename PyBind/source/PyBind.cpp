@@ -314,16 +314,22 @@ BOOST_PYTHON_MODULE(rg3py)
 		.staticmethod("make")
 
 		// Properties
-		.add_property("workers_count", &rg3::pybind::PyAnalyzerContext::getWorkersCount, &rg3::pybind::PyAnalyzerContext::setWorkersCount, "Count of workers which will prepare incoming sources")
+		.add_property("workers_count", &rg3::pybind::PyAnalyzerContext::getWorkersCount, "Count of workers which will prepare incoming sources")
 		.add_property("types", make_function(&rg3::pybind::PyAnalyzerContext::getFoundTypes, return_value_policy<copy_const_reference>()))
 		.add_property("issues", make_function(&rg3::pybind::PyAnalyzerContext::getFoundIssues, return_value_policy<copy_const_reference>()))
-		.add_property("headers", &rg3::pybind::PyAnalyzerContext::getHeaders, &rg3::pybind::PyAnalyzerContext::setHeaders, "List of headers")
-		.add_property("include_directories", &rg3::pybind::PyAnalyzerContext::getCompilerIncludeDirs, &rg3::pybind::PyAnalyzerContext::setCompilerIncludeDirs, "Include directories for compiler instance")
+		.add_property("headers", &rg3::pybind::PyAnalyzerContext::getHeaders, "List of headers")
+		.add_property("include_directories", &rg3::pybind::PyAnalyzerContext::getCompilerIncludeDirs, "Include directories for compiler instance")
 		.add_property("cpp_standard", &rg3::pybind::PyAnalyzerContext::getCppStandard, &rg3::pybind::PyAnalyzerContext::setCppStandard, "Set C++ standard")
-		.add_property("compiler_args", &rg3::pybind::PyAnalyzerContext::getCompilerArgs, &rg3::pybind::PyAnalyzerContext::setCompilerArgs, "Set clang compiler arguments list")
+		.add_property("compiler_args", &rg3::pybind::PyAnalyzerContext::getCompilerArgs, "Set clang compiler arguments list")
 		.add_property("ignore_runtime_tag", &rg3::pybind::PyAnalyzerContext::isRuntimeTagIgnored, &rg3::pybind::PyAnalyzerContext::setIgnoreRuntimeTag, "Should context ignore @runtime tag on 'collect types' stage")
+		.add_property("compiler_defs", &rg3::pybind::PyAnalyzerContext::getCompilerDefs, "Compiler definitions")
 
 		// Functions
+		.def("set_workers_count", &rg3::pybind::PyAnalyzerContext::setWorkersCount)
+		.def("set_headers", &rg3::pybind::PyAnalyzerContext::setHeaders)
+		.def("set_include_directories", &rg3::pybind::PyAnalyzerContext::setCompilerIncludeDirs)
+		.def("set_compiler_args", &rg3::pybind::PyAnalyzerContext::setCompilerArgs)
+		.def("set_compiler_defs", &rg3::pybind::PyAnalyzerContext::setCompilerDefs)
 		.def("analyze", &rg3::pybind::PyAnalyzerContext::analyze)
 	;
 

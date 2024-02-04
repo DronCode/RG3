@@ -66,6 +66,9 @@ namespace rg3::pybind
 		void setCompilerArgs(const boost::python::list& compilerArgs);
 		[[nodiscard]] boost::python::list getCompilerArgs() const;
 
+		void setCompilerDefs(const boost::python::list& compilerDefs);
+		[[nodiscard]] boost::python::list getCompilerDefs() const;
+
 		void setIgnoreRuntimeTag(bool bIgnoreRT);
 		bool isRuntimeTagIgnored() const;
 

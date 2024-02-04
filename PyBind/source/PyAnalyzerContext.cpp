@@ -370,6 +370,31 @@ namespace rg3::pybind
 		return result;
 	}
 
+	void PyAnalyzerContext::setCompilerDefs(const boost::python::list& compilerDefs)
+	{
+		if (m_bInProgress.load(std::memory_order_relaxed))
+			return;
+
+		m_compilerConfig.vCompilerDefs.clear();
+
+		for (int i = 0; i < boost::python::len(compilerDefs); i++)
+		{
+			m_compilerConfig.vCompilerDefs.emplace_back(boost::python::extract<std::string>(compilerDefs[i]));
+		}
+	}
+
+	boost::python::list PyAnalyzerContext::getCompilerDefs() const
+	{
+		boost::python::list result;
+
+		for (const auto& compilerDef : m_compilerConfig.vCompilerDefs)
+		{
+			result.append(compilerDef);
+		}
+
+		return result;
+	}
+
 	void PyAnalyzerContext::setIgnoreRuntimeTag(bool bIgnoreRT)
 	{
 		if (m_bInProgress.load(std::memory_order_relaxed))
