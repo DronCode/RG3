@@ -76,6 +76,11 @@ namespace rg3::cpp
 		return m_parentTypes;
 	}
 
+	std::vector<TypeReference>& TypeClass::getParentTypes()
+	{
+		return m_parentTypes;
+	}
+
 	bool TypeClass::doAreSame(const TypeBase* pOther) const
 	{
 		if (pOther->getKind() != TypeKind::TK_STRUCT_OR_CLASS)

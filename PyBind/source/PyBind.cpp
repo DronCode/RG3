@@ -30,12 +30,6 @@ namespace rg3::pybind::wrappers
 		return boost::python::str(typeRef.getRefName());
 	}
 
-	static boost::python::object CppTypeReference_getTypeInfo(const rg3::cpp::TypeReference& typeRef)
-	{
-		// TODO: Add support of work with internal type
-		return boost::python::object();
-	}
-
 	static boost::python::list Tag_getArguments(const rg3::cpp::Tag& tag)
 	{
 		boost::python::list l;
@@ -93,6 +87,22 @@ namespace rg3::pybind::wrappers
 		return boost::python::str("<UNDEFINED>");
 	}
 
+	static boost::python::object TagArgument_getAsTypeReference(const rg3::cpp::TagArgument& arg)
+	{
+		if (arg.getHoldedType() == rg3::cpp::TagArgumentType::AT_TYPEREF)
+		{
+			static rg3::cpp::TypeReference s_NullRef{};
+			const rg3::cpp::TypeReference& res = arg.asTypeRef(s_NullRef);
+
+			if (res.getRefName() == s_NullRef.getRefName())
+				return {};
+
+			return boost::python::object(res);
+		}
+
+		return {};
+	}
+
 	static boost::python::list Tags_getTagItemsList(const rg3::cpp::Tags& tags)
 	{
 		boost::python::list l;
@@ -103,6 +113,11 @@ namespace rg3::pybind::wrappers
 		}
 
 		return l;
+	}
+
+	static boost::python::str CppIncludeInfo_getPath(const rg3::llvm::IncludeInfo& ii)
+	{
+		return boost::python::str(ii.sFsLocation.string());
 	}
 }
 
@@ -164,6 +179,7 @@ BOOST_PYTHON_MODULE(rg3py)
 		.def("as_float", make_function(&rg3::cpp::TagArgument::asFloat, return_value_policy<return_by_value>()))
 		.def("as_i64", make_function(&rg3::cpp::TagArgument::asI64, return_value_policy<return_by_value>()))
 		.def("as_string", make_function(&rg3::cpp::TagArgument::asString, return_value_policy<return_by_value>()))
+		.def("as_type_ref", &rg3::pybind::wrappers::TagArgument_getAsTypeReference)
 	;
 
 	class_<rg3::cpp::Tag>("Tag")
@@ -182,7 +198,6 @@ BOOST_PYTHON_MODULE(rg3py)
 
 	class_<rg3::cpp::TypeReference>("CppTypeReference")
 		.add_property("name", &rg3::pybind::wrappers::CppTypeReference_getTypeName)
-		.add_property("info", &rg3::pybind::wrappers::CppTypeReference_getTypeInfo)
 	;
 
 	class_<rg3::cpp::EnumEntry>("CppEnumEntry")
@@ -232,8 +247,8 @@ BOOST_PYTHON_MODULE(rg3py)
 
 	class_<rg3::llvm::IncludeInfo>("CppIncludeInfo")
 		.def(init<std::string, rg3::llvm::IncludeKind>(args("path", "kind")))
-		.add_property("path", make_getter(&rg3::llvm::IncludeInfo::sFsLocation))
-		.add_property("kind", make_getter(&rg3::llvm::IncludeInfo::eKind))
+		.add_property("path", &rg3::pybind::wrappers::CppIncludeInfo_getPath, "Path to C/C++ source header")
+		.add_property("kind", make_getter(&rg3::llvm::IncludeInfo::eKind), "Kind of header")
 	;
 
 	enum_<rg3::llvm::AnalyzerResult::CompilerIssue::IssueKind>("CppCompilerIssueKind")
@@ -276,7 +291,7 @@ BOOST_PYTHON_MODULE(rg3py)
 		.add_property("functions", make_function(&rg3::pybind::PyTypeClass::pyGetClassFunctions, return_value_policy<copy_const_reference>()), "Class functions")
 		.add_property("is_struct", &rg3::pybind::PyTypeClass::pyIsStruct)
 		.add_property("is_trivial_constructible", &rg3::pybind::PyTypeClass::pyIsTriviallyConstructible)
-		.add_property("parent_types", make_function(&rg3::pybind::PyTypeClass::pyGetClassParentsTypeNamesList, return_value_policy<copy_const_reference>()))
+		.add_property("parent_types", make_function(&rg3::pybind::PyTypeClass::pyGetClassParentTypeRefs, return_value_policy<copy_const_reference>()))
 	;
 
 	class_<rg3::pybind::PyCodeAnalyzerBuilder, boost::noncopyable, boost::shared_ptr<rg3::pybind::PyCodeAnalyzerBuilder>>("CodeAnalyzer", no_init)
@@ -331,6 +346,9 @@ BOOST_PYTHON_MODULE(rg3py)
 		.def("set_compiler_args", &rg3::pybind::PyAnalyzerContext::setCompilerArgs)
 		.def("set_compiler_defs", &rg3::pybind::PyAnalyzerContext::setCompilerDefs)
 		.def("analyze", &rg3::pybind::PyAnalyzerContext::analyze)
+
+		// Resolvers
+		.def("get_type_by_reference", &rg3::pybind::PyAnalyzerContext::pyGetTypeOfTypeReference)
 	;
 
 	class_<rg3::pybind::PyClangRuntime, boost::noncopyable>("ClangRuntime")

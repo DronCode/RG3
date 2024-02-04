@@ -58,6 +58,7 @@ namespace rg3::cpp
 		[[nodiscard]] bool isStruct() const;
 		[[nodiscard]] bool isTrivialConstructible() const;
 		[[nodiscard]] const std::vector<TypeReference>& getParentTypes() const;
+		[[nodiscard]] std::vector<TypeReference>& getParentTypes();
 
 	 protected:
 		bool doAreSame(const TypeBase* pOther) const override;

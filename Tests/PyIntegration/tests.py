@@ -1,3 +1,4 @@
+from typing import Optional
 import pytest
 import rg3py
 
@@ -93,3 +94,88 @@ def test_code_struct():
     assert len(struct0.properties[1].tags.get_tag('property').arguments) == 1
     assert str(struct0.properties[1].tags.get_tag('property').arguments[0]) == 'Awesome'
     assert struct0.properties[1].type_info.name == 'bool'
+
+
+def test_analyzer_context_sample():
+    analyzer_context: rg3py.AnalyzerContex = rg3py.AnalyzerContext.make()
+
+    analyzer_context.set_headers(["samples/Header1.h"])
+    analyzer_context.set_include_directories([rg3py.CppIncludeInfo("samples", rg3py.CppIncludeKind.IK_PROJECT)])
+
+    analyzer_context.cpp_standard = rg3py.CppStandard.CXX_20
+    analyzer_context.set_compiler_args(["-x", "c++-header"])
+    analyzer_context.set_workers_count(2)
+
+    analyzer_result: bool = analyzer_context.analyze()
+    assert analyzer_result
+
+    assert len(analyzer_context.issues) == 0
+    assert len(analyzer_context.types) == 2
+
+    # First type
+    assert analyzer_context.types[0].name == "Type1Serializer"
+    assert analyzer_context.types[0].kind == rg3py.CppTypeKind.TK_STRUCT_OR_CLASS
+    assert analyzer_context.types[0].kind == rg3py.CppTypeKind.TK_STRUCT_OR_CLASS
+    assert analyzer_context.types[0].tags.has_tag('runtime')
+
+    assert analyzer_context.types[1].name == "Type1"
+    assert analyzer_context.types[1].kind == rg3py.CppTypeKind.TK_STRUCT_OR_CLASS
+    assert analyzer_context.types[1].tags.has_tag('runtime')
+    assert analyzer_context.types[1].tags.has_tag('serializer')
+    assert analyzer_context.types[1].tags.get_tag('serializer').arguments[0].as_type_ref().name == "samples::my_cool_sample::Type1Serializer"
+
+    # Check that type resolvable
+    resolved: Optional[rg3py.CppBaseType] = analyzer_context.get_type_by_reference(analyzer_context.types[1].tags.get_tag('serializer').arguments[0].as_type_ref())
+    assert resolved is not None
+
+    assert resolved.name == "Type1Serializer"
+    assert resolved.hash == analyzer_context.types[0].hash
+    assert resolved.pretty_name == analyzer_context.types[0].pretty_name
+
+
+def test_check_analyzer_context_error_handling():
+    analyzer_context: rg3py.AnalyzerContex = rg3py.AnalyzerContext.make()
+
+    analyzer_context.set_headers(["samples/HeaderWithError.h"])
+    analyzer_context.set_include_directories([rg3py.CppIncludeInfo("samples", rg3py.CppIncludeKind.IK_PROJECT)])
+
+    analyzer_context.cpp_standard = rg3py.CppStandard.CXX_20
+    analyzer_context.set_compiler_args(["-x", "c++-header"])
+
+    analyzer_context.analyze()
+    assert len(analyzer_context.issues) == 1
+    assert analyzer_context.issues[0].kind == rg3py.CppCompilerIssueKind.IK_ERROR
+    assert analyzer_context.issues[0].message == 'He he error here))'
+
+
+# noinspection PyTypeChecker
+def test_check_parent_types_resolver():
+    analyzer_context: rg3py.AnalyzerContex = rg3py.AnalyzerContext.make()
+
+    analyzer_context.set_headers(["samples/HeaderWithMultipleInheritance.h"])
+    analyzer_context.set_include_directories([rg3py.CppIncludeInfo("samples", rg3py.CppIncludeKind.IK_PROJECT)])
+
+    analyzer_context.cpp_standard = rg3py.CppStandard.CXX_20
+    analyzer_context.set_compiler_args(["-x", "c++-header"])
+
+    analyzer_context.analyze()
+
+    assert len(analyzer_context.issues) == 0
+    assert len(analyzer_context.types) == 2
+
+    assert analyzer_context.types[0].pretty_name == "Parent"
+    assert analyzer_context.types[0].kind == rg3py.CppTypeKind.TK_STRUCT_OR_CLASS
+
+    assert analyzer_context.types[1].pretty_name == "Child"
+    assert analyzer_context.types[1].kind == rg3py.CppTypeKind.TK_STRUCT_OR_CLASS
+
+    c1: rg3py.CppClass = analyzer_context.types[0]
+    c2: rg3py.CppClass = analyzer_context.types[1]
+
+    assert len(c1.parent_types) == 0
+    assert len(c2.parent_types) == 1
+
+    c_parent: Optional[rg3py.CppBaseType] = analyzer_context.get_type_by_reference(c2.parent_types[0])
+    assert c_parent is not None
+    assert c_parent.hash == analyzer_context.types[0].hash
+    assert c_parent.pretty_name == analyzer_context.types[0].pretty_name

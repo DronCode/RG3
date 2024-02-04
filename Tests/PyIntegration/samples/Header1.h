@@ -12,7 +12,7 @@ namespace samples::my_cool_sample
 
     /**
      * @runtime
-     * @serializer(Type1Serializer)
+     * @serializer(@samples::my_cool_sample::Type1Serializer)
      **/
     struct Type1
     {

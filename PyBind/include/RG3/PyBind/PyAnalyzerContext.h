@@ -72,6 +72,8 @@ namespace rg3::pybind
 		void setIgnoreRuntimeTag(bool bIgnoreRT);
 		bool isRuntimeTagIgnored() const;
 
+		boost::python::object pyGetTypeOfTypeReference(const rg3::cpp::TypeReference& typeReference);
+
 		[[nodiscard]] const boost::python::list& getFoundIssues() const;
 		[[nodiscard]] const boost::python::list& getFoundTypes() const;
 
@@ -83,12 +85,6 @@ namespace rg3::pybind
 		 * @note When bShouldWait is true, function will return true when all analyzer thread will be finished
 		 */
 		bool analyze();
-
-		/**
-		 * @fn waitFinish
-		 * @brief Lock current thread until all execution thread will be finished
-		 */
-		void waitFinish();
 
 		/**
 		 * @fn isFinished

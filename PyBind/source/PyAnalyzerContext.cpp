@@ -25,8 +25,7 @@ namespace rg3::pybind
 	 * Stop current thread. Just return from internal loop
 	 */
 	struct StopWorkerTask
-	{
-		// Empty, nothing to store here
+	{;
 	};
 
 	/**
@@ -140,8 +139,8 @@ namespace rg3::pybind
 			for (int i = 0; i < workersAmount; i++)
 			{
 				workers.emplace_back(
-					[this]() {
-						workerEntryPoint();
+					[this, iWorkerIndex = static_cast<size_t>(i)]() {
+						workerEntryPoint(iWorkerIndex);
 					}
 				);
 			}
@@ -159,7 +158,7 @@ namespace rg3::pybind
 		}
 
 	 private:
-		void workerEntryPoint()
+		void workerEntryPoint(size_t iWorkerId)
 		{
 			struct Visitor
 			{
@@ -171,7 +170,7 @@ namespace rg3::pybind
 					// Do nothing
 				}
 
-				void operator()(const StopWorkerTask&)
+				void operator()(const StopWorkerTask& task)
 				{
 					// Stop current loop
 					if (stopFlag != nullptr)
@@ -408,20 +407,36 @@ namespace rg3::pybind
 		return m_bIgnoreRuntimeTag;
 	}
 
+	boost::python::object PyAnalyzerContext::pyGetTypeOfTypeReference(const rg3::cpp::TypeReference& typeReference)
+	{
+		// Try to find by type name
+		if (auto it = m_pySubjects.vFoundTypeInstances.find(typeReference.getRefName()); it != m_pySubjects.vFoundTypeInstances.end())
+		{
+			return boost::python::object(it->second);
+		}
+
+		// Idk, None itself
+		return {};
+	}
+
 	const boost::python::list& PyAnalyzerContext::getFoundIssues() const
 	{
-		static boost::python::list s_List;
 		if (!isFinished())
+		{
+			static boost::python::list s_List;
 			return s_List;
+		}
 
 		return m_pySubjects.pyFoundIssues;
 	}
 
 	const boost::python::list& PyAnalyzerContext::getFoundTypes() const
 	{
-		static boost::python::list s_List;
 		if (!isFinished())
+		{
+			static boost::python::list s_List;
 			return s_List;
+		}
 
 		return m_pySubjects.pyFoundTypes;
 	}
@@ -438,14 +453,9 @@ namespace rg3::pybind
 		return bResult;
 	}
 
-	void PyAnalyzerContext::waitFinish()
-	{
-		m_bInProgress.wait(true);
-	}
-
 	bool PyAnalyzerContext::isFinished() const
 	{
-		return m_bInProgress;
+		return m_bInProgress == false;
 	}
 
 	bool PyAnalyzerContext::runAnalyze()
@@ -467,19 +477,22 @@ namespace rg3::pybind
 			}
 
 			// And spawn 'stop' tasks. +2 should be enough
-			for (int i = 0; i < (m_iWorkersAmount + 2); i++)
+			for (size_t i = 0; i < m_iWorkersAmount; i++)
 			{
 				transaction.pushTask(StopWorkerTask {});
 			}
 		}
 
-		// Re-create workers and run analyzer
+		// Re-create workers and run analyze
 		if (m_pContext->runWorkers(m_iWorkersAmount))
 		{
 			m_pContext->waitAll();
+
+			// Everything is fine
+			return resolveTypeReferences();
 		}
 
-		return resolveTypeReferences();
+		return false;
 	}
 
 	void PyAnalyzerContext::pushResolverIssue(const ResolverContext& context, std::string&& errorMessage)
@@ -555,6 +568,23 @@ namespace rg3::pybind
 
 					if (!resolveTags(resolverContext, classFunction.vTags))
 					{
+						return false;
+					}
+				}
+
+				// Resolve parent type refs
+				for (auto& parentType : pClassNative->getParentTypes())
+				{
+					resolverContext.eSpace = ResolverContext::ContextSpace::CS_TYPE;
+
+					if (auto it = m_pySubjects.vFoundTypeInstances.find(parentType.getRefName()); it != m_pySubjects.vFoundTypeInstances.end())
+					{
+						// parent type found
+						parentType.setResolvedType(it->second->getNative().get());
+					}
+					else
+					{
+						pushResolverIssue(resolverContext, std::format("Failed to find parent type '{}'", parentType.getRefName()));
 						return false;
 					}
 				}
