@@ -179,3 +179,47 @@ def test_check_parent_types_resolver():
     assert c_parent is not None
     assert c_parent.hash == analyzer_context.types[0].hash
     assert c_parent.pretty_name == analyzer_context.types[0].pretty_name
+
+
+def test_check_base_types():
+    analyzer: rg3py.CodeAnalyzer = rg3py.CodeAnalyzer.make()
+
+    analyzer.set_code("""
+            #include <cstdint>
+            
+            /// @runtime
+            struct MyCoolStruct {
+                bool b8;
+                uint8_t u8;
+                int8_t i8;
+                uint16_t u16;
+                int16_t i16;
+                uint32_t u32;
+                int32_t i32;
+                float f32;
+                uint64_t u64;
+                int64_t i64;
+                double f64;
+                size_t sz;
+            };
+            """)
+    analyzer.set_cpp_standard(rg3py.CppStandard.CXX_17)
+    analyzer.analyze()
+
+    assert len(analyzer.issues) == 0
+
+    c_class: rg3py.CppClass = analyzer.types[0]
+
+    assert len(c_class.properties) == 12
+    assert c_class.properties[0].type_info.name == "bool"
+    assert c_class.properties[1].type_info.name == "uint8_t"
+    assert c_class.properties[2].type_info.name == "int8_t"
+    assert c_class.properties[3].type_info.name == "uint16_t"
+    assert c_class.properties[4].type_info.name == "int16_t"
+    assert c_class.properties[5].type_info.name == "uint32_t"
+    assert c_class.properties[6].type_info.name == "int32_t"
+    assert c_class.properties[7].type_info.name == "float"
+    assert c_class.properties[8].type_info.name == "uint64_t"
+    assert c_class.properties[9].type_info.name == "int64_t"
+    assert c_class.properties[10].type_info.name == "double"
+    assert c_class.properties[11].type_info.name == "size_t"
