@@ -2,9 +2,74 @@
 #include <RG3/Cpp/BuiltinTags.h>
 #include <RG3/LLVM/Utils.h>
 
+#include <clang/Basic/SourceLocation.h>
+#include <clang/Basic/SourceManager.h>
+#include <clang/AST/Decl.h>
+
 
 namespace rg3::llvm::visitors
 {
+	static void fillTypeStatementFromQualType(rg3::cpp::TypeStatement& typeStatement, clang::QualType qt, clang::SourceManager& sm)
+	{
+		typeStatement.sTypeRef = cpp::TypeReference(rg3::llvm::Utils::getNormalizedTypeRef(qt.getAsString()));
+		typeStatement.bIsConst = qt.isConstQualified();
+
+		if (qt->isPointerType() || qt->isReferenceType())
+		{
+			typeStatement.bIsPointer = qt->isPointerType();
+			typeStatement.bIsReference = qt->isReferenceType();
+			typeStatement.sTypeRef = cpp::TypeReference(rg3::llvm::Utils::getNormalizedTypeRef(qt->getPointeeType().getUnqualifiedType().getAsString()));
+			typeStatement.bIsPtrConst = qt->getPointeeType().isConstQualified();
+		}
+
+		if (qt->getAs<clang::TemplateSpecializationType>())
+		{
+			typeStatement.bIsTemplateSpecialization = true;
+		}
+
+		// Try extract location info
+		const clang::Type* pType = qt.getTypePtr();
+		if (const auto* pRecord = pType->getAs<clang::RecordType>())
+		{
+			const clang::RecordDecl* pRecordDecl = pRecord->getDecl();
+			if (pRecordDecl)
+			{
+				clang::SourceLocation location = pRecordDecl->getLocation();
+				clang::PresumedLoc presumedLoc = sm.getPresumedLoc(location);
+
+				if (presumedLoc.isValid())
+				{
+					typeStatement.sDefinitionLocation.emplace(
+						std::filesystem::path(presumedLoc.getFilename()),
+						presumedLoc.getLine(),
+						presumedLoc.getColumn()
+					);
+
+					/*
+					 * Maybe it's better, who knows...
+					typeStatement.sDefinitionLocation.emplace(
+							std::filesystem::path(presumedLoc.getIncludeLoc().printToString(sm)),
+							presumedLoc.getLine(),
+							presumedLoc.getColumn()
+					);
+					 */
+				}
+			}
+		}
+	}
+
+	static void fillTypeStatementFromLLVMEntry(rg3::cpp::TypeStatement& typeStatement, clang::CXXMethodDecl* cxxMethodDecl)
+	{
+		clang::QualType qt = cxxMethodDecl->getReturnType();
+		fillTypeStatementFromQualType(typeStatement, qt, cxxMethodDecl->getASTContext().getSourceManager());
+	}
+
+	static void fillTypeStatementFromLLVMEntry(rg3::cpp::TypeStatement& typeStatement, clang::FieldDecl* fieldDecl)
+	{
+		clang::QualType qt = fieldDecl->getType();
+		fillTypeStatementFromQualType(typeStatement, qt, fieldDecl->getASTContext().getSourceManager());
+	}
+
 	CxxClassTypeVisitor::CxxClassTypeVisitor(const rg3::llvm::CompilerConfig& cc)
 		: compilerConfig(cc)
 	{
@@ -67,10 +132,12 @@ namespace rg3::llvm::visitors
 	{
 		// Save field info
 		cpp::ClassProperty& newProperty = foundProperties.emplace_back();
-
 		newProperty.sAlias = newProperty.sName = cxxFieldDecl->getNameAsString();
-		newProperty.sTypeName = cpp::TypeReference(rg3::llvm::Utils::getNormalizedTypeRef(cxxFieldDecl->getType().getAsString()));
 
+		// Fill type info (and decl info)
+		fillTypeStatementFromLLVMEntry(newProperty.sTypeInfo, cxxFieldDecl);
+
+		// Save other info
 		clang::ASTContext& ctx = cxxFieldDecl->getASTContext();
 		clang::SourceManager& sm = ctx.getSourceManager();
 
@@ -117,6 +184,25 @@ namespace rg3::llvm::visitors
 		}
 
 		newFunction.eVisibility = Utils::getDeclVisibilityLevel(cxxMethodDecl);
+
+		// Extract return type
+		fillTypeStatementFromLLVMEntry(newFunction.sReturnType, cxxMethodDecl);
+
+		// Extract function arguments
+		for (auto it = cxxMethodDecl->param_begin(); it != cxxMethodDecl->param_end(); ++it)
+		{
+			const clang::ParmVarDecl* pParam = (*it);
+			cpp::FunctionArgument& newArgument = newFunction.vArguments.emplace_back();
+
+			// Extract type info
+			fillTypeStatementFromQualType(newArgument.sType, pParam->getType(), sm);
+
+			// Save arg name
+			newArgument.sArgumentName = pParam->getNameAsString();
+
+			// Save info about default value
+			newArgument.bHasDefaultValue = pParam->hasDefaultArg();
+		}
 
 		return true;
 	}

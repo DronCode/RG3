@@ -84,7 +84,7 @@ def test_code_struct():
     assert str(struct0.properties[0].tags.get_tag('my_prop').arguments[0]) == '123'
     assert str(struct0.properties[0].tags.get_tag('my_prop').arguments[1]) == '321'
     assert str(struct0.properties[0].tags.get_tag('my_prop').arguments[2]) == 'True'
-    assert struct0.properties[0].type_info.name == 'int'
+    assert struct0.properties[0].type_info.type_ref.name == 'int'
 
     assert struct0.properties[1].name == "b8"
     assert struct0.properties[1].alias == "Awesome"
@@ -93,7 +93,7 @@ def test_code_struct():
     assert 'property' in struct0.properties[1].tags
     assert len(struct0.properties[1].tags.get_tag('property').arguments) == 1
     assert str(struct0.properties[1].tags.get_tag('property').arguments[0]) == 'Awesome'
-    assert struct0.properties[1].type_info.name == 'bool'
+    assert struct0.properties[1].type_info.get_name() == 'bool'
 
 
 def test_analyzer_context_sample():
@@ -214,15 +214,87 @@ def test_check_base_types():
     c_class: rg3py.CppClass = analyzer.types[0]
 
     assert len(c_class.properties) == 12
-    assert c_class.properties[0].type_info.name == "bool"
-    assert c_class.properties[1].type_info.name == "uint8_t"
-    assert c_class.properties[2].type_info.name == "int8_t"
-    assert c_class.properties[3].type_info.name == "uint16_t"
-    assert c_class.properties[4].type_info.name == "int16_t"
-    assert c_class.properties[5].type_info.name == "uint32_t"
-    assert c_class.properties[6].type_info.name == "int32_t"
-    assert c_class.properties[7].type_info.name == "float"
-    assert c_class.properties[8].type_info.name == "uint64_t"
-    assert c_class.properties[9].type_info.name == "int64_t"
-    assert c_class.properties[10].type_info.name == "double"
-    assert c_class.properties[11].type_info.name == "size_t"
+    assert c_class.properties[0].type_info.get_name() == "bool"
+    assert c_class.properties[1].type_info.get_name() == "uint8_t"
+    assert c_class.properties[2].type_info.get_name() == "int8_t"
+    assert c_class.properties[3].type_info.get_name() == "uint16_t"
+    assert c_class.properties[4].type_info.get_name() == "int16_t"
+    assert c_class.properties[5].type_info.get_name() == "uint32_t"
+    assert c_class.properties[6].type_info.get_name() == "int32_t"
+    assert c_class.properties[7].type_info.get_name() == "float"
+    assert c_class.properties[8].type_info.get_name() == "uint64_t"
+    assert c_class.properties[9].type_info.get_name() == "int64_t"
+    assert c_class.properties[10].type_info.get_name() == "double"
+    assert c_class.properties[11].type_info.get_name() == "size_t"
+
+
+def test_check_field_decl_type_info():
+    """
+    Very basic test. Check that we can handle types (custom and builtin)
+    """
+    analyzer: rg3py.CodeAnalyzer = rg3py.CodeAnalyzer.make()
+
+    analyzer.set_code("""
+                struct SomeType {};
+    
+                /// @runtime
+                struct MyCoolStruct {
+                    /// @property(MyProp)
+                    const int* pFieldPtr { nullptr };
+                    
+                    /// @property
+                    SomeType s_Entry;
+                    
+                    /// @property
+                    int& g_Health;
+                };
+                """)
+
+    analyzer.set_compiler_args(["-x", "c++-header"])
+    analyzer.set_cpp_standard(rg3py.CppStandard.CXX_20)
+    analyzer.analyze()
+
+    assert len(analyzer.issues) == 0
+    assert len(analyzer.types) == 1
+
+    assert analyzer.types[0].name == "MyCoolStruct"
+    assert analyzer.types[0].kind == rg3py.CppTypeKind.TK_STRUCT_OR_CLASS
+
+    c_class: rg3py.CppClass = analyzer.types[0]
+    assert len(c_class.properties) == 3
+    assert len(c_class.functions) == 0
+    assert c_class.properties[0].name == "pFieldPtr"
+    assert c_class.properties[0].alias == "MyProp"
+    assert c_class.properties[0].type_info.is_const is False
+    assert c_class.properties[0].type_info.is_const_ptr is True
+    assert c_class.properties[0].type_info.is_ptr is True
+    assert c_class.properties[0].type_info.is_ref is False
+    assert c_class.properties[0].type_info.is_template is False
+    assert c_class.properties[0].type_info.is_void is False
+    assert c_class.properties[0].type_info.location is None
+    assert c_class.properties[0].type_info.get_name() == "int"
+
+    assert c_class.properties[1].name == "s_Entry"
+    assert c_class.properties[1].alias == "s_Entry"
+    assert c_class.properties[1].type_info.location is not None
+    assert c_class.properties[1].type_info.location.path == "id0.hpp"
+    # Line & column not checking, it's UB in some cases
+    assert c_class.properties[1].type_info.is_const is False
+    assert c_class.properties[1].type_info.is_const_ptr is False
+    assert c_class.properties[1].type_info.is_ptr is False
+    assert c_class.properties[1].type_info.is_ref is False
+    assert c_class.properties[1].type_info.is_void is False
+    assert c_class.properties[1].type_info.is_template is False
+    assert c_class.properties[1].type_info.get_name() == "SomeType"
+
+    assert c_class.properties[2].name == "g_Health"
+    assert c_class.properties[2].alias == "g_Health"
+    assert c_class.properties[2].type_info.is_const is False
+    assert c_class.properties[2].type_info.is_const_ptr is False
+    assert c_class.properties[2].type_info.is_ptr is False
+    assert c_class.properties[2].type_info.is_ref is True
+    assert c_class.properties[2].type_info.is_template is False
+    assert c_class.properties[2].type_info.is_void is False
+    assert c_class.properties[2].type_info.location is None
+    assert c_class.properties[2].type_info.type_ref.name == "int"
+

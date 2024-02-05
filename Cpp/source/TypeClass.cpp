@@ -3,15 +3,54 @@
 
 namespace rg3::cpp
 {
+	const TypeStatement TypeStatement::g_sVoid {
+		TypeReference("void", nullptr),
+		std::nullopt,
+		false, false, false, false
+	};
+
+	bool TypeStatement::isVoid() const
+	{
+		return sTypeRef.getRefName() == "void" && !bIsPointer;
+	}
+
+	bool TypeStatement::operator==(const TypeStatement& other) const
+	{
+		return sTypeRef == other.sTypeRef &&
+			   sDefinitionLocation == other.sDefinitionLocation &&
+			   bIsConst == other.bIsConst &&
+			   bIsPtrConst == other.bIsPtrConst &&
+			   bIsPointer == other.bIsPointer &&
+			   bIsReference == other.bIsReference &&
+			   bIsTemplateSpecialization == other.bIsTemplateSpecialization;
+	}
+
+	bool TypeStatement::operator!=(const TypeStatement& other) const
+	{
+		return !operator==(other);
+	}
+
 	bool ClassProperty::operator==(const ClassProperty& other) const
 	{
 		return  sName == other.sName &&
 				sAlias == other.sAlias &&
-				sTypeName == other.sTypeName &&
+			    sTypeInfo == other.sTypeInfo &&
 				eVisibility == other.eVisibility;
 	}
 
 	bool ClassProperty::operator!=(const ClassProperty& other) const
+	{
+		return !operator==(other);
+	}
+
+	bool FunctionArgument::operator==(const FunctionArgument& other) const
+	{
+		return sType == other.sType &&
+			   sArgumentName == other.sArgumentName &&
+			   bHasDefaultValue == other.bHasDefaultValue;
+	}
+
+	bool FunctionArgument::operator!=(const FunctionArgument& other) const
 	{
 		return !operator==(other);
 	}
@@ -21,7 +60,9 @@ namespace rg3::cpp
 		return  sName == other.sName &&
 				sOwnerClassName == other.sOwnerClassName &&
 				eVisibility == other.eVisibility &&
-				bIsStatic == other.bIsStatic;
+				bIsStatic == other.bIsStatic &&
+				sReturnType == other.sReturnType &&
+			    vArguments == other.vArguments;
 	}
 
 	bool ClassFunction::operator!=(const ClassFunction& other) const

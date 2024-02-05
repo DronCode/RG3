@@ -84,7 +84,7 @@ struct Sample
 	auto asClass = static_cast<const rg3::cpp::TypeClass*>(analyzeResult.vFoundTypes[0].get());
 	ASSERT_EQ(asClass->getProperties().size(), 2);
 	ASSERT_EQ(asClass->getProperties()[0].sName, "b8");
-	ASSERT_EQ(asClass->getProperties()[0].sTypeName.getRefName(), "bool");
+	ASSERT_EQ(asClass->getProperties()[0].sTypeInfo.sTypeRef.getRefName(), "bool");
 	ASSERT_EQ(asClass->getProperties()[1].sName, "sz");
-	ASSERT_EQ(asClass->getProperties()[1].sTypeName.getRefName(), "size_t");
+	ASSERT_EQ(asClass->getProperties()[1].sTypeInfo.sTypeRef.getRefName(), "size_t");
 }

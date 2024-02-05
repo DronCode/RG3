@@ -25,11 +25,31 @@ namespace rg3::cpp
 		IV_VIRTUAL = 3  ///< virtual inheritance
 	};
 
+	struct TypeStatement
+	{
+		TypeReference sTypeRef {};
+		std::optional<DefinitionLocation> sDefinitionLocation {};
+		bool bIsConst { false };
+		bool bIsPointer { false };
+		bool bIsPtrConst { false };
+		bool bIsReference { false };
+		bool bIsTemplateSpecialization { false };
+
+		static const TypeStatement g_sVoid; // globally known void type
+
+		bool isVoid() const;
+
+		bool operator==(const TypeStatement& other) const;
+		bool operator!=(const TypeStatement& other) const;
+	};
+
+	using TypeStatementVector = std::vector<TypeStatement>;
+
 	struct ClassProperty
 	{
 		std::string sName {};
 		std::string sAlias {};
-		TypeReference sTypeName {};
+		TypeStatement sTypeInfo {};
 		ClassEntryVisibility eVisibility { ClassEntryVisibility::CEV_PRIVATE };
 		Tags vTags {};
 
@@ -37,12 +57,27 @@ namespace rg3::cpp
 		bool operator!=(const ClassProperty& other) const;
 	};
 
+	struct FunctionArgument
+	{
+		TypeStatement sType {};
+		std::string sArgumentName {};
+		bool bHasDefaultValue { false };
+
+		bool operator==(const FunctionArgument& other) const;
+		bool operator!=(const FunctionArgument& other) const;
+	};
+
+	using FunctionArgumentsVector = std::vector<FunctionArgument>;
+
 	struct ClassFunction
 	{
 		std::string sName {}; /// Name of function
 		std::string sOwnerClassName {}; /// Owner class name
 		ClassEntryVisibility eVisibility { ClassEntryVisibility::CEV_PRIVATE }; /// Visibility level of entry
 		Tags vTags {}; /// List of tags of function decl
+		TypeStatement sReturnType {}; // Return type of function (or void)
+		FunctionArgumentsVector vArguments {}; // Function arguments
+
 		bool bIsStatic { false }; /// Is static entry
 		bool bIsConst { false }; /// Is const method (for static method doesn't matter)
 

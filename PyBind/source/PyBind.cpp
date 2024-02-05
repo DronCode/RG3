@@ -119,6 +119,33 @@ namespace rg3::pybind::wrappers
 	{
 		return boost::python::str(ii.sFsLocation.string());
 	}
+
+	static boost::python::object TypeStatement_getDefinitionLocation(const rg3::cpp::TypeStatement& stmt)
+	{
+		if (stmt.sDefinitionLocation.has_value())
+		{
+			return boost::python::object(stmt.sDefinitionLocation.value());
+		}
+
+		return {};
+	}
+
+	static boost::python::str TypeStatement_getTypeName(const rg3::cpp::TypeStatement& stmt)
+	{
+		return boost::python::str(stmt.sTypeRef.getRefName());
+	}
+
+	static boost::python::list ClassFunction_getArgumentsList(const rg3::cpp::ClassFunction& classFunction)
+	{
+		boost::python::list l;
+
+		for (const auto& arg : classFunction.vArguments)
+		{
+			l.append(arg);
+		}
+
+		return l;
+	}
 }
 
 
@@ -217,18 +244,35 @@ BOOST_PYTHON_MODULE(rg3py)
 		.add_property("value", make_getter(&rg3::cpp::EnumEntry::iValue), "Value of entry")
 	;
 
-	// TODO: Need create wrapper type PyClassProperty
+	class_<rg3::cpp::TypeStatement>("TypeStatement")
+	    .add_property("type_ref", make_getter(&rg3::cpp::TypeStatement::sTypeRef), "Reference to type info")
+		.add_property("location", &rg3::pybind::wrappers::TypeStatement_getDefinitionLocation)
+		.add_property("is_const", make_getter(&rg3::cpp::TypeStatement::bIsConst), "Is declaration constant")
+		.add_property("is_const_ptr", make_getter(&rg3::cpp::TypeStatement::bIsPtrConst), "Is pointer type with const qualifier (unused when is_ptr is False)")
+		.add_property("is_ptr", make_getter(&rg3::cpp::TypeStatement::bIsPointer), "Is declaration pointer")
+		.add_property("is_ref", make_getter(&rg3::cpp::TypeStatement::bIsReference), "Is declaration reference")
+		.add_property("is_template", make_getter(&rg3::cpp::TypeStatement::bIsTemplateSpecialization), "Is declaration presented via template specialization")
+		.add_property("is_void", &rg3::cpp::TypeStatement::isVoid)
+
+		.def("get_name", &rg3::pybind::wrappers::TypeStatement_getTypeName)
+	;
+
+	class_<rg3::cpp::FunctionArgument>("FunctionArgument")
+		.add_property("type_info", make_getter(&rg3::cpp::FunctionArgument::sType), "Argument type info")
+		.add_property("name", make_getter(&rg3::cpp::FunctionArgument::sArgumentName), "Name of argument")
+		.add_property("has_default_value", make_getter(&rg3::cpp::FunctionArgument::bHasDefaultValue))
+	    ;
+
 	class_<rg3::cpp::ClassProperty>("CppClassProperty")
 		.add_property("name", make_getter(&rg3::cpp::ClassProperty::sName))
 		.add_property("alias", make_getter(&rg3::cpp::ClassProperty::sAlias))
 		.add_property("visibility", make_getter(&rg3::cpp::ClassProperty::eVisibility))
 		.add_property("tags", make_getter(&rg3::cpp::ClassProperty::vTags))
-		.add_property("type_info", make_getter(&rg3::cpp::ClassProperty::sTypeName))
+		.add_property("type_info", make_getter(&rg3::cpp::ClassProperty::sTypeInfo))
 		.def("__eq__", make_function(&rg3::cpp::ClassProperty::operator==, return_value_policy<return_by_value>()))
 		.def("__ne__", make_function(&rg3::cpp::ClassProperty::operator!=, return_value_policy<return_by_value>()))
 	;
 
-	// TODO: Need create wrapper type PyClassProperty
 	class_<rg3::cpp::ClassFunction>("CppClassFunction")
 		.add_property("name", make_getter(&rg3::cpp::ClassFunction::sName))
 		.add_property("owner", make_getter(&rg3::cpp::ClassFunction::sOwnerClassName))
@@ -236,6 +280,8 @@ BOOST_PYTHON_MODULE(rg3py)
 		.add_property("tags", make_getter(&rg3::cpp::ClassFunction::vTags))
 		.add_property("is_static", make_getter(&rg3::cpp::ClassFunction::bIsStatic))
 		.add_property("is_const", make_getter(&rg3::cpp::ClassFunction::bIsConst))
+		.add_property("return_type", make_getter(&rg3::cpp::ClassFunction::sReturnType))
+		.add_property("arguments", &rg3::pybind::wrappers::ClassFunction_getArgumentsList)
 		.def("__eq__", make_function(&rg3::cpp::ClassFunction::operator==))
 		.def("__ne__", make_function(&rg3::cpp::ClassFunction::operator!=))
 	;
