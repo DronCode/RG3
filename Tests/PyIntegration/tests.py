@@ -298,3 +298,130 @@ def test_check_field_decl_type_info():
     assert c_class.properties[2].type_info.location is None
     assert c_class.properties[2].type_info.type_ref.name == "int"
 
+
+def test_check_member_function_arguments_and_return_type():
+    """
+        Very basic test. Check that we can handle types (custom and builtin)
+        """
+    analyzer: rg3py.CodeAnalyzer = rg3py.CodeAnalyzer.make()
+
+    analyzer.set_code("""
+                    /// @runtime
+                    struct DamageInfo {
+                        /// @property(vDir)
+                        float direction[3] { .0f };
+                        
+                        /// @property(fPower)
+                        float power { .0f };
+                    };
+
+                    /// @runtime
+                    struct PlanetComponent {
+                        bool RegisterDamage(const DamageInfo& damageInfo);
+                        void MarkAsKilled(bool b_byDamage = false);
+                        
+                        /// @taggable(true)
+                        static DamageInfo* const GetLastKnownDamage();
+                        
+                        bool CanHandleDamage(const DamageInfo* const pDamage = nullptr) const;
+                    };
+                    """)
+
+    analyzer.set_compiler_args(["-x", "c++-header"])
+    analyzer.set_cpp_standard(rg3py.CppStandard.CXX_20)
+    analyzer.analyze()
+
+    assert len(analyzer.issues) == 0
+    assert len(analyzer.types) == 2
+
+    assert analyzer.types[0].name == "DamageInfo"
+    assert analyzer.types[0].kind == rg3py.CppTypeKind.TK_STRUCT_OR_CLASS
+
+    assert analyzer.types[1].name == "PlanetComponent"
+    assert analyzer.types[1].kind == rg3py.CppTypeKind.TK_STRUCT_OR_CLASS
+
+    c_class0: rg3py.CppClass = analyzer.types[0]
+    c_class1: rg3py.CppClass = analyzer.types[1]
+
+    # NOTE: Here we need to support arrays in v0.0.3. For now I'm interpreting this type as float[3]
+    assert len(c_class0.properties) == 2
+    assert len(c_class0.functions) == 0
+    assert c_class0.properties[0].name == 'direction'
+    assert c_class0.properties[0].alias == 'vDir'
+    assert c_class0.properties[0].type_info.get_name() == 'float[3]'
+
+    assert c_class0.properties[1].name == 'power'
+    assert c_class0.properties[1].alias == 'fPower'
+    assert c_class0.properties[1].type_info.get_name() == 'float'
+
+    assert len(c_class1.properties) == 0
+    assert len(c_class1.functions) == 4
+
+    assert c_class1.functions[0].name == 'RegisterDamage'
+    assert c_class1.functions[0].owner == 'PlanetComponent'
+    assert c_class1.functions[0].is_const is False
+    assert c_class1.functions[0].is_static is False
+    assert c_class1.functions[0].return_type.get_name() == 'bool'
+    assert len(c_class1.functions[0].arguments) == 1
+    assert c_class1.functions[0].arguments[0].has_default_value is False
+    assert c_class1.functions[0].arguments[0].name == 'damageInfo'
+    assert c_class1.functions[0].arguments[0].type_info.get_name() == 'DamageInfo'
+    assert c_class1.functions[0].arguments[0].type_info.is_const is False
+    assert c_class1.functions[0].arguments[0].type_info.is_const_ptr is True
+    assert c_class1.functions[0].arguments[0].type_info.is_ptr is False
+    assert c_class1.functions[0].arguments[0].type_info.is_template is False
+    assert c_class1.functions[0].arguments[0].type_info.is_void is False
+    assert c_class1.functions[0].arguments[0].type_info.location is not None
+    assert c_class1.functions[0].arguments[0].type_info.location.path == 'id0.hpp'
+
+    assert c_class1.functions[1].name == 'MarkAsKilled'
+    assert c_class1.functions[1].owner == 'PlanetComponent'
+    assert c_class1.functions[1].is_const is False
+    assert c_class1.functions[1].is_static is False
+    assert c_class1.functions[1].return_type.get_name() == 'void'
+    assert c_class1.functions[1].return_type.is_void is True
+    assert len(c_class1.functions[1].arguments) == 1
+    assert c_class1.functions[1].arguments[0].has_default_value is True
+    assert c_class1.functions[1].arguments[0].name == 'b_byDamage'
+    assert c_class1.functions[1].arguments[0].type_info.get_name() == 'bool'
+    assert c_class1.functions[1].arguments[0].type_info.is_const is False
+    assert c_class1.functions[1].arguments[0].type_info.is_const_ptr is False
+    assert c_class1.functions[1].arguments[0].type_info.is_ptr is False
+    assert c_class1.functions[1].arguments[0].type_info.is_template is False
+    assert c_class1.functions[1].arguments[0].type_info.is_void is False
+    assert c_class1.functions[1].arguments[0].type_info.location is None
+
+    assert c_class1.functions[2].name == 'GetLastKnownDamage'
+    assert c_class1.functions[2].owner == 'PlanetComponent'
+    assert c_class1.functions[2].tags.has_tag('taggable')
+    assert len(c_class1.functions[2].tags.get_tag('taggable').arguments) == 1
+    assert c_class1.functions[2].tags.get_tag('taggable').arguments[0].get_type() == rg3py.TagArgumentType.AT_BOOL
+    assert c_class1.functions[2].tags.get_tag('taggable').arguments[0].as_bool(False) is True
+    assert len(c_class1.functions[2].arguments) == 0
+    assert c_class1.functions[2].return_type.get_name() == "DamageInfo"
+    assert c_class1.functions[2].return_type.is_const is True
+    assert c_class1.functions[2].return_type.is_const_ptr is False
+    assert c_class1.functions[2].return_type.is_ptr is True
+    assert c_class1.functions[2].return_type.is_ref is False
+    assert c_class1.functions[2].return_type.is_void is False
+    assert c_class1.functions[2].return_type.location is not None
+    assert c_class1.functions[2].return_type.location.path == "id0.hpp"
+    assert c_class1.functions[2].return_type.type_ref.name == "DamageInfo"
+    assert c_class1.functions[2].is_static is True
+    assert c_class1.functions[2].is_const is False
+
+    assert c_class1.functions[3].name == 'CanHandleDamage'
+    assert c_class1.functions[3].return_type.get_name() == "bool"
+    assert c_class1.functions[3].return_type.location is None
+    assert c_class1.functions[3].is_const is True
+    assert c_class1.functions[3].is_static is False
+    assert len(c_class1.functions[3].arguments) == 1
+    assert c_class1.functions[3].arguments[0].name == "pDamage"
+    assert c_class1.functions[3].arguments[0].has_default_value is True
+    assert c_class1.functions[3].arguments[0].type_info.get_name() == "DamageInfo"
+    assert c_class1.functions[3].arguments[0].type_info.is_const is True
+    assert c_class1.functions[3].arguments[0].type_info.is_const_ptr is True
+    assert c_class1.functions[3].arguments[0].type_info.is_void is False
+    assert c_class1.functions[3].arguments[0].type_info.is_template is False
+    assert c_class1.functions[3].arguments[0].type_info.is_ptr is True
+    assert c_class1.functions[3].arguments[0].type_info.is_ref is False

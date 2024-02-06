@@ -28,7 +28,7 @@ namespace rg3::llvm::visitors
 		}
 
 		// Try extract location info
-		const clang::Type* pType = qt.getTypePtr();
+		const clang::Type* pType = typeStatement.bIsReference || typeStatement.bIsPointer ? qt->getPointeeType().getUnqualifiedType().getTypePtr() : qt.getTypePtr();
 		if (const auto* pRecord = pType->getAs<clang::RecordType>())
 		{
 			const clang::RecordDecl* pRecordDecl = pRecord->getDecl();

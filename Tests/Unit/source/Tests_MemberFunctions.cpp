@@ -75,3 +75,96 @@ namespace my_cool_space
 	ASSERT_EQ(asClass->getFunctions()[3].bIsStatic, false);
 	ASSERT_EQ(asClass->getFunctions()[3].bIsConst, false);
 }
+
+TEST_F(Tests_MemberFunctions, CheckFunctionArgumentPointerRefQualifiers)
+{
+	g_Analyzer->setSourceCode(R"(
+/// @runtime
+struct Vector3
+{
+	/// @property
+	float x = 0.f;
+
+	/// @property
+	float y = 0.f;
+
+	/// @property
+	float z = 0.f;
+};
+
+/// @runtime
+struct TransformComponent
+{
+	/// @property(vPos)
+	const Vector3 position{};
+
+	void MoveTo(const Vector3& vNewPos);
+	const Vector3& GetPosition() const;
+
+	static bool IsSomething();
+};
+)");
+
+	g_Analyzer->getCompilerConfig().cppStandard = rg3::llvm::CxxStandard::CC_20;
+
+	const auto analyzeResult = g_Analyzer->analyze();
+
+	ASSERT_TRUE(analyzeResult.vIssues.empty()) << "No issues should be here";
+	ASSERT_EQ(analyzeResult.vFoundTypes.size(), 2) << "Only 2 type should be here";
+
+	// First type (check properties)
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getKind(), rg3::cpp::TypeKind::TK_STRUCT_OR_CLASS);
+
+	auto asClass = static_cast<const rg3::cpp::TypeClass*>(analyzeResult.vFoundTypes[0].get()); // NOLINT(*-pro-type-static-cast-downcast)
+	ASSERT_EQ(asClass->getFunctions().size(), 0);
+	ASSERT_EQ(asClass->getProperties().size(), 3);
+
+	ASSERT_EQ(asClass->getProperties()[0].sName, "x");
+	ASSERT_EQ(asClass->getProperties()[0].sTypeInfo.sTypeRef.getRefName(), "float");
+	ASSERT_EQ(asClass->getProperties()[1].sName, "y");
+	ASSERT_EQ(asClass->getProperties()[1].sTypeInfo.sTypeRef.getRefName(), "float");
+	ASSERT_EQ(asClass->getProperties()[2].sName, "z");
+	ASSERT_EQ(asClass->getProperties()[2].sTypeInfo.sTypeRef.getRefName(), "float");
+
+	// Second type (check properties & functions)
+	ASSERT_EQ(analyzeResult.vFoundTypes[1]->getKind(), rg3::cpp::TypeKind::TK_STRUCT_OR_CLASS);
+
+	asClass = static_cast<const rg3::cpp::TypeClass*>(analyzeResult.vFoundTypes[1].get()); // NOLINT(*-pro-type-static-cast-downcast)
+
+	ASSERT_EQ(asClass->getFunctions().size(), 3);
+	ASSERT_EQ(asClass->getProperties().size(), 1);
+
+	ASSERT_EQ(asClass->getProperties()[0].sName, "position");
+	ASSERT_EQ(asClass->getProperties()[0].sAlias, "vPos");
+	ASSERT_EQ(asClass->getProperties()[0].sTypeInfo.bIsConst, true);
+	ASSERT_EQ(asClass->getProperties()[0].sTypeInfo.sDefinitionLocation.has_value(), true);
+	ASSERT_EQ(asClass->getProperties()[0].sTypeInfo.sDefinitionLocation.value().getPath(), "id0.hpp");
+
+	ASSERT_EQ(asClass->getFunctions()[0].sName, "MoveTo");
+	ASSERT_EQ(asClass->getFunctions()[0].sReturnType.isVoid(), true);
+	ASSERT_EQ(asClass->getFunctions()[0].vArguments.size(), 1);
+	ASSERT_EQ(asClass->getFunctions()[0].vArguments[0].bHasDefaultValue, false);
+	ASSERT_EQ(asClass->getFunctions()[0].vArguments[0].sArgumentName, "vNewPos");
+	ASSERT_EQ(asClass->getFunctions()[0].vArguments[0].sType.bIsPtrConst, true);
+	ASSERT_EQ(asClass->getFunctions()[0].vArguments[0].sType.bIsPointer, false);
+	ASSERT_EQ(asClass->getFunctions()[0].vArguments[0].sType.bIsReference, true);
+	ASSERT_EQ(asClass->getFunctions()[0].vArguments[0].sType.sTypeRef.getRefName(), "Vector3");
+	ASSERT_EQ(asClass->getFunctions()[0].vArguments[0].sType.sDefinitionLocation.has_value(), true);
+	ASSERT_EQ(asClass->getFunctions()[0].vArguments[0].sType.sDefinitionLocation.value().getPath(), "id0.hpp");
+
+	ASSERT_EQ(asClass->getFunctions()[1].sName, "GetPosition");
+	ASSERT_EQ(asClass->getFunctions()[1].vArguments.size(), 0);
+	ASSERT_EQ(asClass->getFunctions()[1].sReturnType.isVoid(), false);
+	ASSERT_EQ(asClass->getFunctions()[1].sReturnType.bIsPtrConst, true);
+	ASSERT_EQ(asClass->getFunctions()[1].sReturnType.bIsReference, true);
+	ASSERT_EQ(asClass->getFunctions()[1].sReturnType.bIsPointer, false);
+	ASSERT_EQ(asClass->getFunctions()[1].sReturnType.sDefinitionLocation.has_value(), true);
+	ASSERT_EQ(asClass->getFunctions()[1].sReturnType.sDefinitionLocation.value().getPath(), "id0.hpp");
+	ASSERT_EQ(asClass->getFunctions()[1].sReturnType.sTypeRef.getRefName(), "Vector3");
+	ASSERT_EQ(asClass->getFunctions()[1].bIsConst, true);
+
+	ASSERT_EQ(asClass->getFunctions()[2].sName, "IsSomething");
+	ASSERT_EQ(asClass->getFunctions()[2].vArguments.size(), 0);
+	ASSERT_EQ(asClass->getFunctions()[2].sReturnType.sTypeRef.getRefName(), "bool");
+	ASSERT_EQ(asClass->getFunctions()[2].bIsStatic, true);
+}
