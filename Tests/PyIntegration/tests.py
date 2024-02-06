@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 import pytest
 import rg3py
 
@@ -301,8 +301,8 @@ def test_check_field_decl_type_info():
 
 def test_check_member_function_arguments_and_return_type():
     """
-        Very basic test. Check that we can handle types (custom and builtin)
-        """
+    Very basic test. Check that we can handle types (custom and builtin)
+    """
     analyzer: rg3py.CodeAnalyzer = rg3py.CodeAnalyzer.make()
 
     analyzer.set_code("""
@@ -425,3 +425,11 @@ def test_check_member_function_arguments_and_return_type():
     assert c_class1.functions[3].arguments[0].type_info.is_template is False
     assert c_class1.functions[3].arguments[0].type_info.is_ptr is True
     assert c_class1.functions[3].arguments[0].type_info.is_ref is False
+
+
+def test_check_clang_runtime():
+    assert len(rg3py.ClangRuntime.get_version()) > 0
+    assert "Clang" in rg3py.ClangRuntime.get_version()
+
+    found_inc_paths: List[str] = rg3py.ClangRuntime.detect_system_include_sources()
+    assert len(found_inc_paths) > 1  # NOTE: In windows it usually 8, on macOS and Linux could be less/more.
