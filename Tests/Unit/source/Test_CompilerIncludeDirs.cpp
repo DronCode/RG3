@@ -49,8 +49,8 @@ TEST_F(Tests_CompilerIncludeDirs, CheckStdIncludes)
 	g_Analyzer->getCompilerConfig().vCompilerDefs.emplace_back("ENABLE_STD_TEST_ARGS=1");
 	auto analyzeResult = g_Analyzer->analyze();
 
-	ASSERT_TRUE(analyzeResult.vIssues.empty()) << "No issues should be here";
-	ASSERT_EQ(analyzeResult.vFoundTypes.size(), 1) << "Only 1 type should be here";
+	ASSERT_TRUE(analyzeResult.vIssues.empty()) << "No issues should be here, but found " + std::to_string(analyzeResult.vIssues.size());
+	ASSERT_EQ(analyzeResult.vFoundTypes.size(), 1) << "Only 1 type should be here, but found " + std::to_string(analyzeResult.vFoundTypes.size());
 	// That's enough for this case
 }
 
@@ -76,8 +76,8 @@ struct Sample
 
 	auto analyzeResult = g_Analyzer->analyze();
 
-	ASSERT_TRUE(analyzeResult.vIssues.empty()) << "No issues should be here";
-	ASSERT_EQ(analyzeResult.vFoundTypes.size(), 1) << "Only 1 type should be here";
+	ASSERT_TRUE(analyzeResult.vIssues.empty()) << "No issues should be here, but found " + std::to_string(analyzeResult.vIssues.size());
+	ASSERT_EQ(analyzeResult.vFoundTypes.size(), 1) << "Only 1 type should be here" + std::to_string(analyzeResult.vFoundTypes.size());
 
 	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getPrettyName(), "Sample");
 

@@ -97,6 +97,48 @@ namespace rg3::llvm
 		c.wait();
 		response.append(stdOutResponse);
 		response.append(stdErrResponse);
+#elif defined(__APPLE__)
+		// macOS specific impl
+		bp::ipstream stdErr, stdOut;
+		std::string stdErrLine, stdOutLine, stdErrResponse, stdOutResponse {};
+
+		bp::child c {
+			compilerPath,
+			args,
+			bp::std_err > stdErr,
+			bp::std_out > stdOut
+		};
+
+		bool bCanRead = false;
+		do
+		{
+			auto storeLine = [](std::string& line, std::string& out) {
+				while (!line.empty() && line.back() == '\r')
+					line.pop_back();
+
+				out.append(line);
+				out.push_back('\n');
+			};
+
+			const bool bHasStdErr = static_cast<bool>(std::getline(stdErr, stdErrLine));
+			const bool bHasStdOut = static_cast<bool>(std::getline(stdOut, stdOutLine));
+
+			if (!stdErrLine.empty())
+			{
+				storeLine(stdErrLine, stdErrResponse);
+			}
+
+			if (!stdOutLine.empty())
+			{
+				storeLine(stdOutLine, stdOutResponse);
+			}
+
+			bCanRead = c.running() || bHasStdErr || bHasStdOut;
+		} while (bCanRead);
+
+		c.wait();
+		response.append(stdOutResponse);
+		response.append(stdErrResponse);
 #else
 #		error Unsupported
 #endif
@@ -106,6 +148,7 @@ namespace rg3::llvm
 
 	std::optional<CompilerEnvError> parseClangOutput(CompilerEnvironment& env, const std::string& response)
 	{
+#if defined(_WIN32) || defined(__linux__)
 		// Here we need to parse output
 		// We have 2 blocks:
 		//		#include "..." search starts here:
@@ -144,11 +187,20 @@ namespace rg3::llvm
 				continue;
 			}
 
+			constexpr std::string_view kFrameworkMarker = " (framework directory)";
+			auto frameworkIt = (*it).find(kFrameworkMarker);
+			if (frameworkIt != std::string::npos)
+			{
+				(*it).erase((*it).begin() + frameworkIt, (*it).end() + frameworkIt + kFrameworkMarker.length());
+			}
+
 			// And insert result
 			rg3::llvm::IncludeInfo& ii = env.config.vSystemIncludes.emplace_back();
 
 			ii.sFsLocation = std::filesystem::path { (*it) };
 			ii.eKind = rg3::llvm::IncludeKind::IK_SYSTEM;
+			ii.bIsMacOSFramework = frameworkIt != std::string::npos;
+
 			bAddedAtLeastOneEntry = true;
 
 			++it;
@@ -156,6 +208,64 @@ namespace rg3::llvm
 
 		if (!bAddedAtLeastOneEntry)
 			return CompilerEnvError{ "System includes not found", CompilerEnvError::ErrorKind::EK_NO_SYSTEM_INCLUDE_DIRS_FOUND };
+#elif defined(__APPLE__)
+		// Here we need to lookup for -I, -isysroot, -internal-isystem and -internal-externc-isystem
+		// Also, we able to lookup for frameworks but I'm not sure that this is required for now.
+		bool bAddedAtLeastOneEntry = false;
+
+#if 0
+-isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
+-I/usr/local/include
+-internal-isystem /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1
+-internal-isystem /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/local/include
+-internal-isystem /Library/Developer/CommandLineTools/usr/lib/clang/15.0.0/include
+-internal-externc-isystem /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include
+-internal-externc-isystem /Library/Developer/CommandLineTools/usr/include
+#endif
+
+		// It's pretty stupid approach, but I'll just lookup for expected tokens like
+		struct TokenInfo { std::string_view name {}; IncludeKind kind {}; };
+
+		const std::array<TokenInfo, 4> kExpectedTokens {
+			TokenInfo { "-isysroot ", IncludeKind::IK_SYSROOT },
+			TokenInfo { "-I", IncludeKind::IK_THIRD_PARTY },
+			TokenInfo { "-internal-isystem ", IncludeKind::IK_SYSTEM },
+			TokenInfo { "-internal-externc-isystem ", IncludeKind::IK_C_SYSTEM }
+		};
+
+		for (const auto& [expectedToken, kind] : kExpectedTokens)
+		{
+			size_t lastKnownPos = 0;
+
+			do
+			{
+				// Find token
+				auto it = response.find(expectedToken, lastKnownPos);
+
+				if (it == std::string::npos)
+					break;
+
+				// Find space after token decl
+				auto nextSpaceIt = response.find(' ', (it + expectedToken.length()));
+				if (nextSpaceIt == std::string::npos)
+					break;
+
+				// Collect data
+				bAddedAtLeastOneEntry = true;
+				rg3::llvm::IncludeInfo& ii = env.config.vSystemIncludes.emplace_back();
+
+				// Actually, no frameworks here, but we've able to find a framework later
+				ii.eKind = kind;
+				ii.sFsLocation = std::filesystem::path { response.substr(it + expectedToken.length(), nextSpaceIt - (it + expectedToken.length())) };
+				ii.bIsMacOSFramework = false;
+
+				// Find token since last found place
+				lastKnownPos = nextSpaceIt;
+			} while (true);
+		}
+#else
+#error Unsupported
+#endif
 
 		// now let's try to find triple, on Windows it looks like -triple x86_64-pc-windows-msvc19.35.32217
 		constexpr std::string_view sTripleDecl = "-triple ";
@@ -170,21 +280,42 @@ namespace rg3::llvm
 			}
 		}
 
+#ifdef __APPLE__
+		// Let's try to find -fgnuc-version, -target-sdk-version,
+		constexpr std::string_view sGNUCVersionDecl = "-fgnuc-version=";
+		constexpr std::string_view sTargetSDKVersionDecl = "-target-sdk-version=";
+
+		// extract GNUC version
+		auto gnucIt = response.find(sGNUCVersionDecl);
+		if (gnucIt != std::string::npos)
+		{
+			// find next space
+			auto gnucDeclEndIt = response.find(' ', gnucIt + sGNUCVersionDecl.length());
+			if (gnucDeclEndIt != std::string::npos)
+			{
+				env.macOS_GNUC_Version = response.substr(gnucIt + sGNUCVersionDecl.length(), gnucDeclEndIt - (gnucIt + sGNUCVersionDecl.length()));
+			}
+		}
+
+		// extract target sdk version
+		auto targetSdkIt = response.find(sTargetSDKVersionDecl);
+		if (targetSdkIt != std::string::npos)
+		{
+			// find next space
+			auto targetSdkEndIt = response.find(' ', targetSdkIt + sTargetSDKVersionDecl.length());
+			if (targetSdkEndIt != std::string::npos)
+			{
+				env.macOS_TargetSDK_Version = response.substr(targetSdkIt + sTargetSDKVersionDecl.length(), targetSdkEndIt - (targetSdkIt + sTargetSDKVersionDecl.length()));
+			}
+		}
+#endif
+
 		// End
 		return std::nullopt;
 	}
 
 	CompilerEnvResult CompilerConfigDetector::detectSystemCompilerEnvironment()
 	{
-#if defined(__APPLE__)
-		// On macOS we need to find xcrun instance and then find clang
-		// Smth like "xcrun", "--find", "clang++", nullptr
-		// Also, we need to find all 'frameworks' (macOS specific things)
-
-		//Support it later!
-		return CompilerEnvError { "Current OS not supported yet. See README.md for details!", CompilerEnvError::ErrorKind::EK_UNSUPPORTED_OS };
-#endif
-
 #if defined(_WIN32)
 		constexpr const char* kCompilerInstanceExecutable = "clang++.exe";
 #elif defined(__linux__)
@@ -224,7 +355,8 @@ namespace rg3::llvm
 		if (compilerLocation.empty())
 		{
 			return CompilerEnvError {
-				std::format("Failed to locate {} instance. Please, make sure that your os contains it. (MacOS: check that xcrun available and configured properly!)", kCompilerInstanceExecutable),
+				std::string("Failed to locate ") + kCompilerInstanceExecutable + " instance. Please, make sure that your os contains it.",
+				//std::format("Failed to locate {} instance. Please, make sure that your os contains it.", kCompilerInstanceExecutable),
 				CompilerEnvError::ErrorKind::EK_NO_CLANG_INSTANCE
 			};
 		}
@@ -234,14 +366,18 @@ namespace rg3::llvm
 #elif defined(__linux__)
 		const std::string response = runShellCommand(compilerLocation, { kCompilerInstanceExecutable, "-x", "c++-header", "/dev/null", "-v", "-E" });
 #elif defined(__APPLE__)
-		const std::string response = runShellCommand(compilerLocation, { kCompilerInstanceExecutable, "-x", "c++-header", "/dev/null", "-v", "-E" });
+		const std::string response = runShellCommand(compilerLocation, { "-x", "c++-header", "/dev/null", "-v", "-E" });
 #else
 #		error Unsupported
 #endif
 
 		if (response.empty())
 		{
-			return CompilerEnvError { std::format("Failed to invoke '{}' executable", kCompilerInstanceExecutable), CompilerEnvError::ErrorKind::EK_BAD_CLANG_OUTPUT };
+			return CompilerEnvError {
+				std::string("Failed to invoke '") + kCompilerInstanceExecutable + "' executable",
+//				std::format("Failed to invoke '{}' executable", kCompilerInstanceExecutable),
+				CompilerEnvError::ErrorKind::EK_BAD_CLANG_OUTPUT
+			};
 		}
 
 		CompilerEnvironment compilerEnvironment {};

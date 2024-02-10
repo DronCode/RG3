@@ -147,7 +147,7 @@ namespace rg3::llvm
 		if (auto pEnvFailure = std::get_if<CompilerEnvError>(&compilerEnvironment))
 		{
 			// Fatal error
-			result.vIssues.emplace_back(AnalyzerResult::CompilerIssue::IssueKind::IK_ERROR, sourceToString(m_source), 0, 0, pEnvFailure->message);
+			result.vIssues.emplace_back(AnalyzerResult::CompilerIssue { AnalyzerResult::CompilerIssue::IssueKind::IK_ERROR, sourceToString(m_source), 0, 0, pEnvFailure->message });
 			return result;
 		}
 
@@ -173,6 +173,11 @@ namespace rg3::llvm
 		vProxyArgs.emplace_back("-fms-extensions");
 		vProxyArgs.emplace_back("-fdelayed-template-parsing");
 		vProxyArgs.emplace_back("-fms-compatibility-version=19");
+#endif
+
+#ifdef __APPLE__
+		vProxyArgs.emplace_back("-fgnuc-version=" + pCompilerEnv->macOS_GNUC_Version); // TODO: use fmt!
+		vProxyArgs.emplace_back("-target-sdk-version=" + pCompilerEnv->macOS_TargetSDK_Version); // TODO: use fmt!
 #endif
 
 		std::vector<const char*> vCompilerArgs;
@@ -246,10 +251,15 @@ namespace rg3::llvm
 		compilerInstance.getPreprocessorOpts().addMacroDef("_MSC_EXTENSIONS");
 #endif
 
+#ifdef __APPLE__
+		// This should be enough?
+		compilerInstance.getPreprocessorOpts().addMacroDef("__GCC_HAVE_DWARF2_CFI_ASM=1");
+#endif
+
 		std::shared_ptr<clang::TargetOptions> targetOpts = nullptr;
 
 		// Setup triple
-		if (!pCompilerEnv || pCompilerEnv->triple.empty())
+		if (pCompilerEnv->triple.empty())
 		{
 			// Use default triple
 			targetOpts = std::make_shared<clang::TargetOptions>();
@@ -284,7 +294,10 @@ namespace rg3::llvm
 		opts.Inputs.clear();
 
 		// Prepare compiler instance
-		std::visit(Visitor(opts), m_source);
+		{
+			Visitor v { opts };
+			std::visit(v, m_source);
+		}
 
 		// Set macros
 		clang::PreprocessorOptions& preprocessorOptions = compilerInstance.getPreprocessorOpts();
@@ -301,17 +314,40 @@ namespace rg3::llvm
 		// Setup header dirs source
 		clang::HeaderSearchOptions& headerSearchOptions = compilerInstance.getHeaderSearchOpts();
 		{
-			for (const auto& sysInc : (pCompilerEnv ? pCompilerEnv->config.vSystemIncludes : m_compilerConfig.vSystemIncludes))
+			headerSearchOptions.Verbose = 1;
+			headerSearchOptions.UseStandardCXXIncludes = 0;
+			headerSearchOptions.UseStandardSystemIncludes = 0;
+			headerSearchOptions.UseBuiltinIncludes = 0;
+
+			for (const auto& sysInc : pCompilerEnv->config.vSystemIncludes)
 			{
 				const auto absolutePath = std::filesystem::absolute(sysInc.sFsLocation);
-				headerSearchOptions.AddPath(absolutePath.string(), clang::frontend::IncludeDirGroup::CXXSystem, false, false);
+
+				clang::frontend::IncludeDirGroup group = clang::frontend::IncludeDirGroup::Angled;
+
+				if (sysInc.eKind == IncludeKind::IK_SYSROOT)
+				{
+					continue;
+				}
+
+				if (sysInc.eKind == IncludeKind::IK_SYSTEM)
+				{
+					group = clang::frontend::IncludeDirGroup::CXXSystem;
+				}
+
+				if (sysInc.eKind == IncludeKind::IK_C_SYSTEM)
+				{
+					group = clang::frontend::IncludeDirGroup::ExternCSystem;
+				}
+
+				headerSearchOptions.AddPath(absolutePath.string(), group, false, true);
 			}
 
 			for (const auto& incInfo : m_compilerConfig.vIncludes)
 			{
 				// Convert path to absolute
 				const auto absolutePath = std::filesystem::absolute(incInfo.sFsLocation);
-				headerSearchOptions.AddPath(absolutePath.string(), clang::frontend::IncludeDirGroup::Angled, false, false);
+				headerSearchOptions.AddPath(absolutePath.string(), clang::frontend::IncludeDirGroup::Angled, false, true);
 			}
 		}
 

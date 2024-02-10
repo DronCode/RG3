@@ -2,7 +2,7 @@ project(RG3_LLVM)
 
 # ------- Boost
 set(Boost_USE_STATIC_LIBS ON)
-find_package(Boost COMPONENTS python filesystem REQUIRED HINTS $ENV{Boost_ROOT})
+find_package(Boost COMPONENTS filesystem REQUIRED HINTS $ENV{Boost_ROOT})
 
 # ------- LLVM BACKEND
 find_package(LLVM REQUIRED CONFIG HINTS $ENV{LLVM_DIR})
