@@ -16,13 +16,13 @@ namespace rg3::cpp
         TypeBase();
 		virtual ~TypeBase() noexcept = default;
 
-        TypeBase(TypeKind kind, const std::string& name, const CppNamespace& aNamespace, const DefinitionLocation& aLocation, const Tags& tags);
+        TypeBase(TypeKind kind, const std::string& name, const std::string& prettyName, const CppNamespace& aNamespace, const DefinitionLocation& aLocation, const Tags& tags);
 
 		[[nodiscard]] TypeID getID() const;
 		[[nodiscard]] TypeKind getKind() const;
 		[[nodiscard]] const std::string& getName() const;
 		[[nodiscard]] const CppNamespace& getNamespace() const;
-		[[nodiscard]] std::string getPrettyName() const;
+		[[nodiscard]] const std::string& getPrettyName() const;
 		[[nodiscard]] const DefinitionLocation& getDefinition() const;
 
 		[[nodiscard]] bool areSame(const TypeBase* pOther) const;
@@ -38,7 +38,8 @@ namespace rg3::cpp
 
 	 private:
 		TypeKind m_kind { TypeKind::TK_NONE };
-		std::string m_name;
+		std::string m_name;  ///< Name of type without namespaces and parent types
+		std::string m_prettyName;  ///< "prettified" name contains full decl
 		CppNamespace m_nameSpace;
 		DefinitionLocation m_location;
 		Tags m_tags;

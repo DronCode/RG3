@@ -9,65 +9,16 @@
 
 namespace rg3::llvm::visitors
 {
-	static void fillTypeStatementFromQualType(rg3::cpp::TypeStatement& typeStatement, clang::QualType qt, clang::SourceManager& sm)
-	{
-		typeStatement.sTypeRef = cpp::TypeReference(rg3::llvm::Utils::getNormalizedTypeRef(qt.getAsString()));
-		typeStatement.bIsConst = qt.isConstQualified();
-
-		if (qt->isPointerType() || qt->isReferenceType())
-		{
-			typeStatement.bIsPointer = qt->isPointerType();
-			typeStatement.bIsReference = qt->isReferenceType();
-			typeStatement.sTypeRef = cpp::TypeReference(rg3::llvm::Utils::getNormalizedTypeRef(qt->getPointeeType().getUnqualifiedType().getAsString()));
-			typeStatement.bIsPtrConst = qt->getPointeeType().isConstQualified();
-		}
-
-		if (qt->getAs<clang::TemplateSpecializationType>())
-		{
-			typeStatement.bIsTemplateSpecialization = true;
-		}
-
-		// Try extract location info
-		const clang::Type* pType = typeStatement.bIsReference || typeStatement.bIsPointer ? qt->getPointeeType().getUnqualifiedType().getTypePtr() : qt.getTypePtr();
-		if (const auto* pRecord = pType->getAs<clang::RecordType>())
-		{
-			const clang::RecordDecl* pRecordDecl = pRecord->getDecl();
-			if (pRecordDecl)
-			{
-				clang::SourceLocation location = pRecordDecl->getLocation();
-				clang::PresumedLoc presumedLoc = sm.getPresumedLoc(location);
-
-				if (presumedLoc.isValid())
-				{
-					typeStatement.sDefinitionLocation.emplace(
-						std::filesystem::path(presumedLoc.getFilename()),
-						presumedLoc.getLine(),
-						presumedLoc.getColumn()
-					);
-
-					/*
-					 * Maybe it's better, who knows...
-					typeStatement.sDefinitionLocation.emplace(
-							std::filesystem::path(presumedLoc.getIncludeLoc().printToString(sm)),
-							presumedLoc.getLine(),
-							presumedLoc.getColumn()
-					);
-					 */
-				}
-			}
-		}
-	}
-
 	static void fillTypeStatementFromLLVMEntry(rg3::cpp::TypeStatement& typeStatement, clang::CXXMethodDecl* cxxMethodDecl)
 	{
 		clang::QualType qt = cxxMethodDecl->getReturnType();
-		fillTypeStatementFromQualType(typeStatement, qt, cxxMethodDecl->getASTContext().getSourceManager());
+		rg3::llvm::Utils::fillTypeStatementFromQualType(typeStatement, qt, cxxMethodDecl->getASTContext());
 	}
 
 	static void fillTypeStatementFromLLVMEntry(rg3::cpp::TypeStatement& typeStatement, clang::FieldDecl* fieldDecl)
 	{
 		clang::QualType qt = fieldDecl->getType();
-		fillTypeStatementFromQualType(typeStatement, qt, fieldDecl->getASTContext().getSourceManager());
+		rg3::llvm::Utils::fillTypeStatementFromQualType(typeStatement, qt, fieldDecl->getASTContext());
 	}
 
 	CxxClassTypeVisitor::CxxClassTypeVisitor(const rg3::llvm::CompilerConfig& cc)
@@ -94,6 +45,7 @@ namespace rg3::llvm::visitors
 
 		// Create entry
 		sClassName = cxxRecordDecl->getName().str();
+		sClassPrettyName = Utils::getPrettyNameOfDecl(cxxRecordDecl);
 		Utils::getDeclInfo(cxxRecordDecl, sNameSpace);
 
 		// Location
@@ -108,20 +60,27 @@ namespace rg3::llvm::visitors
 			cpp::ClassParent& parent = parentClasses.emplace_back();
 			parent.rParentType = cpp::TypeReference(baseSpecifier.getType().getAsString());
 
-			switch (baseSpecifier.getAccessSpecifier())
+			if (baseSpecifier.isVirtual())
 			{
-				case clang::AS_public:
-					parent.eModifier = cpp::InheritanceVisibility::IV_PUBLIC;
-					break;
-				case clang::AS_protected:
-					parent.eModifier = cpp::InheritanceVisibility::IV_PROTECTED;
-					break;
-				case clang::AS_private:
-					parent.eModifier = cpp::InheritanceVisibility::IV_PRIVATE;
-					break;
-				case clang::AS_none:
-					parent.eModifier = bIsStruct ? cpp::InheritanceVisibility::IV_PUBLIC : cpp::InheritanceVisibility::IV_PRIVATE;
-					break;
+				parent.eModifier = cpp::InheritanceVisibility::IV_VIRTUAL;
+			}
+			else
+			{
+				switch (baseSpecifier.getAccessSpecifier())
+				{
+					case clang::AS_public:
+						parent.eModifier = cpp::InheritanceVisibility::IV_PUBLIC;
+						break;
+					case clang::AS_protected:
+						parent.eModifier = cpp::InheritanceVisibility::IV_PROTECTED;
+						break;
+					case clang::AS_private:
+						parent.eModifier = cpp::InheritanceVisibility::IV_PRIVATE;
+						break;
+					case clang::AS_none:
+						parent.eModifier = bIsStruct ? cpp::InheritanceVisibility::IV_PUBLIC : cpp::InheritanceVisibility::IV_PRIVATE;
+						break;
+				}
 			}
 		}
 
@@ -195,7 +154,7 @@ namespace rg3::llvm::visitors
 			cpp::FunctionArgument& newArgument = newFunction.vArguments.emplace_back();
 
 			// Extract type info
-			fillTypeStatementFromQualType(newArgument.sType, pParam->getType(), sm);
+			rg3::llvm::Utils::fillTypeStatementFromQualType(newArgument.sType, pParam->getType(), ctx);
 
 			// Save arg name
 			newArgument.sArgumentName = pParam->getNameAsString();

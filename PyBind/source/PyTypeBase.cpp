@@ -31,6 +31,9 @@ namespace rg3::pybind
 				case cpp::TypeKind::TK_TEMPLATE_SPECIALIZATION:
 					str = "template " + m_base->getPrettyName();
 					break;
+				case cpp::TypeKind::TK_ALIAS:
+					str = "alias " + m_base->getPrettyName();
+					break;
 				}
 
 				m_str = { str.c_str(), str.length() };

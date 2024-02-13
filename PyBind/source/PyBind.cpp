@@ -15,6 +15,7 @@
 #include <RG3/PyBind/PyTypeBase.h>
 #include <RG3/PyBind/PyTypeEnum.h>
 #include <RG3/PyBind/PyTypeClass.h>
+#include <RG3/PyBind/PyTypeAlias.h>
 #include <RG3/PyBind/PyAnalyzerContext.h>
 #include <RG3/PyBind/PyClangRuntime.h>
 
@@ -161,6 +162,7 @@ BOOST_PYTHON_MODULE(rg3py)
 	    .value("TK_TRIVIAL", rg3::cpp::TypeKind::TK_TRIVIAL)
 	    .value("TK_ENUM", rg3::cpp::TypeKind::TK_ENUM)
 	    .value("TK_STRUCT_OR_CLASS", rg3::cpp::TypeKind::TK_STRUCT_OR_CLASS)
+	    .value("TK_ALIAS", rg3::cpp::TypeKind::TK_ALIAS)
 	    .value("TK_TEMPLATE_SPECIALIZATION", rg3::cpp::TypeKind::TK_TEMPLATE_SPECIALIZATION)
 	;
 
@@ -350,6 +352,12 @@ BOOST_PYTHON_MODULE(rg3py)
 		.add_property("is_struct", &rg3::pybind::PyTypeClass::pyIsStruct)
 		.add_property("is_trivial_constructible", &rg3::pybind::PyTypeClass::pyIsTriviallyConstructible)
 		.add_property("parent_types", make_function(&rg3::pybind::PyTypeClass::pyGetClassParentTypeRefs, return_value_policy<copy_const_reference>()))
+	;
+
+	class_<rg3::pybind::PyTypeAlias, boost::noncopyable, boost::shared_ptr<rg3::pybind::PyTypeAlias>, boost::python::bases<rg3::pybind::PyTypeBase>>("CppAlias", no_init)
+		.add_property("target", make_function(&rg3::pybind::PyTypeAlias::pyGetTargetTypeRef, return_value_policy<copy_const_reference>()), "Target type reference")
+		.add_property("target_location", make_function(&rg3::pybind::PyTypeAlias::pyGetTargetTypeLocation, return_value_policy<return_by_value>()), "Target type location or None")
+		.add_property("target_description", make_function(&rg3::pybind::PyTypeAlias::getTargetTypeDescription, return_value_policy<copy_const_reference>()), "Target type extended info")
 	;
 
 	class_<rg3::pybind::PyCodeAnalyzerBuilder, boost::noncopyable, boost::shared_ptr<rg3::pybind::PyCodeAnalyzerBuilder>>("CodeAnalyzer", no_init)

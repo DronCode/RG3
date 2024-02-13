@@ -1,6 +1,7 @@
 from typing import Optional, List
 import pytest
 import rg3py
+import os
 
 
 def test_code_analyzer_base():
@@ -122,10 +123,12 @@ def test_analyzer_context_sample():
     assert analyzer_context.types[1].kind == rg3py.CppTypeKind.TK_STRUCT_OR_CLASS
     assert analyzer_context.types[1].tags.has_tag('runtime')
     assert analyzer_context.types[1].tags.has_tag('serializer')
-    assert analyzer_context.types[1].tags.get_tag('serializer').arguments[0].as_type_ref().name == "samples::my_cool_sample::Type1Serializer"
+    assert analyzer_context.types[1].tags.get_tag('serializer').arguments[
+               0].as_type_ref().name == "samples::my_cool_sample::Type1Serializer"
 
     # Check that type resolvable
-    resolved: Optional[rg3py.CppBaseType] = analyzer_context.get_type_by_reference(analyzer_context.types[1].tags.get_tag('serializer').arguments[0].as_type_ref())
+    resolved: Optional[rg3py.CppBaseType] = analyzer_context.get_type_by_reference(
+        analyzer_context.types[1].tags.get_tag('serializer').arguments[0].as_type_ref())
     assert resolved is not None
 
     assert resolved.name == "Type1Serializer"
@@ -433,3 +436,160 @@ def test_check_clang_runtime():
 
     found_inc_paths: List[str] = rg3py.ClangRuntime.detect_system_include_sources()
     assert len(found_inc_paths) > 1  # NOTE: In windows it usually 8, on macOS and Linux could be less/more.
+
+
+def test_check_type_inside_type():
+    analyzer: rg3py.CodeAnalyzer = rg3py.CodeAnalyzer.make()
+
+    analyzer.set_code("""
+namespace generic { namespace extended {
+    /// @runtime
+    struct MyStruct
+    {
+        /// @runtime
+        enum class MyCoolEnum : int 
+        {};
+    };
+}}
+                       """)
+
+    analyzer.set_compiler_args(["-x", "c++-header"])
+    analyzer.set_cpp_standard(rg3py.CppStandard.CXX_17)
+    analyzer.analyze()
+
+    assert len(analyzer.issues) == 0
+    assert len(analyzer.types) == 2
+
+    assert analyzer.types[0].name == "MyStruct"
+    assert analyzer.types[0].pretty_name == "generic::extended::MyStruct"
+
+    assert analyzer.types[1].name == "MyCoolEnum"
+    assert analyzer.types[1].pretty_name == "generic::extended::MyStruct::MyCoolEnum"
+
+
+def test_check_type_alias_and_template_spec_basic():
+    analyzer: rg3py.CodeAnalyzer = rg3py.CodeAnalyzer.make()
+
+    analyzer.set_file("samples/HeaderWithUsingDecls.h")
+    analyzer.set_compiler_args(["-x", "c++-header"])
+    analyzer.set_cpp_standard(rg3py.CppStandard.CXX_17)
+    analyzer.analyze()
+
+    assert len(analyzer.issues) == 0
+    assert len(analyzer.types) == 5
+
+    assert analyzer.types[0].name == "MyComponent"
+    assert analyzer.types[0].pretty_name == "engine::MyComponent"
+    assert analyzer.types[0].kind == rg3py.CppTypeKind.TK_STRUCT_OR_CLASS
+
+    assert analyzer.types[1].name == "Ptr"
+    assert analyzer.types[1].pretty_name == "engine::MyComponent::Ptr"
+    assert analyzer.types[1].kind == rg3py.CppTypeKind.TK_ALIAS
+
+    assert os.path.basename(analyzer.types[1].location.path) == "HeaderWithUsingDecls.h"
+
+    as_alias1: rg3py.CppAlias = analyzer.types[1]
+    assert as_alias1.target_location is not None
+    assert os.path.basename(as_alias1.target_location.path) == "HeaderWithUsingDecls.h"
+    assert as_alias1.target_description.get_name() == "not_std::shared_ptr<engine::MyComponent>"
+    assert as_alias1.target_description.is_template is True
+    assert as_alias1.target_description.is_ref is False
+    assert as_alias1.target_description.is_const is False
+    assert as_alias1.target_description.is_ptr is False
+    assert as_alias1.target_description.is_void is False
+    assert as_alias1.target_description.is_const_ptr is False
+
+    # -----------------------------------------------------------------
+    assert analyzer.types[2].name == "i32"
+    assert analyzer.types[2].pretty_name == "xzibit_stl::i32"
+
+    as_alias2: rg3py.CppAlias = analyzer.types[2]
+    assert as_alias2.target_location is None
+    assert as_alias2.target.name == "int"
+    assert as_alias2.target_description.get_name() == "int"
+    assert as_alias2.target_description.is_ptr is False
+    assert as_alias2.target_description.is_const is False
+    assert as_alias2.target_description.is_const_ptr is False
+    assert as_alias2.target_description.is_template is False
+    assert as_alias2.target_description.is_ref is False
+    assert as_alias2.target_description.is_void is False
+
+    # -----------------------------------------------------------------
+    assert analyzer.types[3].name == "u32"
+    assert analyzer.types[3].pretty_name == "xzibit_stl::u32"
+
+    as_alias3: rg3py.CppAlias = analyzer.types[3]
+    assert as_alias3.target_location is None
+
+    assert as_alias3.target.name == "unsigned int"
+    assert as_alias3.target_description.get_name() == "unsigned int"
+    assert as_alias3.target_description.is_ptr is False
+    assert as_alias3.target_description.is_const is False
+    assert as_alias3.target_description.is_const_ptr is False
+    assert as_alias3.target_description.is_template is False
+    assert as_alias3.target_description.is_ref is False
+    assert as_alias3.target_description.is_void is False
+    # -----------------------------------------------------------------
+    assert analyzer.types[4].name == "bytes"
+    assert analyzer.types[4].pretty_name == "xzibit_stl::bytes"
+
+    as_alias4: rg3py.CppAlias = analyzer.types[4]
+    assert as_alias4.target_location is None
+
+    assert as_alias4.target.name == "unsigned char *"
+    assert as_alias4.target_description.get_name() == "unsigned char *"
+    assert as_alias4.target_description.is_ptr is True
+    assert as_alias4.target_description.is_const is False
+    assert as_alias4.target_description.is_const_ptr is False
+    assert as_alias4.target_description.is_template is False
+    assert as_alias4.target_description.is_ref is False
+    assert as_alias4.target_description.is_void is False
+
+
+def test_check_global_type_aliases():
+    analyzer: rg3py.CodeAnalyzer = rg3py.CodeAnalyzer.make()
+
+    analyzer.set_code("""
+    /// @runtime
+    struct MyStruct
+    {
+        /// @runtime
+        typedef const MyStruct* CPtr;
+        
+        /// @runtime
+        typedef unsigned int ID;
+    };
+""")
+
+    analyzer.set_compiler_args(["-x", "c++-header"])
+    analyzer.set_cpp_standard(rg3py.CppStandard.CXX_17)
+    analyzer.analyze()
+
+    assert len(analyzer.issues) == 0
+    assert len(analyzer.types) == 3
+
+    assert analyzer.types[0].name == "MyStruct"
+    assert analyzer.types[0].pretty_name == "MyStruct"
+    assert analyzer.types[0].kind == rg3py.CppTypeKind.TK_STRUCT_OR_CLASS
+
+    assert analyzer.types[1].name == "CPtr"
+    assert analyzer.types[1].pretty_name == "MyStruct::CPtr"
+    assert analyzer.types[1].kind == rg3py.CppTypeKind.TK_ALIAS
+
+    as_alias1: rg3py.CppAlias = analyzer.types[1]
+    assert as_alias1.target.name == "MyStruct"
+    assert as_alias1.target_location is not None
+    assert as_alias1.target_description.is_ref is False
+    assert as_alias1.target_description.is_ptr is True
+    assert as_alias1.target_description.is_const_ptr is True
+    assert as_alias1.target_description.is_template is False
+    assert as_alias1.target_description.is_const is False
+
+    as_alias2: rg3py.CppAlias = analyzer.types[2]
+    assert as_alias2.target.name == "unsigned int"
+    assert as_alias2.target_location is None
+    assert as_alias2.target_description.is_ref is False
+    assert as_alias2.target_description.is_ptr is False
+    assert as_alias2.target_description.is_const_ptr is False
+    assert as_alias2.target_description.is_template is False
+    assert as_alias2.target_description.is_const is False

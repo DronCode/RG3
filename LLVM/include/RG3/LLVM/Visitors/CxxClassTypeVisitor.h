@@ -20,6 +20,7 @@ namespace rg3::llvm::visitors
 		bool VisitCXXMethodDecl(clang::CXXMethodDecl* cxxMethodDecl);
 
 		std::string sClassName;
+		std::string sClassPrettyName;
 		cpp::CppNamespace sNameSpace;
 		cpp::Tags vTags {};
 		cpp::DefinitionLocation sDefinitionLocation;

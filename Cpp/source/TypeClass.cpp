@@ -3,33 +3,6 @@
 
 namespace rg3::cpp
 {
-	const TypeStatement TypeStatement::g_sVoid {
-		TypeReference("void", nullptr),
-		std::nullopt,
-		false, false, false, false
-	};
-
-	bool TypeStatement::isVoid() const
-	{
-		return sTypeRef.getRefName() == "void" && !bIsPointer;
-	}
-
-	bool TypeStatement::operator==(const TypeStatement& other) const
-	{
-		return sTypeRef == other.sTypeRef &&
-			   sDefinitionLocation == other.sDefinitionLocation &&
-			   bIsConst == other.bIsConst &&
-			   bIsPtrConst == other.bIsPtrConst &&
-			   bIsPointer == other.bIsPointer &&
-			   bIsReference == other.bIsReference &&
-			   bIsTemplateSpecialization == other.bIsTemplateSpecialization;
-	}
-
-	bool TypeStatement::operator!=(const TypeStatement& other) const
-	{
-		return !operator==(other);
-	}
-
 	bool ClassProperty::operator==(const ClassProperty& other) const
 	{
 		return  sName == other.sName &&
@@ -72,8 +45,8 @@ namespace rg3::cpp
 
 	TypeClass::TypeClass() = default;
 
-	TypeClass::TypeClass(const std::string& name, const rg3::cpp::CppNamespace& aNamespace, const rg3::cpp::DefinitionLocation& aLocation, const Tags& tags, const rg3::cpp::ClassPropertyVector& aProperties, const rg3::cpp::ClassFunctionVector& aFunctions, bool bIsStruct, bool bTrivialConstructible, const std::vector<ClassParent>& parentTypes)
-		: TypeBase(TypeKind::TK_STRUCT_OR_CLASS, name, aNamespace, aLocation, tags)
+	TypeClass::TypeClass(const std::string& name, const std::string& prettyName, const rg3::cpp::CppNamespace& aNamespace, const rg3::cpp::DefinitionLocation& aLocation, const Tags& tags, const rg3::cpp::ClassPropertyVector& aProperties, const rg3::cpp::ClassFunctionVector& aFunctions, bool bIsStruct, bool bTrivialConstructible, const std::vector<ClassParent>& parentTypes)
+		: TypeBase(TypeKind::TK_STRUCT_OR_CLASS, name, prettyName, aNamespace, aLocation, tags)
 		, m_properties(aProperties)
 		, m_functions(aFunctions)
 		, m_bIsStruct(bIsStruct)

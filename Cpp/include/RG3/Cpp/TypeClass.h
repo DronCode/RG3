@@ -3,6 +3,7 @@
 #include <RG3/Cpp/Tag.h>
 #include <RG3/Cpp/TypeBase.h>
 #include <RG3/Cpp/TypeReference.h>
+#include <RG3/Cpp/TypeStatement.h>
 #include <vector>
 #include <string>
 #include <optional>
@@ -24,26 +25,6 @@ namespace rg3::cpp
 		IV_PROTECTED = 2, ///< protected inheritance
 		IV_VIRTUAL = 3  ///< virtual inheritance
 	};
-
-	struct TypeStatement
-	{
-		TypeReference sTypeRef {};
-		std::optional<DefinitionLocation> sDefinitionLocation {};
-		bool bIsConst { false };
-		bool bIsPointer { false };
-		bool bIsPtrConst { false };
-		bool bIsReference { false };
-		bool bIsTemplateSpecialization { false };
-
-		static const TypeStatement g_sVoid; // globally known void type
-
-		bool isVoid() const;
-
-		bool operator==(const TypeStatement& other) const;
-		bool operator!=(const TypeStatement& other) const;
-	};
-
-	using TypeStatementVector = std::vector<TypeStatement>;
 
 	struct ClassProperty
 	{
@@ -98,7 +79,7 @@ namespace rg3::cpp
 	{
 	 public:
 		TypeClass();
-		TypeClass(const std::string& name, const CppNamespace& aNamespace, const DefinitionLocation& aLocation, const Tags& tags, const ClassPropertyVector& aProperties, const ClassFunctionVector& aFunctions, bool bIsStruct, bool bTrivialConstructible, const std::vector<ClassParent>& parentTypes);
+		TypeClass(const std::string& name, const std::string& prettyName, const CppNamespace& aNamespace, const DefinitionLocation& aLocation, const Tags& tags, const ClassPropertyVector& aProperties, const ClassFunctionVector& aFunctions, bool bIsStruct, bool bTrivialConstructible, const std::vector<ClassParent>& parentTypes);
 
 		[[nodiscard]] const ClassPropertyVector& getProperties() const;
 		[[nodiscard]] ClassPropertyVector& getProperties();

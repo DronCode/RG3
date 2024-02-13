@@ -2,6 +2,7 @@
 #include <RG3/PyBind/PyTypeBase.h>
 #include <RG3/PyBind/PyTypeClass.h>
 #include <RG3/PyBind/PyTypeEnum.h>
+#include <RG3/PyBind/PyTypeAlias.h>
 #include <RG3/LLVM/CodeAnalyzer.h>
 #include <RG3/Cpp/TransactionGuard.h>
 #include <RG3/Cpp/TypeClass.h>
@@ -229,6 +230,17 @@ namespace rg3::pybind
 								case cpp::TypeKind::TK_STRUCT_OR_CLASS:
 								{
 									auto object = boost::shared_ptr<PyTypeClass>(new PyTypeClass(std::move(type)));
+									auto [_iter, bInserted] = pAnalyzerStorage->vFoundTypeInstances.try_emplace(object->getNative()->getPrettyName(), object);
+
+									if (bInserted)
+									{
+										pAnalyzerStorage->pyFoundTypes.append(object);
+									}
+								}
+								break;
+								case cpp::TypeKind::TK_ALIAS:
+								{
+									auto object = boost::shared_ptr<PyTypeAlias>(new PyTypeAlias(std::move(type)));
 									auto [_iter, bInserted] = pAnalyzerStorage->vFoundTypeInstances.try_emplace(object->getNative()->getPrettyName(), object);
 
 									if (bInserted)
