@@ -4,6 +4,8 @@
 #include <boost/process.hpp>
 #include <boost/filesystem.hpp>
 
+#include <fmt/format.h>
+
 
 
 namespace rg3::llvm
@@ -355,8 +357,7 @@ namespace rg3::llvm
 		if (compilerLocation.empty())
 		{
 			return CompilerEnvError {
-				std::string("Failed to locate ") + kCompilerInstanceExecutable + " instance. Please, make sure that your os contains it.",
-				//std::format("Failed to locate {} instance. Please, make sure that your os contains it.", kCompilerInstanceExecutable),
+				fmt::format("Failed to locate {} instance. Please, make sure that your os contains it.", kCompilerInstanceExecutable),
 				CompilerEnvError::ErrorKind::EK_NO_CLANG_INSTANCE
 			};
 		}
@@ -374,8 +375,7 @@ namespace rg3::llvm
 		if (response.empty())
 		{
 			return CompilerEnvError {
-				std::string("Failed to invoke '") + kCompilerInstanceExecutable + "' executable",
-//				std::format("Failed to invoke '{}' executable", kCompilerInstanceExecutable),
+				fmt::format("Failed to invoke '{}' executable", kCompilerInstanceExecutable),
 				CompilerEnvError::ErrorKind::EK_BAD_CLANG_OUTPUT
 			};
 		}

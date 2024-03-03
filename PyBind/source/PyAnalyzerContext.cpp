@@ -6,9 +6,9 @@
 #include <RG3/Cpp/TransactionGuard.h>
 #include <RG3/Cpp/TypeClass.h>
 #include <RG3/Cpp/TypeEnum.h>
+#include <fmt/format.h>
 #include <optional>
 #include <variant>
-#include <format>
 #include <thread>
 #include <deque>
 #include <mutex>
@@ -513,7 +513,7 @@ namespace rg3::pybind
 		rg3::llvm::AnalyzerResult::CompilerIssue issue;
 		issue.kind = rg3::llvm::AnalyzerResult::CompilerIssue::IssueKind::IK_ERROR;
 		issue.sSourceFile = context.pOwner->getDefinition().getPath();
-		issue.sMessage = std::format("RG3|ResolveTypeREF failed: {} (space {})", errorMessage, spaceToString(context.eSpace));
+		issue.sMessage = fmt::format("RG3|ResolveTypeREF failed: {} (space {})", errorMessage, spaceToString(context.eSpace));
 
 		m_pySubjects.pyFoundIssues.append(issue);
 	}
@@ -584,7 +584,7 @@ namespace rg3::pybind
 					}
 					else
 					{
-						pushResolverIssue(resolverContext, std::format("Failed to find parent type '{}'", parentType.rParentType.getRefName()));
+						pushResolverIssue(resolverContext, fmt::format("Failed to find parent type '{}'", parentType.rParentType.getRefName()));
 						return false;
 					}
 				}
@@ -618,7 +618,7 @@ namespace rg3::pybind
 					else
 					{
 						// Type reference not found in context of ...
-						pushResolverIssue(context, std::format("Reference '{}' not found in types db", pTypeRef->getRefName()));
+						pushResolverIssue(context, fmt::format("Reference '{}' not found in types db", pTypeRef->getRefName()));
 						return false;
 					}
 				}

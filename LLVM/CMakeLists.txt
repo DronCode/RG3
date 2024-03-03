@@ -48,4 +48,6 @@ target_link_libraries(RG3_LLVM PUBLIC
         ${Boost_LIBRARIES}
         # RG3
         RG3::Cpp
+        # FMT
+        fmt::fmt
 )

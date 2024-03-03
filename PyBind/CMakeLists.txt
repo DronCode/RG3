@@ -16,6 +16,7 @@ target_include_directories(RG3_PyBind PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/includ
 target_link_libraries(RG3_PyBind PUBLIC RG3::Cpp RG3::LLVM)
 
 target_link_libraries(RG3_PyBind PUBLIC ${Boost_LIBRARIES} ${Python3_LIBRARIES})
+target_link_libraries(RG3_PyBind PRIVATE fmt::fmt)
 target_include_directories(RG3_PyBind PUBLIC ${Python3_INCLUDE_DIRS})
 
 if (WIN32)
