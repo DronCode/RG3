@@ -366,7 +366,7 @@ namespace rg3::llvm
 #elif defined(__linux__)
 		const std::string response = runShellCommand(compilerLocation, { kCompilerInstanceExecutable, "-x", "c++-header", "/dev/null", "-v", "-E" });
 #elif defined(__APPLE__)
-		const std::string response = runShellCommand(compilerLocation, { "-x", "c++-header", "/dev/null", "-v", "-E" });
+		const std::string response = runShellCommand("/usr/bin/clang++", { "-x", "c++-header", "/dev/null", "-v", "-E" });
 #else
 #		error Unsupported
 #endif

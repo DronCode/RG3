@@ -175,10 +175,24 @@ namespace rg3::llvm
 		vProxyArgs.emplace_back("-fms-compatibility-version=19");
 #endif
 
-#ifdef __APPLE__
-		vProxyArgs.emplace_back("-fgnuc-version=" + pCompilerEnv->macOS_GNUC_Version); // TODO: use fmt!
-		vProxyArgs.emplace_back("-target-sdk-version=" + pCompilerEnv->macOS_TargetSDK_Version); // TODO: use fmt!
-#endif
+		if (auto it = std::find(vProxyArgs.begin(), vProxyArgs.end(), "-x"); it != vProxyArgs.end())
+		{
+			// need to remove this iter and next
+			auto next = std::next(it);
+
+			if (next != std::end(vProxyArgs))
+			{
+				// remove next
+				vProxyArgs.erase(next);
+			}
+
+			// and remove this
+			vProxyArgs.erase(it);
+		}
+
+		// We will append "-x c++-header" option always
+		vProxyArgs.emplace_back("-x");
+		vProxyArgs.emplace_back("c++-header");
 
 		std::vector<const char*> vCompilerArgs;
 		vCompilerArgs.resize(vProxyArgs.size());
@@ -259,6 +273,7 @@ namespace rg3::llvm
 		std::shared_ptr<clang::TargetOptions> targetOpts = nullptr;
 
 		// Setup triple
+#if !defined(__APPLE__)
 		if (pCompilerEnv->triple.empty())
 		{
 			// Use default triple
@@ -284,6 +299,12 @@ namespace rg3::llvm
 			std::vector<std::string> vIncs;
 			clang::LangOptions::setLangDefaults(*langOptions, clang::Language::CXX, triple, vIncs, langKind);
 		}
+#else
+		// On Apple we should use default triple instead of detect it at runtime
+		::llvm::Triple triple(::llvm::sys::getDefaultTargetTriple());
+		compilerInstance.getTargetOpts().Triple = triple.str();
+		compilerInstance.setTarget(clang::TargetInfo::CreateTargetInfo(compilerInstance.getDiagnostics(), std::make_shared<clang::TargetOptions>(compilerInstance.getTargetOpts())));
+#endif
 
 		compilerInstance.setInvocation(invocation);
 
@@ -311,14 +332,15 @@ namespace rg3::llvm
 		preprocessorOptions.addMacroDef("__RG3_COMMIT__=\"" RG3_BUILD_HASH "\"");
 		preprocessorOptions.addMacroDef("__RG3_BUILD_DATE__=\"" __DATE__ "\"");
 
+#ifdef __APPLE__
+		// For apple only. They cares about GNUC? Idk & I don't care
+		preprocessorOptions.addMacroDef("__GNUC__=4");
+#endif
+
 		// Setup header dirs source
 		clang::HeaderSearchOptions& headerSearchOptions = compilerInstance.getHeaderSearchOpts();
 		{
-			headerSearchOptions.Verbose = 1;
-			headerSearchOptions.UseStandardCXXIncludes = 0;
-			headerSearchOptions.UseStandardSystemIncludes = 0;
-			headerSearchOptions.UseBuiltinIncludes = 0;
-
+#ifndef __APPLE__
 			for (const auto& sysInc : pCompilerEnv->config.vSystemIncludes)
 			{
 				const auto absolutePath = std::filesystem::absolute(sysInc.sFsLocation);
@@ -327,12 +349,13 @@ namespace rg3::llvm
 
 				if (sysInc.eKind == IncludeKind::IK_SYSROOT)
 				{
+					// ignore sysroot here
 					continue;
 				}
 
 				if (sysInc.eKind == IncludeKind::IK_SYSTEM)
 				{
-					group = clang::frontend::IncludeDirGroup::CXXSystem;
+					group = clang::frontend::IncludeDirGroup::System;
 				}
 
 				if (sysInc.eKind == IncludeKind::IK_C_SYSTEM)
@@ -342,6 +365,17 @@ namespace rg3::llvm
 
 				headerSearchOptions.AddPath(absolutePath.string(), group, false, true);
 			}
+#else
+			// A little message from DronCode: I REALLY HATE THIS SHIT. But really, Idk how to find those locations properly. It's really shitty stuff but... so, just let it work like that...
+			// For C++ things (cstddef, string, etc)
+			headerSearchOptions.AddPath("/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1", clang::frontend::CXXSystem, false, true);
+
+			// For C things (stddef.h used by include_next<>)
+			headerSearchOptions.AddPath("/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include", clang::frontend::CXXSystem, false, true);
+
+			// For stdarg.h (located somewhere in hell)
+			headerSearchOptions.AddPath("/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/Kernel.framework/Versions/A/Headers", clang::frontend::CXXSystem, false, true);
+#endif
 
 			for (const auto& incInfo : m_compilerConfig.vIncludes)
 			{
