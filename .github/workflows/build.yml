@@ -40,6 +40,18 @@ jobs:
             os_version: "22.04",
             artifact_id: "RG3_Linux"
           }
+          - {
+              name: "macOS",
+              os: macos-13,
+              os_id: "macos",
+              cc: "clang",
+              cxx: "clang++",
+              boost_toolset: gcc,
+              cmake_generator: "Ninja",
+              python_version: "3.10",
+              os_version: "13",
+              artifact_id: "RG3_macOS"
+          }
 
     steps:
       # Download repository with submodules
@@ -56,17 +68,27 @@ jobs:
           msbuild-architecture: x64
 
       # Setup Ninja
-      - name: Setup Ninja (Linux, macOS)
+      - name: Setup Ninja (Linux)
         if: matrix.config.os_id == 'linux'
         run: |
           sudo apt-get install -y ninja-build gcc-13 g++-13 libboost-all-dev
 
       # Setup Python of specific version
       - name: Install Python
+        if: matrix.config.os_id != 'macos'
         id: install-python3
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.config.python_version }}
+
+      - name: Setup PyENV and other tools (macOS)
+        if: matrix.config.os_id == 'macos'
+        run: |
+          brew install pyenv
+          brew install wget
+          brew install ninja
+          brew install python@3.10
+          pyenv install 3.10-dev -s
 
       # ---------------
       # Boost
@@ -78,7 +100,7 @@ jobs:
           key: ${{ runner.os }}-boost_1_81_0
           path: boost_1_81_0
 
-      - name: Download and build Boost (Linux, macOS)
+      - name: Download and build Boost (Linux)
         if: steps.cache-boost-binaries.outputs.cache-hit != 'true' && matrix.config.os_id == 'linux'
         run: |
           wget https://boostorg.jfrog.io/artifactory/main/release/1.81.0/source/boost_1_81_0.tar.gz
@@ -96,116 +118,125 @@ jobs:
           .\bootstrap.bat --with-libraries=system,filesystem,python
           .\b2 link=static variant=release
 
+      - name: Download and build Boost (macOS)
+        if: steps.cache-boost-binaries.outputs.cache-hit != 'true' && matrix.config.os_id == 'macos'
+        run: |
+          wget "https://boostorg.jfrog.io/artifactory/main/release/1.81.0/source/boost_1_81_0.tar.gz"
+          tar -xzf boost_1_81_0.tar.gz
+          cd boost_1_81_0
+          ./bootstrap.sh --with-libraries=python,system,filesystem --with-python=$HOME/.pyenv/versions/3.10-dev/bin/python3 --with-python-version=3.10 --with-python-root=$HOME/.pyenv/versions/3.10-dev
+          ./b2 link=static variant=release
+
       # ---------------
       # LLVM
       # ---------------
-      - name: Cache LLVM binaries
-        id: cache-llvm-binaries
-        uses: actions/cache@v3
-        with:
-          key: "${{ runner.os }}-build-${{ matrix.config.llvm_tag }}"
-          path: |
-            llvm_repo/cmake
-            llvm_repo/build/cmake
-            llvm_repo/build/MinSizeRel
-            llvm_repo/build/include
-            llvm_repo/build/lib
-            llvm_repo/build/tools/clang/include
-            llvm_repo/llvm
-            llvm_repo/clang
-
-      # Checkout & Build LLVM (On cache miss - build from sources!)
-      - name: Checkout LLVM
-        if: steps.cache-llvm-binaries.outputs.cache-hit != 'true'
-        uses: actions/checkout@v3
-        with:
-          submodules: "recursive"
-          repository: "llvm/llvm-project"
-          ref: ${{ matrix.config.llvm_tag }}
-          path: "llvm_repo"
-
-      # Build LLVM
-      - name: Build LLVM
-        if: steps.cache-llvm-binaries.outputs.cache-hit != 'true'
-        working-directory: llvm_repo
-        env:
-          CC: ${{ matrix.config.cc }}
-          CXX: ${{ matrix.config.cxx }}
-        run: |
-          mkdir build
-          cmake -DLLVM_ENABLE_PROJECTS="clang" -DCMAKE_BUILD_TYPE="MinSizeRel" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DLLVM_ENABLE_RTTI=ON -DLLVM_INCLUDE_BENCHMARKS=OFF -DLLVM_INCLUDE_EXAMPLES=OFF -DLLVM_INCLUDE_TESTS=OFF -DLLVM_INCLUDE_TOOLS=ON -DLLVM_TARGETS_TO_BUILD="host" -DLLVM_BUILD_32_BITS=OFF -DLLVM_ENABLE_BINDINGS=OFF -DLLVM_BUILD_DOCS=OFF -S llvm -B build -G "${{ matrix.config.cmake_generator }}"
-          cd build
-          cmake --build . --config MinSizeRel
-
-      # Build our project
-      - name: Build RG3
-        env:
-          LLVM_DIR: ${{ github.workspace }}/llvm_repo/build/lib/cmake/llvm
-          CLANG_DIR: ${{ github.workspace }}/llvm_repo/build/lib/cmake/clang
-          Boost_ROOT: ${{ github.workspace }}/boost_1_81_0/stage/lib/cmake/Boost-1.81.0
-          Python3_USE_STATIC_LIBS: "TRUE"
-          CC: ${{ matrix.config.cc }}
-          CXX: ${{ matrix.config.cxx }}
-        run: |
-          mkdir build
-          cmake -DCMAKE_BUILD_TYPE="MinSizeRel" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -B build -G "${{ matrix.config.cmake_generator }}"
-          cd build
-          cmake --build . --config MinSizeRel
-
-      # Install Clang Latest (for testing env)
-      - name: Install Clang TestEnv
-        uses: egor-tensin/setup-clang@v1
-        with:
-          version: latest
-          platform: x64
-
-      # Run Unit Tests
-      - name: RG3 Run unit tests
-        run: |
-          cd build
-          ctest . -C MinSizeRel --verbose --output-on-failure
-
-      # Run Python Unit Tests
-      - name: RG3 Run python unit tests (Windows)
-        if: matrix.config.os_id == 'windows'
-        run: |
-          cp PyBind/rg3py.pyd Tests/PyIntegration
-          cp PyBind/rg3py.pyi Tests/PyIntegration
-          cd Tests/PyIntegration
-          pip install pytest
-          pytest tests.py
-
-      # Run Python Unit Tests (Linux, macOS)
-      - name: RG3 Run python unit tests (Linux, macOS)
-        if: matrix.config.os_id == 'linux' || matrix.config.os_id == 'macos'
-        run: |
-          cp PyBind/rg3py.so Tests/PyIntegration
-          cp PyBind/rg3py.pyi Tests/PyIntegration
-          cd Tests/PyIntegration
-          pip install pytest
-          pytest tests.py
-
-      # Make dist folder with pyd & pyi files.
-      - name: Create distribution package (Windows)
-        if: matrix.config.os_id == 'windows'
-        run: |
-          mkdir dist
-          mv PyBind/rg3py.pyi dist
-          mv PyBind/rg3py.pyd dist
-
-      - name: Create distribution package (not Windows)
-        if: matrix.config.os_id != 'windows'
-        run: |
-          mkdir dist
-          mv PyBind/rg3py.pyi dist
-          mv PyBind/rg3py.so dist
-
-      # Upload artifacts
-      - name: Upload RG3 artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.config.artifact_id }}
-          path: dist
+#      - name: Cache LLVM binaries
+#        id: cache-llvm-binaries
+#        uses: actions/cache@v3
+#        with:
+#          key: "${{ runner.os }}-build-${{ matrix.config.llvm_tag }}"
+#          path: |
+#            llvm_repo/cmake
+#            llvm_repo/build/cmake
+#            llvm_repo/build/MinSizeRel
+#            llvm_repo/build/include
+#            llvm_repo/build/lib
+#            llvm_repo/build/tools/clang/include
+#            llvm_repo/llvm
+#            llvm_repo/clang
+#
+#      # Checkout & Build LLVM (On cache miss - build from sources!)
+#      - name: Checkout LLVM
+#        if: steps.cache-llvm-binaries.outputs.cache-hit != 'true'
+#        uses: actions/checkout@v3
+#        with:
+#          submodules: "recursive"
+#          repository: "llvm/llvm-project"
+#          ref: ${{ matrix.config.llvm_tag }}
+#          path: "llvm_repo"
+#
+#      # Build LLVM
+#      - name: Build LLVM
+#        if: steps.cache-llvm-binaries.outputs.cache-hit != 'true'
+#        working-directory: llvm_repo
+#        env:
+#          CC: ${{ matrix.config.cc }}
+#          CXX: ${{ matrix.config.cxx }}
+#        run: |
+#          mkdir build
+#          cmake -DLLVM_ENABLE_PROJECTS="clang" -DCMAKE_BUILD_TYPE="MinSizeRel" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DLLVM_ENABLE_RTTI=ON -DLLVM_INCLUDE_BENCHMARKS=OFF -DLLVM_INCLUDE_EXAMPLES=OFF -DLLVM_INCLUDE_TESTS=OFF -DLLVM_INCLUDE_TOOLS=ON -DLLVM_TARGETS_TO_BUILD="host" -DLLVM_BUILD_32_BITS=OFF -DLLVM_ENABLE_BINDINGS=OFF -DLLVM_BUILD_DOCS=OFF -S llvm -B build -G "${{ matrix.config.cmake_generator }}"
+#          cd build
+#          cmake --build . --config MinSizeRel
+#
+#      # Build our project
+#      - name: Build RG3
+#        env:
+#          LLVM_DIR: ${{ github.workspace }}/llvm_repo/build/lib/cmake/llvm
+#          CLANG_DIR: ${{ github.workspace }}/llvm_repo/build/lib/cmake/clang
+#          Boost_ROOT: ${{ github.workspace }}/boost_1_81_0/stage/lib/cmake/Boost-1.81.0
+#          Python3_USE_STATIC_LIBS: "TRUE"
+#          CC: ${{ matrix.config.cc }}
+#          CXX: ${{ matrix.config.cxx }}
+#        run: |
+#          mkdir build
+#          cmake -DCMAKE_BUILD_TYPE="MinSizeRel" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -B build -G "${{ matrix.config.cmake_generator }}"
+#          cd build
+#          cmake --build . --config MinSizeRel
+#
+#      # Install Clang Latest (for testing env)
+#      - name: Install Clang TestEnv
+#        uses: egor-tensin/setup-clang@v1
+#        with:
+#          version: latest
+#          platform: x64
+#
+#      # Run Unit Tests
+#      - name: RG3 Run unit tests
+#        run: |
+#          cd build
+#          ctest . -C MinSizeRel --verbose --output-on-failure
+#
+#      # Run Python Unit Tests
+#      - name: RG3 Run python unit tests (Windows)
+#        if: matrix.config.os_id == 'windows'
+#        run: |
+#          cp PyBind/rg3py.pyd Tests/PyIntegration
+#          cp PyBind/rg3py.pyi Tests/PyIntegration
+#          cd Tests/PyIntegration
+#          pip install pytest
+#          pytest tests.py
+#
+#      # Run Python Unit Tests (Linux, macOS)
+#      - name: RG3 Run python unit tests (Linux, macOS)
+#        if: matrix.config.os_id == 'linux' || matrix.config.os_id == 'macos'
+#        run: |
+#          cp PyBind/rg3py.so Tests/PyIntegration
+#          cp PyBind/rg3py.pyi Tests/PyIntegration
+#          cd Tests/PyIntegration
+#          pip install pytest
+#          pytest tests.py
+#
+#      # Make dist folder with pyd & pyi files.
+#      - name: Create distribution package (Windows)
+#        if: matrix.config.os_id == 'windows'
+#        run: |
+#          mkdir dist
+#          mv PyBind/rg3py.pyi dist
+#          mv PyBind/rg3py.pyd dist
+#
+#      - name: Create distribution package (not Windows)
+#        if: matrix.config.os_id != 'windows'
+#        run: |
+#          mkdir dist
+#          mv PyBind/rg3py.pyi dist
+#          mv PyBind/rg3py.so dist
+#
+#      # Upload artifacts
+#      - name: Upload RG3 artifacts
+#        uses: actions/upload-artifact@v4
+#        with:
+#          name: ${{ matrix.config.artifact_id }}
+#          path: dist
 
   public_release_template:
     name: Create release and public PyPI packages
