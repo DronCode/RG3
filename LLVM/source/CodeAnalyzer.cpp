@@ -340,7 +340,6 @@ namespace rg3::llvm
 		// Setup header dirs source
 		clang::HeaderSearchOptions& headerSearchOptions = compilerInstance.getHeaderSearchOpts();
 		{
-#ifndef __APPLE__
 			for (const auto& sysInc : pCompilerEnv->config.vSystemIncludes)
 			{
 				const auto absolutePath = std::filesystem::absolute(sysInc.sFsLocation);
@@ -365,17 +364,6 @@ namespace rg3::llvm
 
 				headerSearchOptions.AddPath(absolutePath.string(), group, false, true);
 			}
-#else
-			// A little message from DronCode: I REALLY HATE THIS SHIT. But really, Idk how to find those locations properly. It's really shitty stuff but... so, just let it work like that...
-			// For C++ things (cstddef, string, etc)
-			headerSearchOptions.AddPath("/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1", clang::frontend::CXXSystem, false, true);
-
-			// For C things (stddef.h used by include_next<>)
-			headerSearchOptions.AddPath("/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include", clang::frontend::CXXSystem, false, true);
-
-			// For stdarg.h (located somewhere in hell)
-			headerSearchOptions.AddPath("/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/Kernel.framework/Versions/A/Headers", clang::frontend::CXXSystem, false, true);
-#endif
 
 			for (const auto& incInfo : m_compilerConfig.vIncludes)
 			{

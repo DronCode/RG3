@@ -401,6 +401,28 @@ namespace rg3::llvm
 #endif
 		}
 
+#if defined(__APPLE__)
+		// Override found paths. Use isysroot as base path and compile three paths:
+		// ${ISYSROOT}/usr/include/c++/v1
+		// ${ISYSROOT}/usr/include
+		// ${ISYSROOT}/System/Library/Frameworks/Kernel.framework/Versions/A/Headers
+		const auto& incs = compilerEnvironment.config.vSystemIncludes;
+		if (auto it = std::find_if(incs.begin(), incs.end(), [](const rg3::llvm::IncludeInfo& ii) -> bool { return ii.eKind == rg3::llvm::IncludeKind::IK_SYSROOT; }); it != incs.end())
+		{
+			const auto basePath = it->sFsLocation;
+
+			compilerEnvironment.config.vSystemIncludes = {
+				rg3::llvm::IncludeInfo { basePath / "usr" / "include" / "c++" / "v1", rg3::llvm::IncludeKind::IK_SYSTEM },
+				rg3::llvm::IncludeInfo { basePath / "usr" / "include", rg3::llvm::IncludeKind::IK_SYSTEM },
+				rg3::llvm::IncludeInfo { basePath / "System" / "Library" / "Frameworks" / "Kernel.framework" / "Versions" / "A" / "Headers", rg3::llvm::IncludeKind::IK_SYSTEM }
+			};
+		}
+		else
+		{
+			return CompilerEnvError { "No sysroot found on macOS!", rg3::llvm::CompilerEnvError::ErrorKind::EK_BAD_CLANG_OUTPUT };
+		}
+#endif
+
 		// Everything is ok, return env
 		return compilerEnvironment;
 	}
