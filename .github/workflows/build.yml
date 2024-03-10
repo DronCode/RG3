@@ -125,7 +125,7 @@ jobs:
           tar -xzf boost_1_81_0.tar.gz
           cd boost_1_81_0
           ./bootstrap.sh --with-libraries=python,system,filesystem --with-python=$HOME/.pyenv/versions/3.10-dev/bin/python3 --with-python-version=3.10 --with-python-root=$HOME/.pyenv/versions/3.10-dev
-          ./b2 link=static variant=release
+          ./b2 link=static variant=release cxxflags=-fPIC cflags=-fPIC target-os=darwin architecture=arm+x86
 
       # ---------------
       # LLVM
