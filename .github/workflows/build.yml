@@ -87,7 +87,6 @@ jobs:
         env:
           HOMEBREW_NO_AUTO_UPDATE: 1
         run: |
-          brew install python@3.10
           brew install pyenv
           brew install wget
           brew install ninja
