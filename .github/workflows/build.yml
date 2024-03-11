@@ -187,59 +187,60 @@ jobs:
           cmake --build . --config MinSizeRel
 
       # Install Clang Latest (for testing env)
-#      - name: Install Clang TestEnv
-#        uses: egor-tensin/setup-clang@v1
-#        with:
-#          version: latest
-#          platform: x64
-#
-#      # Run Unit Tests
-#      - name: RG3 Run unit tests
-#        run: |
-#          cd build
-#          ctest . -C MinSizeRel --verbose --output-on-failure
-#
-#      # Run Python Unit Tests
-#      - name: RG3 Run python unit tests (Windows)
-#        if: matrix.config.os_id == 'windows'
-#        run: |
-#          cp PyBind/rg3py.pyd Tests/PyIntegration
-#          cp PyBind/rg3py.pyi Tests/PyIntegration
-#          cd Tests/PyIntegration
-#          pip install pytest
-#          pytest tests.py
-#
-#      # Run Python Unit Tests (Linux, macOS)
-#      - name: RG3 Run python unit tests (Linux, macOS)
-#        if: matrix.config.os_id == 'linux' || matrix.config.os_id == 'macos'
-#        run: |
-#          cp PyBind/rg3py.so Tests/PyIntegration
-#          cp PyBind/rg3py.pyi Tests/PyIntegration
-#          cd Tests/PyIntegration
-#          pip install pytest
-#          pytest tests.py
-#
-#      # Make dist folder with pyd & pyi files.
-#      - name: Create distribution package (Windows)
-#        if: matrix.config.os_id == 'windows'
-#        run: |
-#          mkdir dist
-#          mv PyBind/rg3py.pyi dist
-#          mv PyBind/rg3py.pyd dist
-#
-#      - name: Create distribution package (not Windows)
-#        if: matrix.config.os_id != 'windows'
-#        run: |
-#          mkdir dist
-#          mv PyBind/rg3py.pyi dist
-#          mv PyBind/rg3py.so dist
-#
-#      # Upload artifacts
-#      - name: Upload RG3 artifacts
-#        uses: actions/upload-artifact@v4
-#        with:
-#          name: ${{ matrix.config.artifact_id }}
-#          path: dist
+      - name: Install Clang TestEnv (Windows, Linux)
+        if: matrix.config.os_id != 'macos'
+        uses: egor-tensin/setup-clang@v1
+        with:
+          version: latest
+          platform: x64
+
+      # Run Unit Tests
+      - name: RG3 Run unit tests
+        run: |
+          cd build
+          ctest . -C MinSizeRel --verbose --output-on-failure
+
+      # Run Python Unit Tests
+      - name: RG3 Run python unit tests (Windows)
+        if: matrix.config.os_id == 'windows'
+        run: |
+          cp PyBind/rg3py.pyd Tests/PyIntegration
+          cp PyBind/rg3py.pyi Tests/PyIntegration
+          cd Tests/PyIntegration
+          pip install pytest
+          pytest tests.py
+
+      # Run Python Unit Tests (Linux, macOS)
+      - name: RG3 Run python unit tests (Linux, macOS)
+        if: matrix.config.os_id == 'linux' || matrix.config.os_id == 'macos'
+        run: |
+          cp PyBind/rg3py.so Tests/PyIntegration
+          cp PyBind/rg3py.pyi Tests/PyIntegration
+          cd Tests/PyIntegration
+          pip install pytest
+          pytest tests.py
+
+      # Make dist folder with pyd & pyi files.
+      - name: Create distribution package (Windows)
+        if: matrix.config.os_id == 'windows'
+        run: |
+          mkdir dist
+          mv PyBind/rg3py.pyi dist
+          mv PyBind/rg3py.pyd dist
+
+      - name: Create distribution package (not Windows)
+        if: matrix.config.os_id != 'windows'
+        run: |
+          mkdir dist
+          mv PyBind/rg3py.pyi dist
+          mv PyBind/rg3py.so dist
+
+      # Upload artifacts
+      - name: Upload RG3 artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.config.artifact_id }}
+          path: dist
 
   public_release_template:
     name: Create release and public PyPI packages
