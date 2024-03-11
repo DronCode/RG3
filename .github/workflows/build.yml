@@ -85,10 +85,11 @@ jobs:
       - name: Setup PyENV and other tools (macOS)
         if: matrix.config.os_id == 'macos'
         run: |
+          brew install python@3.10
+          brew install python@3.12
           brew install pyenv
           brew install wget
           brew install ninja
-          brew install python@3.10
           pyenv install 3.10-dev -s
 
       # ---------------
