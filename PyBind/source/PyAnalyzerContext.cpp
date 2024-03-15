@@ -49,6 +49,38 @@ namespace rg3::pybind
 		virtual std::optional<ContextTask> takeTask() = 0;
 	};
 
+	struct PyGuard final : boost::noncopyable
+	{
+		PyGuard()
+		{
+			m_state = PyEval_SaveThread();
+		}
+
+		~PyGuard()
+		{
+			PyEval_RestoreThread(m_state);
+			m_state = nullptr;
+		}
+
+	 private:
+		PyThreadState* m_state { nullptr };
+	};
+
+	struct PyGILGuard final : boost::noncopyable
+	{
+		PyGILState_STATE m_gs;
+
+		PyGILGuard()
+		{
+			m_gs = PyGILState_Ensure();
+		}
+
+		~PyGILGuard()
+		{
+			PyGILState_Release(m_gs);
+		}
+	};
+
 	struct PyAnalyzerContext::RuntimeContext : public IRuntimeContextBaseOperations
 	{
 	 public:
@@ -138,11 +170,13 @@ namespace rg3::pybind
 
 			for (int i = 0; i < workersAmount; i++)
 			{
-				workers.emplace_back(
+				std::thread worker {
 					[this, iWorkerIndex = static_cast<size_t>(i)]() {
 						workerEntryPoint(iWorkerIndex);
 					}
-				);
+				};
+
+				workers.emplace_back(std::move(worker));
 			}
 
 			return true;
@@ -188,6 +222,7 @@ namespace rg3::pybind
 					{
 						// Write results (write lock)
 						std::unique_lock<std::shared_mutex> guard { pAnalyzerStorage->lockMutex };
+						PyGILGuard gilGuard {};
 
 						for (const auto& issue : analyzeResult.vIssues)
 						{
@@ -446,8 +481,10 @@ namespace rg3::pybind
 		if (m_bInProgress)
 			return false;
 
+		bool bResult = false;
+
 		m_bInProgress = true;
-		const bool bResult = runAnalyze();
+		bResult = runAnalyze();
 		m_bInProgress = false;
 
 		return bResult;
@@ -464,35 +501,40 @@ namespace rg3::pybind
 		m_pySubjects.pyFoundTypes = {};
 		m_pySubjects.pyFoundIssues = {};
 		m_pySubjects.vFoundTypeInstances.clear();
+		bool bResult = false;
 
 		// Create tasks
 		{
-			auto transaction = m_pContext->startTransaction();
-			transaction.clearTasks();
+			PyGuard pyGuard {};
 
-			// Spawn worker tasks
-			for (const auto& header : m_headersToPrepare)
 			{
-				transaction.pushTask(AnalyzeHeaderTask { header, m_compilerConfig });
+				auto transaction = m_pContext->startTransaction();
+				transaction.clearTasks();
+
+				// Spawn worker tasks
+				for (const auto& header : m_headersToPrepare)
+				{
+					transaction.pushTask(AnalyzeHeaderTask{header, m_compilerConfig});
+				}
+
+				// And spawn 'stop' tasks. +2 should be enough
+				for (size_t i = 0; i < m_iWorkersAmount; i++)
+				{
+					transaction.pushTask(StopWorkerTask{});
+				}
 			}
 
-			// And spawn 'stop' tasks. +2 should be enough
-			for (size_t i = 0; i < m_iWorkersAmount; i++)
+			// Re-create workers and run analyze
+			if (m_pContext->runWorkers(m_iWorkersAmount))
 			{
-				transaction.pushTask(StopWorkerTask {});
+				m_pContext->waitAll();
+
+				// Everything is fine
+				bResult = resolveTypeReferences();
 			}
 		}
 
-		// Re-create workers and run analyze
-		if (m_pContext->runWorkers(m_iWorkersAmount))
-		{
-			m_pContext->waitAll();
-
-			// Everything is fine
-			return resolveTypeReferences();
-		}
-
-		return false;
+		return bResult;
 	}
 
 	void PyAnalyzerContext::pushResolverIssue(const ResolverContext& context, std::string&& errorMessage)

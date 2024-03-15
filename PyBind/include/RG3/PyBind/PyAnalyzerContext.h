@@ -31,7 +31,7 @@ namespace rg3::pybind
 	 * 		analyzer_context.add_project_include_directory("include")
 	 * 		analyzer_context.add_project_include_directory("ThirdPart/glm/include")
 	 *
-	 * 		found_headers: List[str] = glob("include/*.h", recursive=True)
+	 * 		found_headers: List[str] = glob("include\*.h", recursive=True)
 	 * 		analyzer_context.set_files(found_headers)
 	 *
 	 * 		analyzer_context.analyze()  # Run analyze
