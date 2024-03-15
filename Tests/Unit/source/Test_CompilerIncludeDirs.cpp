@@ -37,6 +37,42 @@ TEST_F(Tests_CompilerIncludeDirs, CheckIncludeDirs)
 	// That's enough for this case
 }
 
+TEST_F(Tests_CompilerIncludeDirs, CheckCStdDefUsage)
+{
+	g_Analyzer->getCompilerConfig().cppStandard = rg3::llvm::CxxStandard::CC_11; // that should be enough
+	g_Analyzer->setSourceCode(R"(
+#include <cstddef>
+
+/// @runtime
+struct MyFooStruct
+{
+	/// @property(Some)
+	std::size_t something { 0 };
+
+	/// @property(Flag)
+	bool bBooleanSupportedOrNope { true };
+};
+)");
+
+	auto analyzerResult = g_Analyzer->analyze();
+
+	ASSERT_TRUE(analyzerResult.vIssues.empty()) << "no issues expected to be here";
+}
+
+TEST_F(Tests_CompilerIncludeDirs, CheckThatWeRunningAsCppCompiler)
+{
+	g_Analyzer->getCompilerConfig().cppStandard = rg3::llvm::CxxStandard::CC_11; // that should be enough
+	g_Analyzer->setSourceCode(R"(
+#ifndef __cplusplus
+#errror "C++ NOT C++!"
+#endif
+)");
+
+	auto analyzerResult = g_Analyzer->analyze();
+
+	ASSERT_TRUE(analyzerResult.vIssues.empty()) << "no issues expected to be here";
+}
+
 TEST_F(Tests_CompilerIncludeDirs, CheckStdIncludes)
 {
 	g_Analyzer->getCompilerConfig().cppStandard = rg3::llvm::CxxStandard::CC_20;
@@ -49,8 +85,8 @@ TEST_F(Tests_CompilerIncludeDirs, CheckStdIncludes)
 	g_Analyzer->getCompilerConfig().vCompilerDefs.emplace_back("ENABLE_STD_TEST_ARGS=1");
 	auto analyzeResult = g_Analyzer->analyze();
 
-	ASSERT_TRUE(analyzeResult.vIssues.empty()) << "No issues should be here";
-	ASSERT_EQ(analyzeResult.vFoundTypes.size(), 1) << "Only 1 type should be here";
+	ASSERT_TRUE(analyzeResult.vIssues.empty()) << "No issues should be here, but found " + std::to_string(analyzeResult.vIssues.size());
+	ASSERT_EQ(analyzeResult.vFoundTypes.size(), 1) << "Only 1 type should be here, but found " + std::to_string(analyzeResult.vFoundTypes.size());
 	// That's enough for this case
 }
 
@@ -76,8 +112,8 @@ struct Sample
 
 	auto analyzeResult = g_Analyzer->analyze();
 
-	ASSERT_TRUE(analyzeResult.vIssues.empty()) << "No issues should be here";
-	ASSERT_EQ(analyzeResult.vFoundTypes.size(), 1) << "Only 1 type should be here";
+	ASSERT_TRUE(analyzeResult.vIssues.empty()) << "No issues should be here, but found " + std::to_string(analyzeResult.vIssues.size());
+	ASSERT_EQ(analyzeResult.vFoundTypes.size(), 1) << "Only 1 type should be here" + std::to_string(analyzeResult.vFoundTypes.size());
 
 	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getPrettyName(), "Sample");
 

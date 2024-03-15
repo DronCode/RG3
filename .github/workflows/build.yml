@@ -40,6 +40,19 @@ jobs:
             os_version: "22.04",
             artifact_id: "RG3_Linux"
           }
+          - {
+            name: "macOS",
+            os: macos-13,
+            os_id: "macos",
+            cc: "clang",
+            cxx: "clang++",
+            boost_toolset: gcc,
+            cmake_generator: "Ninja",
+            llvm_tag: "llvmorg-16.0.4",
+            python_version: "3.10",
+            os_version: "13",
+            artifact_id: "RG3_macOS"
+          }
 
     steps:
       # Download repository with submodules
@@ -56,17 +69,29 @@ jobs:
           msbuild-architecture: x64
 
       # Setup Ninja
-      - name: Setup Ninja (Linux, macOS)
+      - name: Setup Ninja (Linux)
         if: matrix.config.os_id == 'linux'
         run: |
           sudo apt-get install -y ninja-build gcc-13 g++-13 libboost-all-dev
 
       # Setup Python of specific version
       - name: Install Python
+        if: matrix.config.os_id != 'macos'
         id: install-python3
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.config.python_version }}
+
+      - name: Setup PyENV and other tools (macOS)
+        if: matrix.config.os_id == 'macos'
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: 1
+        run: |
+          brew install pyenv
+          brew install ninja
+          brew install python@3.10
+          pyenv install 3.10-dev -s
+          echo "Python3_ROOT_DIR=$HOME/.pyenv/versions/3.10-dev" >> $GITHUB_ENV
 
       # ---------------
       # Boost
@@ -78,7 +103,7 @@ jobs:
           key: ${{ runner.os }}-boost_1_81_0
           path: boost_1_81_0
 
-      - name: Download and build Boost (Linux, macOS)
+      - name: Download and build Boost (Linux)
         if: steps.cache-boost-binaries.outputs.cache-hit != 'true' && matrix.config.os_id == 'linux'
         run: |
           wget https://boostorg.jfrog.io/artifactory/main/release/1.81.0/source/boost_1_81_0.tar.gz
@@ -95,6 +120,15 @@ jobs:
           cd boost_1_81_0
           .\bootstrap.bat --with-libraries=system,filesystem,python
           .\b2 link=static variant=release
+
+      - name: Download and build Boost (macOS)
+        if: steps.cache-boost-binaries.outputs.cache-hit != 'true' && matrix.config.os_id == 'macos'
+        run: |
+          curl -L -O https://boostorg.jfrog.io/artifactory/main/release/1.81.0/source/boost_1_81_0.tar.gz
+          tar -xzf boost_1_81_0.tar.gz
+          cd boost_1_81_0
+          ./bootstrap.sh --with-libraries=python,system,filesystem --with-python=$HOME/.pyenv/versions/3.10-dev/bin/python3 --with-python-version=3.10 --with-python-root=$HOME/.pyenv/versions/3.10-dev
+          ./b2 link=static variant=release cxxflags=-fPIC cflags=-fPIC target-os=darwin architecture=arm+x86
 
       # ---------------
       # LLVM
@@ -133,7 +167,7 @@ jobs:
           CXX: ${{ matrix.config.cxx }}
         run: |
           mkdir build
-          cmake -DLLVM_ENABLE_PROJECTS="clang" -DCMAKE_BUILD_TYPE="MinSizeRel" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DLLVM_ENABLE_RTTI=ON -DLLVM_INCLUDE_BENCHMARKS=OFF -DLLVM_INCLUDE_EXAMPLES=OFF -DLLVM_INCLUDE_TESTS=OFF -DLLVM_INCLUDE_TOOLS=ON -DLLVM_TARGETS_TO_BUILD="host" -DLLVM_BUILD_32_BITS=OFF -DLLVM_ENABLE_BINDINGS=OFF -DLLVM_BUILD_DOCS=OFF -S llvm -B build -G "${{ matrix.config.cmake_generator }}"
+          cmake -DLLVM_ENABLE_PROJECTS="clang" -DCMAKE_BUILD_TYPE="MinSizeRel" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DLLVM_ENABLE_ZLIB=OFF -DLLVM_ENABLE_ZSTD=OFF -DLLVM_ENABLE_RTTI=ON -DLLVM_INCLUDE_BENCHMARKS=OFF -DLLVM_INCLUDE_EXAMPLES=OFF -DLLVM_INCLUDE_TESTS=OFF -DLLVM_INCLUDE_TOOLS=ON -DLLVM_TARGETS_TO_BUILD="host" -DLLVM_BUILD_32_BITS=OFF -DLLVM_ENABLE_BINDINGS=OFF -DLLVM_BUILD_DOCS=OFF -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" -S llvm -B build -G "${{ matrix.config.cmake_generator }}"
           cd build
           cmake --build . --config MinSizeRel
 
@@ -148,12 +182,13 @@ jobs:
           CXX: ${{ matrix.config.cxx }}
         run: |
           mkdir build
-          cmake -DCMAKE_BUILD_TYPE="MinSizeRel" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -B build -G "${{ matrix.config.cmake_generator }}"
+          cmake -DCMAKE_BUILD_TYPE="MinSizeRel" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" -B build -G "${{ matrix.config.cmake_generator }}"
           cd build
           cmake --build . --config MinSizeRel
 
       # Install Clang Latest (for testing env)
-      - name: Install Clang TestEnv
+      - name: Install Clang TestEnv (Windows, Linux)
+        if: matrix.config.os_id != 'macos'
         uses: egor-tensin/setup-clang@v1
         with:
           version: latest

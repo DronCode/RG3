@@ -147,7 +147,7 @@ namespace rg3::llvm
 		if (auto pEnvFailure = std::get_if<CompilerEnvError>(&compilerEnvironment))
 		{
 			// Fatal error
-			result.vIssues.emplace_back(AnalyzerResult::CompilerIssue::IssueKind::IK_ERROR, sourceToString(m_source), 0, 0, pEnvFailure->message);
+			result.vIssues.emplace_back(AnalyzerResult::CompilerIssue { AnalyzerResult::CompilerIssue::IssueKind::IK_ERROR, sourceToString(m_source), 0, 0, pEnvFailure->message });
 			return result;
 		}
 
@@ -174,6 +174,25 @@ namespace rg3::llvm
 		vProxyArgs.emplace_back("-fdelayed-template-parsing");
 		vProxyArgs.emplace_back("-fms-compatibility-version=19");
 #endif
+
+		if (auto it = std::find(vProxyArgs.begin(), vProxyArgs.end(), "-x"); it != vProxyArgs.end())
+		{
+			// need to remove this iter and next
+			auto next = std::next(it);
+
+			if (next != std::end(vProxyArgs))
+			{
+				// remove next
+				vProxyArgs.erase(next);
+			}
+
+			// and remove this
+			vProxyArgs.erase(it);
+		}
+
+		// We will append "-x c++-header" option always
+		vProxyArgs.emplace_back("-x");
+		vProxyArgs.emplace_back("c++-header");
 
 		std::vector<const char*> vCompilerArgs;
 		vCompilerArgs.resize(vProxyArgs.size());
@@ -246,10 +265,16 @@ namespace rg3::llvm
 		compilerInstance.getPreprocessorOpts().addMacroDef("_MSC_EXTENSIONS");
 #endif
 
+#ifdef __APPLE__
+		// This should be enough?
+		compilerInstance.getPreprocessorOpts().addMacroDef("__GCC_HAVE_DWARF2_CFI_ASM=1");
+#endif
+
 		std::shared_ptr<clang::TargetOptions> targetOpts = nullptr;
 
 		// Setup triple
-		if (!pCompilerEnv || pCompilerEnv->triple.empty())
+#if !defined(__APPLE__)
+		if (pCompilerEnv->triple.empty())
 		{
 			// Use default triple
 			targetOpts = std::make_shared<clang::TargetOptions>();
@@ -274,6 +299,12 @@ namespace rg3::llvm
 			std::vector<std::string> vIncs;
 			clang::LangOptions::setLangDefaults(*langOptions, clang::Language::CXX, triple, vIncs, langKind);
 		}
+#else
+		// On Apple we should use default triple instead of detect it at runtime
+		::llvm::Triple triple(::llvm::sys::getDefaultTargetTriple());
+		compilerInstance.getTargetOpts().Triple = triple.str();
+		compilerInstance.setTarget(clang::TargetInfo::CreateTargetInfo(compilerInstance.getDiagnostics(), std::make_shared<clang::TargetOptions>(compilerInstance.getTargetOpts())));
+#endif
 
 		compilerInstance.setInvocation(invocation);
 
@@ -284,7 +315,10 @@ namespace rg3::llvm
 		opts.Inputs.clear();
 
 		// Prepare compiler instance
-		std::visit(Visitor(opts), m_source);
+		{
+			Visitor v { opts };
+			std::visit(v, m_source);
+		}
 
 		// Set macros
 		clang::PreprocessorOptions& preprocessorOptions = compilerInstance.getPreprocessorOpts();
@@ -298,20 +332,44 @@ namespace rg3::llvm
 		preprocessorOptions.addMacroDef("__RG3_COMMIT__=\"" RG3_BUILD_HASH "\"");
 		preprocessorOptions.addMacroDef("__RG3_BUILD_DATE__=\"" __DATE__ "\"");
 
+#ifdef __APPLE__
+		// For apple only. They cares about GNUC? Idk & I don't care
+		preprocessorOptions.addMacroDef("__GNUC__=4");
+#endif
+
 		// Setup header dirs source
 		clang::HeaderSearchOptions& headerSearchOptions = compilerInstance.getHeaderSearchOpts();
 		{
-			for (const auto& sysInc : (pCompilerEnv ? pCompilerEnv->config.vSystemIncludes : m_compilerConfig.vSystemIncludes))
+			for (const auto& sysInc : pCompilerEnv->config.vSystemIncludes)
 			{
 				const auto absolutePath = std::filesystem::absolute(sysInc.sFsLocation);
-				headerSearchOptions.AddPath(absolutePath.string(), clang::frontend::IncludeDirGroup::CXXSystem, false, false);
+
+				clang::frontend::IncludeDirGroup group = clang::frontend::IncludeDirGroup::Angled;
+
+				if (sysInc.eKind == IncludeKind::IK_SYSROOT)
+				{
+					// ignore sysroot here
+					continue;
+				}
+
+				if (sysInc.eKind == IncludeKind::IK_SYSTEM)
+				{
+					group = clang::frontend::IncludeDirGroup::System;
+				}
+
+				if (sysInc.eKind == IncludeKind::IK_C_SYSTEM)
+				{
+					group = clang::frontend::IncludeDirGroup::ExternCSystem;
+				}
+
+				headerSearchOptions.AddPath(absolutePath.string(), group, false, true);
 			}
 
 			for (const auto& incInfo : m_compilerConfig.vIncludes)
 			{
 				// Convert path to absolute
 				const auto absolutePath = std::filesystem::absolute(incInfo.sFsLocation);
-				headerSearchOptions.AddPath(absolutePath.string(), clang::frontend::IncludeDirGroup::Angled, false, false);
+				headerSearchOptions.AddPath(absolutePath.string(), clang::frontend::IncludeDirGroup::Angled, false, true);
 			}
 		}
 

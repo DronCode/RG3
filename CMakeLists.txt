@@ -8,6 +8,8 @@ if (UNIX)
     set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
 endif()
 
+add_subdirectory(ThirdParty/fmt)
+
 add_subdirectory(Cpp)
 add_subdirectory(LLVM)
 add_subdirectory(PyBind)

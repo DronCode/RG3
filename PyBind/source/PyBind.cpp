@@ -1,7 +1,7 @@
 #include <string>
 #include <vector>
 #include <variant>
-#include <format>
+#include <fmt/format.h>
 
 #define BOOST_PYTHON_STATIC_LIB  // required because we using boost.python as static library
 #include <boost/python.hpp>
@@ -51,7 +51,7 @@ namespace rg3::pybind::wrappers
 			{
 				static const rg3::cpp::TypeReference s_None {};
 				rg3::cpp::TypeReference rType = arg.asTypeRef(s_None);
-				return boost::python::str(std::format("TypeREF: {}", rType.getRefName()));
+				return boost::python::str(fmt::format("TypeREF: {}", rType.getRefName()));
 			}
 			break;
 

@@ -20,7 +20,7 @@ namespace rg3::llvm
 			std::string sSourceFile;
 			uint32_t iLine { 0 };
 			uint32_t iColumn { 0 };
-			std::string sMessage;
+			std::string sMessage {};
 		};
 
 		using CompilerIssuesVector = std::vector<CompilerIssue>;
