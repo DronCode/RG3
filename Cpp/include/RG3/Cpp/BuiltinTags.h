@@ -17,5 +17,10 @@ namespace rg3::cpp
 		 * Brief - a "doxygen way" to know annotation about entity.
 		 */
 		static constexpr std::string_view kBrief { "brief" };
+
+		/**
+		 * Property - special tag to override property name. Usually, it has 1 argument - alias for property name
+		 */
+		static constexpr std::string_view kProperty { "property" };
 	};
 }

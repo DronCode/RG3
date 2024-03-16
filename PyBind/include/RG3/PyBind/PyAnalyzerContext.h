@@ -1,5 +1,6 @@
 #pragma once
 
+#include <RG3/PyBind/PyTypeBase.h>
 #include <RG3/LLVM/CodeAnalyzer.h>
 #include <RG3/LLVM/Compiler.h>
 
@@ -30,7 +31,7 @@ namespace rg3::pybind
 	 * 		analyzer_context.add_project_include_directory("include")
 	 * 		analyzer_context.add_project_include_directory("ThirdPart/glm/include")
 	 *
-	 * 		found_headers: List[str] = glob("include/*.h", recursive=True)
+	 * 		found_headers: List[str] = glob("include\*.h", recursive=True)
 	 * 		analyzer_context.set_files(found_headers)
 	 *
 	 * 		analyzer_context.analyze()  # Run analyze
@@ -65,8 +66,13 @@ namespace rg3::pybind
 		void setCompilerArgs(const boost::python::list& compilerArgs);
 		[[nodiscard]] boost::python::list getCompilerArgs() const;
 
+		void setCompilerDefs(const boost::python::list& compilerDefs);
+		[[nodiscard]] boost::python::list getCompilerDefs() const;
+
 		void setIgnoreRuntimeTag(bool bIgnoreRT);
 		bool isRuntimeTagIgnored() const;
+
+		boost::python::object pyGetTypeOfTypeReference(const rg3::cpp::TypeReference& typeReference);
 
 		[[nodiscard]] const boost::python::list& getFoundIssues() const;
 		[[nodiscard]] const boost::python::list& getFoundTypes() const;
@@ -75,17 +81,10 @@ namespace rg3::pybind
 		/**
 		 * @fn analyze
 		 * @brief Run analyze process.
-		 * @param bShouldWait true when we need to wait until all analyze process finished
-		 * @return true if analyzer started
+		 * @return true if everything is ok
 		 * @note When bShouldWait is true, function will return true when all analyzer thread will be finished
 		 */
-		bool analyze(bool bShouldWait);
-
-		/**
-		 * @fn waitFinish
-		 * @brief Lock current thread until all execution thread will be finished
-		 */
-		void waitFinish();
+		bool analyze();
 
 		/**
 		 * @fn isFinished
@@ -94,7 +93,25 @@ namespace rg3::pybind
 		bool isFinished() const;
 
 	 private:
-		bool runAnalyze(bool bShouldWait);
+		bool runAnalyze();
+
+		struct ResolverContext
+		{
+			enum class ContextSpace {
+				CS_UNDEFINED,
+				CS_TYPE,
+				CS_PROPERTY,
+				CS_FUNCTION,
+			};
+
+			ContextSpace eSpace { ContextSpace::CS_UNDEFINED };
+			boost::shared_ptr<rg3::cpp::TypeBase> pOwner { nullptr };
+		};
+
+		void pushResolverIssue(const ResolverContext& context, std::string&& errorMessage);
+
+		bool resolveTypeReferences();
+		bool resolveTags(const ResolverContext& context, rg3::cpp::Tags& tagsToResolve);
 
 	 private:
 		struct RuntimeContext;
@@ -108,6 +125,11 @@ namespace rg3::pybind
 		struct PyFoundSubjects
 		{
 			std::shared_mutex   lockMutex;
+
+			// Found & mapped original types. Key - typename (prettified, value - type instance with ownership)
+			std::unordered_map<std::string, boost::shared_ptr<rg3::pybind::PyTypeBase>> vFoundTypeInstances;
+
+			// Mapped types to python side
 			boost::python::list pyFoundTypes;
 			boost::python::list pyFoundIssues;
 		};

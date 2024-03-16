@@ -23,8 +23,8 @@ namespace rg3::cpp
 
 	TypeEnum::TypeEnum() = default;
 
-	TypeEnum::TypeEnum(const std::string& name, const CppNamespace& aNamespace, const DefinitionLocation& aLocation, const Tags& tags, const EnumEntryVector& aValues, bool bIsScoped, TypeReference underlyingType)
-		: TypeBase(TypeKind::TK_ENUM, name, aNamespace, aLocation, tags)
+	TypeEnum::TypeEnum(const std::string& name, const std::string& prettyName, const CppNamespace& aNamespace, const DefinitionLocation& aLocation, const Tags& tags, const EnumEntryVector& aValues, bool bIsScoped, TypeReference underlyingType)
+		: TypeBase(TypeKind::TK_ENUM, name, prettyName, aNamespace, aLocation, tags)
 		, m_entries(aValues)
 		, m_bScoped(bIsScoped)
 		, m_rUnderlyingType(underlyingType)

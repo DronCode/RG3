@@ -18,7 +18,9 @@ namespace rg3::llvm
 
 			IssueKind kind { IssueKind::IK_NONE };
 			std::string sSourceFile;
-			std::string sMessage;
+			uint32_t iLine { 0 };
+			uint32_t iColumn { 0 };
+			std::string sMessage {};
 		};
 
 		using CompilerIssuesVector = std::vector<CompilerIssue>;

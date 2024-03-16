@@ -27,7 +27,7 @@ namespace rg3::cpp
 	{
 	 public:
 		TypeEnum();
-		TypeEnum(const std::string& name, const CppNamespace& aNamespace, const DefinitionLocation& aLocation, const Tags& tags, const EnumEntryVector& aValues, bool bIsScoped, TypeReference underlyingType);
+		TypeEnum(const std::string& name, const std::string& prettyName, const CppNamespace& aNamespace, const DefinitionLocation& aLocation, const Tags& tags, const EnumEntryVector& aValues, bool bIsScoped, TypeReference underlyingType);
 
 		[[nodiscard]] const EnumEntryVector& getEntries() const;
 		[[nodiscard]] bool containsValue(EnumEntry::ValueType value) const;

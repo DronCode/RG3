@@ -21,7 +21,7 @@ namespace rg3::pybind
 		/// Another implementations
 		[[nodiscard]] const boost::python::list& pyGetClassProperties() const;
 		[[nodiscard]] const boost::python::list& pyGetClassFunctions() const;
-		[[nodiscard]] const boost::python::list& pyGetClassParentsTypeNamesList() const;
+		[[nodiscard]] const boost::python::list& pyGetClassParentTypeRefs() const;
 		[[nodiscard]] bool pyIsStruct() const;
 		[[nodiscard]] bool pyIsTriviallyConstructible() const;
 

@@ -2,7 +2,7 @@
 This file contains all public available symbols & definitions for PyBind (rg3py.pyd)
 Follow PyBind/source/PyBind.cpp for details
 """
-from typing import List, Union
+from typing import List, Union, Optional
 
 
 class CppStandard:
@@ -14,6 +14,11 @@ class CppStandard:
     CXX_26 = 26
     CXX_DEFAULT = 11
 
+class InheritanceVisibility:
+    IV_PUBLIC = 0
+    IV_PRIVATE = 1
+    IV_PROTECTED = 2
+    IV_VIRTUAL = 3
 
 class CppEnumEntry:
     @property
@@ -28,7 +33,8 @@ class CppTypeKind:
     TK_TRIVIAL = 1
     TK_ENUM = 2
     TK_STRUCT_OR_CLASS = 3
-    TK_TEMPLATE_SPECIALIZATION = 4
+    TK_ALIAS = 4
+    TK_TEMPLATE_SPECIALIZATION = 5
 
 
 class CppEnum:
@@ -40,6 +46,17 @@ class CppEnum:
 
     @property
     def underlying_type(self) -> str: ...
+
+
+class CppAlias:
+    @property
+    def target(self) -> CppTypeReference: ...
+
+    @property
+    def target_location(self) -> Optional[Location]: ...
+
+    @property
+    def target_description(self) -> TypeStatement: ...
 
 
 class CppIncludeKind:
@@ -95,6 +112,7 @@ class TagArgument:
     def as_float(self) -> float: ...
     def as_i64(self) -> int: ...
     def as_string(self) -> str: ...
+    def as_type_ref(self) -> Optional[CppTypeReference]: ...
 
 
 class Tag:
@@ -107,6 +125,16 @@ class Tag:
     def __eq__(self, other) -> bool: ...
 
     def __ne__(self, other) -> bool: ...
+
+class Tags:
+    @property
+    def items(self) -> List[Tag]: ...
+
+    def __contains__(self, tag: str) -> bool: ...
+
+    def has_tag(self, tag: str) -> bool: ...
+
+    def get_tag(self, tag: str) -> Tag: ...
 
 class CppBaseType:
     @property
@@ -129,7 +157,7 @@ class CppBaseType:
     def pretty_name(self) -> str: ...
 
     @property
-    def tags(self) -> List[Tag]: ...
+    def tags(self) -> Tags: ...
 
     def __str__(self) -> str: ...
 
@@ -143,9 +171,48 @@ class CppBaseType:
 
 
 class CppClassEntryVisibillity:
-    CEV_PRIVATE = 0
-    CEV_PROTECTED = 1
-    CEV_PUBLIC = 2
+    CEV_PUBLIC = 0
+    CEV_PRIVATE = 1
+    CEV_PROTECTED = 2
+
+
+class TypeStatement:
+    @property
+    def type_ref(self) -> CppTypeReference: ...
+
+    @property
+    def location(self) -> Optional[Location]: ...
+
+    @property
+    def is_const(self) -> bool: ...
+
+    @property
+    def is_const_ptr(self) -> bool: ...
+
+    @property
+    def is_ptr(self) -> bool: ...
+
+    @property
+    def is_ref(self) -> bool: ...
+
+    @property
+    def is_template(self) -> bool: ...
+
+    @property
+    def is_void(self) -> bool: ...
+
+    def get_name(self) -> str: ...
+
+
+class FunctionArgument:
+    @property
+    def type_info(self) -> TypeStatement: ...
+
+    @property
+    def name(self) -> str: ...
+
+    @property
+    def has_default_value(self) -> bool: ...
 
 
 class CppClassFunction:
@@ -159,13 +226,19 @@ class CppClassFunction:
     def visibility(self) -> CppClassEntryVisibillity: ...
 
     @property
-    def tags(self) -> List[Tag]: ...
+    def tags(self) -> Tags: ...
 
     @property
     def is_static(self) -> bool: ...
 
     @property
     def is_const(self) -> bool: ...
+
+    @property
+    def return_type(self) -> TypeStatement: ...
+
+    @property
+    def arguments(self) -> List[FunctionArgument]: ...
 
     def __eq__(self, other) -> bool: ...
 
@@ -183,11 +256,22 @@ class CppClassProperty:
     def visibility(self) -> CppClassEntryVisibillity: ...
 
     @property
-    def tags(self) -> List[Tag]: ...
+    def tags(self) -> Tags: ...
+
+    @property
+    def type_info(self) -> TypeStatement: ...
 
     def __eq__(self, other) -> bool: ...
 
     def __ne__(self, other) -> bool: ...
+
+
+class ClassParent:
+    @property
+    def info(self) -> CppTypeReference: ...
+
+    @property
+    def inheritance(self) -> InheritanceVisibility: ...
 
 
 class CppClass:
@@ -204,7 +288,7 @@ class CppClass:
     def is_trivial_constructible(self) -> bool: ...
 
     @property
-    def parent_types(self) -> List[str]: ...
+    def parent_types(self) -> List[ClassParent]: ...
 
 
 class CodeAnalyzer:
@@ -248,6 +332,49 @@ class CodeAnalyzer:
     def analyze(self): ...
 
 
+class AnalyzerContext:
+    @staticmethod
+    def make() -> AnalyzerContext: ...
+
+    @property
+    def workers_count(self) -> int: ...
+
+    @property
+    def types(self) -> List[CppBaseType]: ...
+
+    @property
+    def issues(self) -> List[CppCompilerIssue]: ...
+
+    @property
+    def headers(self) -> List[str]: ...
+
+    @property
+    def include_directories(self) -> List[CppIncludeInfo]: ...
+
+    @property
+    def cpp_standard(self) -> CppStandard: ...
+
+    @property
+    def compiler_args(self) -> List[str]: ...
+
+    @property
+    def ignore_runtime_tag(self) -> bool: ...
+
+    def set_workers_count(self, count: int): ...
+
+    def set_headers(self, headers: List[str]): ...
+
+    def set_include_directories(self, include_dirs: List[CppIncludeInfo]): ...
+
+    def set_compiler_args(self, args: List[str]): ...
+
+    def set_compiler_defs(self, defs: List[str]): ...
+
+    def get_type_by_reference(self, ref: CppTypeReference) -> Optional[CppBaseType]: ...
+
+    def analyze(self) -> bool: ...
+
+
 class CppCompilerIssueKind:
     IK_NONE = 0
     IK_WARNING = 1
@@ -267,8 +394,8 @@ class CppCompilerIssue:
 
 
 class CppTypeReference:
-    def __init__(self, path: str): ...
-
+    @property
+    def name(self) -> str: ...
 
 class ClangRuntime:
     @staticmethod

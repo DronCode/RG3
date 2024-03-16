@@ -36,6 +36,7 @@ namespace rg3::cpp
 		std::int64_t asI64(std::int64_t defValue) const;
 		std::string asString(const std::string& defValue) const;
 		TypeReference asTypeRef(const TypeReference& defValue) const;
+		TypeReference* asTypeRefMutable();
 		TagArgumentType getHoldedType() const;
 
 		TagArgument& operator=(bool val);
@@ -64,6 +65,7 @@ namespace rg3::cpp
 
 		[[nodiscard]] const std::string& getName() const;
 		[[nodiscard]] const std::vector<TagArgument>& getArguments() const;
+		[[nodiscard]] std::vector<TagArgument>& getArguments();
 		[[nodiscard]] bool hasArguments() const;
 		[[nodiscard]] int getArgumentsCount() const;
 
@@ -79,8 +81,11 @@ namespace rg3::cpp
 
 	class Tags
 	{
+	 public:
+		using Storage_t = std::map<std::string, Tag>;
+
 	 private:
-		std::map<std::string, Tag> m_tags;
+		Storage_t m_tags;
 
 	 public:
 		Tags();
@@ -88,6 +93,7 @@ namespace rg3::cpp
 
 		[[nodiscard]] bool hasTag(const std::string& tag) const;
 		[[nodiscard]] Tag getTag(const std::string& tag) const;
-		[[nodiscard]] const std::map<std::string, Tag>& getTags() const;
+		[[nodiscard]] const Storage_t& getTags() const;
+		[[nodiscard]] Storage_t& getTags();
 	};
 }

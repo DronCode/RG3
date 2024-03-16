@@ -17,9 +17,10 @@ namespace rg3::cpp
 
 	TypeBase::TypeBase() = default;
 
-	TypeBase::TypeBase(TypeKind kind, const std::string& name, const CppNamespace& aNamespace, const DefinitionLocation& aLocation, const Tags& tags)
+	TypeBase::TypeBase(TypeKind kind, const std::string& name, const std::string& prettyName, const CppNamespace& aNamespace, const DefinitionLocation& aLocation, const Tags& tags)
 		: m_kind(kind)
 		, m_name(name)
+		, m_prettyName(prettyName)
 		, m_nameSpace(aNamespace)
 		, m_location(aLocation)
 		, m_tags(tags)
@@ -36,18 +37,7 @@ namespace rg3::cpp
 	TypeKind TypeBase::getKind() const { return m_kind; }
 	const std::string& TypeBase::getName() const { return m_name; }
 	const CppNamespace& TypeBase::getNamespace() const { return m_nameSpace; }
-	std::string TypeBase::getPrettyName() const
-	{
-		std::string result;
-
-		result += getNamespace();
-		if (!result.empty())
-			result += "::";
-
-		result += getName();
-
-		return result;
-	}
+	const std::string& TypeBase::getPrettyName() const { return m_prettyName; }
 
 	const DefinitionLocation& TypeBase::getDefinition() const
 	{
@@ -63,6 +53,11 @@ namespace rg3::cpp
 	}
 
 	const Tags& TypeBase::getTags() const
+	{
+		return m_tags;
+	}
+
+	Tags& TypeBase::getTags()
 	{
 		return m_tags;
 	}

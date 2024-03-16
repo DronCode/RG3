@@ -27,6 +27,11 @@ namespace rg3::cpp
 		return m_arguments;
 	}
 
+	std::vector<TagArgument>& Tag::getArguments()
+	{
+		return m_arguments;
+	}
+
 	bool Tag::hasArguments() const
 	{
 		return !m_arguments.empty();
@@ -174,7 +179,12 @@ namespace rg3::cpp
 		return g_BadTag;
 	}
 
-	const std::map<std::string, Tag>& Tags::getTags() const
+	const Tags::Storage_t& Tags::getTags() const
+	{
+		return m_tags;
+	}
+
+	Tags::Storage_t& Tags::getTags()
 	{
 		return m_tags;
 	}

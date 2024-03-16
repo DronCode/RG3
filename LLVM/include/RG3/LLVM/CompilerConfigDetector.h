@@ -14,6 +14,10 @@ namespace rg3::llvm
 		std::string triple {};
 		std::string options {};
 		std::string versionString {};
+#ifdef __APPLE__
+		std::string macOS_GNUC_Version {}; // -fgnuc-version option
+		std::string macOS_TargetSDK_Version {}; // -target-sdk-version
+#endif
 	};
 
 	struct CompilerEnvError

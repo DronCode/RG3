@@ -12,7 +12,7 @@ namespace rg3::pybind
 		if (auto self = getBase())
 		{
 			// Functions
-			for (const auto& function : self->getProperties())
+			for (const auto& function : self->getFunctions())
 			{
 				m_functions.append(function);
 			}
@@ -26,7 +26,7 @@ namespace rg3::pybind
 			// Parents
 			for (const auto& parent : self->getParentTypes())
 			{
-				m_parents.append(parent.getRefName());
+				m_parents.append(parent);
 			}
 		}
 	}
@@ -51,7 +51,7 @@ namespace rg3::pybind
 		return m_functions;
 	}
 
-	const boost::python::list& PyTypeClass::pyGetClassParentsTypeNamesList() const
+	const boost::python::list& PyTypeClass::pyGetClassParentTypeRefs() const
 	{
 		return m_parents;
 	}

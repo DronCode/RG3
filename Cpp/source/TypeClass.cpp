@@ -7,11 +7,23 @@ namespace rg3::cpp
 	{
 		return  sName == other.sName &&
 				sAlias == other.sAlias &&
-				sTypeName == other.sTypeName &&
+			    sTypeInfo == other.sTypeInfo &&
 				eVisibility == other.eVisibility;
 	}
 
 	bool ClassProperty::operator!=(const ClassProperty& other) const
+	{
+		return !operator==(other);
+	}
+
+	bool FunctionArgument::operator==(const FunctionArgument& other) const
+	{
+		return sType == other.sType &&
+			   sArgumentName == other.sArgumentName &&
+			   bHasDefaultValue == other.bHasDefaultValue;
+	}
+
+	bool FunctionArgument::operator!=(const FunctionArgument& other) const
 	{
 		return !operator==(other);
 	}
@@ -21,7 +33,9 @@ namespace rg3::cpp
 		return  sName == other.sName &&
 				sOwnerClassName == other.sOwnerClassName &&
 				eVisibility == other.eVisibility &&
-				bIsStatic == other.bIsStatic;
+				bIsStatic == other.bIsStatic &&
+				sReturnType == other.sReturnType &&
+			    vArguments == other.vArguments;
 	}
 
 	bool ClassFunction::operator!=(const ClassFunction& other) const
@@ -31,8 +45,8 @@ namespace rg3::cpp
 
 	TypeClass::TypeClass() = default;
 
-	TypeClass::TypeClass(const std::string& name, const rg3::cpp::CppNamespace& aNamespace, const rg3::cpp::DefinitionLocation& aLocation, const Tags& tags, const rg3::cpp::ClassPropertyVector& aProperties, const rg3::cpp::ClassFunctionVector& aFunctions, bool bIsStruct, bool bTrivialConstructible, const std::vector<TypeReference>& parentTypes)
-		: TypeBase(TypeKind::TK_STRUCT_OR_CLASS, name, aNamespace, aLocation, tags)
+	TypeClass::TypeClass(const std::string& name, const std::string& prettyName, const rg3::cpp::CppNamespace& aNamespace, const rg3::cpp::DefinitionLocation& aLocation, const Tags& tags, const rg3::cpp::ClassPropertyVector& aProperties, const rg3::cpp::ClassFunctionVector& aFunctions, bool bIsStruct, bool bTrivialConstructible, const std::vector<ClassParent>& parentTypes)
+		: TypeBase(TypeKind::TK_STRUCT_OR_CLASS, name, prettyName, aNamespace, aLocation, tags)
 		, m_properties(aProperties)
 		, m_functions(aFunctions)
 		, m_bIsStruct(bIsStruct)
@@ -46,7 +60,17 @@ namespace rg3::cpp
 		return m_properties;
 	}
 
+	ClassPropertyVector& TypeClass::getProperties()
+	{
+		return m_properties;
+	}
+
 	const ClassFunctionVector& TypeClass::getFunctions() const
+	{
+		return m_functions;
+	}
+
+	ClassFunctionVector& TypeClass::getFunctions()
 	{
 		return m_functions;
 	}
@@ -61,7 +85,12 @@ namespace rg3::cpp
 		return m_bIsTrivialConstructible;
 	}
 
-	const std::vector<TypeReference>& TypeClass::getParentTypes() const
+	const std::vector<ClassParent>& TypeClass::getParentTypes() const
+	{
+		return m_parentTypes;
+	}
+
+	std::vector<ClassParent>& TypeClass::getParentTypes()
 	{
 		return m_parentTypes;
 	}

@@ -31,6 +31,17 @@ Tested on Ubuntu (apt based systems)
  * Installed gcc instance (for Windows required `clang`, but for Linux `gcc` is enough)
  * CMake & Ninja
 
+macOS
+------
+
+Tested on macOS
+ * Compiled LLVM (compiled manually, see .github/workflows/build.yml for details)
+ * Boost >= 1.81
+ * Homebrew (see dependencies inside .github/workflows/build.yml)
+ * Python 3.10 or later installed with [PyEnv](https://github.com/pyenv/pyenv)
+ * Installed & configured XCode (tested on 15.x, check that XCode able to build projects and available via `xcrun`)
+ * CMake & Ninja (installed via Homebrew)
+
 Build
 -----
 
@@ -95,17 +106,14 @@ Now project ready to discover medium code bases. Supported STL discover on Windo
 Feature Checklist
 -----------------
 
- - [ ] Implement multithread for analyzer
+ - [x] Implement multithread for analyzer
  - [ ] Add support of async operations on Python side
  - [ ] Support template deduction & aliasing
- - [ ] Implement integration tests & embed it into GitHub Actions
- - [ ] Support macOS & OSX Frameworks (lookup via `xcrun`)
+ - [x] Implement integration tests & embed it into GitHub Actions
+ - [x] Support macOS & OSX Frameworks (lookup via `xcrun`)
 
 
 Current limitations
 -------------------
 
  * Project WILL NOT support code inside function scope. I'm focused only on header analysis. Feel free to fork with project and make which analysis what you want.
- * Multithreading: not supported now, but will be supported later.
- * Context: not supported. Will do it later. 
-   * Workaround: main context focused in CodeAnalyzer, so you able to make 1 context per thread, that should be enough. 

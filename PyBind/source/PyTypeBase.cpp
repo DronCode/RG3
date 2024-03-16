@@ -1,5 +1,4 @@
 #include <RG3/PyBind/PyTypeBase.h>
-#include <RG3/PyBind/PyTag.h>
 
 
 namespace rg3::pybind
@@ -32,19 +31,15 @@ namespace rg3::pybind
 				case cpp::TypeKind::TK_TEMPLATE_SPECIALIZATION:
 					str = "template " + m_base->getPrettyName();
 					break;
+				case cpp::TypeKind::TK_ALIAS:
+					str = "alias " + m_base->getPrettyName();
+					break;
 				}
 
 				m_str = { str.c_str(), str.length() };
 			}
 
 			m_repr = m_str;
-
-			// Tags list precache
-			const auto& tagsContainer = m_base->getTags();
-			for (const auto& [tagName, tag] : tagsContainer.getTags())
-			{
-				m_tags[tagName] = PyTag(tag);
-			}
 		}
 	}
 
@@ -78,9 +73,10 @@ namespace rg3::pybind
 		return m_base ? m_base->getID() : 0u;
 	}
 
-	const boost::python::dict& PyTypeBase::pyGetTags() const
+	const rg3::cpp::Tags& PyTypeBase::pyGetTags() const
 	{
-		return m_tags;
+		static rg3::cpp::Tags s_Empty {};
+		return m_base ? m_base->getTags() : s_Empty;
 	}
 
 
