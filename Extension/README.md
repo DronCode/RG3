@@ -12,7 +12,7 @@ Install
 Make sure that your system has clang (any version):
  * **macOS**: you need to install XCode (tested on 15.x but should work everywhere)
  * **Window**: you need to install clang 17.x or later and add it into PATH 
- * **Linux**: feel free to install clang of any version (at least 15.x tested)
+ * **Linux**: default g++ is enough
  * **Other platforms & archs**: Contact us in [our GitHub](https://github.com/DronCode/RG3).
 
 It's a better way to use RG3 inside virtualenv:
@@ -77,3 +77,5 @@ Third Party libraries
  * LLVM 16.0.4 - our main backend of C++ analysis
  * Boost 1.81.0 - python support & process launcher
  * FMT - string formatter
+ * googletest - for internal unit testing
+ * pytest - for python side unit testing

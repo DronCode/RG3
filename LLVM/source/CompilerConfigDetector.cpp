@@ -215,16 +215,6 @@ namespace rg3::llvm
 		// Also, we able to lookup for frameworks but I'm not sure that this is required for now.
 		bool bAddedAtLeastOneEntry = false;
 
-#if 0
--isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
--I/usr/local/include
--internal-isystem /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1
--internal-isystem /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/local/include
--internal-isystem /Library/Developer/CommandLineTools/usr/lib/clang/15.0.0/include
--internal-externc-isystem /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include
--internal-externc-isystem /Library/Developer/CommandLineTools/usr/include
-#endif
-
 		// It's pretty stupid approach, but I'll just lookup for expected tokens like
 		struct TokenInfo { std::string_view name {}; IncludeKind kind {}; };
 

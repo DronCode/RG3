@@ -354,10 +354,10 @@ jobs:
           rm Extension/rg3py/rg3py.so
           rm Extension/rg3py/rg3py.pyi
 
-#      - name: Upload wheels
-#        env:
-#          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
-#          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
-#        working-directory: Extension
-#        run: |
-#          twine upload dist/*
+      - name: Upload wheels
+        env:
+          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+        working-directory: Extension
+        run: |
+          twine upload dist/*
