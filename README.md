@@ -28,7 +28,7 @@ Tested on Ubuntu (apt based systems)
  * Compiled LLVM (compiled manually)
  * Boost >= 1.81 (`sudo apt-get install libboost-dev libboost-system-dev libboost-filesystem-dev libboost-python-dev`). **NOTE:** You able to install boost and link it dynamically, but official rg3py build uses own compiled boost for static linkage with `-fPIC` flag.
  * Python 3.10 (or later) with development files (`sudo apt-get install python3.10 python3.10-dev python3.10-venv`) (**venv is optional**)
- * Installed gcc instance (for Windows required `clang`, but for Linux `gcc` is enough)
+ * Installed gcc instance (for Windows required `clang`, but for Linux `gcc` is enough). Warning: **GCC-13** is a minimum supported version for CI builds!
  * CMake & Ninja
 
 macOS
