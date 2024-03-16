@@ -318,6 +318,8 @@ jobs:
           mv RG3_Linux/rg3py.pyi Extension/rg3py
           cd Extension
           python setup.py bdist_wheel
+          rm Extension/rg3py/rg3py.so
+          rm Extension/rg3py/rg3py.pyi
           cd ..
 
       - name: Build WHL for Windows
@@ -329,6 +331,8 @@ jobs:
           mv RG3_Windows/rg3py.pyi Extension/rg3py
           cd Extension
           python setup.py bdist_wheel --plat-name win_amd64
+          rm Extension/rg3py/rg3py.pyd
+          rm Extension/rg3py/rg3py.pyi
           cd ..
 
       - name: Build WHL for macOS
@@ -340,6 +344,8 @@ jobs:
           mv RG3_macOS/rg3py.pyi Extension/rg3py
           cd Extension
           python setup.py bdist_wheel
+          rm Extension/rg3py/rg3py.so
+          rm Extension/rg3py/rg3py.pyi
           cd ..
 
 #      - name: Upload wheels
