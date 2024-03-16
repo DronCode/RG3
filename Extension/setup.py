@@ -1,6 +1,7 @@
 from setuptools import setup
 from typing import Dict
 from os import getenv
+from pathlib import Path
 
 
 known_os_ext: Dict[str, str] = {
@@ -13,6 +14,12 @@ known_os_to_os_tag: Dict[str, str] = {
     'linux': 'Linux',
     'macos': 'MacOS',
     'windows': 'Windows'
+}
+
+os_classifiers: Dict[str, str] = {
+    'linux': 'Operating System :: POSIX :: Linux',
+    'macos': 'Operating System :: MacOS :: MacOS X',
+    'windows': 'Operating System :: Microsoft :: Windows'
 }
 
 # Read env
@@ -31,6 +38,9 @@ print("*************************************************")
 print(f"RG3 Deploy for version {target_version} target os {target_os} target ext {platform_ext}")
 print("*************************************************")
 
+# Readme
+this_dir: Path = Path(__file__).parent
+long_description_contents: str = (this_dir / "README.md").read_text()
 
 setup(
     name='rg3py',
@@ -38,15 +48,17 @@ setup(
     author='DronCode',
     author_email='alexandrleutin@gmail.com',
     description='RG3 is a C/C++ analyzer framework',
-    long_description='RG3 is a C/C++ analyzer framework',
+    long_description=long_description_contents,
+    long_description_content_type='text/markdown',
     packages=['rg3py'],
     package_data={'rg3py': [f'rg3py.{platform_ext}', 'rg3py.pyi']},
     classifiers=[
         'Programming Language :: Python :: 3',
         'License :: OSI Approved :: MIT License',
-        'Operating System :: Microsoft :: Windows',
-        'Operating System :: POSIX :: Linux',
+        os_classifiers[target_os],
         'Programming Language :: Python :: Implementation :: CPython',
+        'Topic :: Software Development :: Code Generators',
+        'Topic :: Software Development :: Libraries'
     ],
     python_requires='>=3.10',
     platforms=[known_os_to_os_tag[target_os]],

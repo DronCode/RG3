@@ -331,10 +331,21 @@ jobs:
           python setup.py bdist_wheel --plat-name win_amd64
           cd ..
 
-      - name: Upload wheels
+      - name: Build WHL for macOS
         env:
-          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
-          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
-        working-directory: Extension
+          RG3_DEPLOY_VERSION: ${{ steps.get_version.outputs.VERSION }}
+          RG3_DEPLOY_OS: 'macos'
         run: |
-          twine upload dist/*
+          mv RG3_macOS/rg3py.so Extension/rg3py
+          mv RG3_macOS/rg3py.pyi Extension/rg3py
+          cd Extension
+          python setup.py bdist_wheel
+          cd ..
+
+#      - name: Upload wheels
+#        env:
+#          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+#          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+#        working-directory: Extension
+#        run: |
+#          twine upload dist/*
