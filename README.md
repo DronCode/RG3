@@ -60,7 +60,7 @@ cmake -DCMAKE_BUILD_TYPE=Release ..
 cmake --build . --config Release
 ```
 
-When everything is done your plugin file `rg3py.pyd` or `rg3py.so` will be in `build` folder.
+When everything is done your plugin file `rg3py.pyd` or `rg3py.so` will be in `build` folder. Use **.github/workflows/build.yml** file as reference to build RG3 on your platform.
 
 Usage:
 ------
