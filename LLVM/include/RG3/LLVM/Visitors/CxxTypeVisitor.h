@@ -23,10 +23,6 @@ namespace rg3::llvm::visitors
 
 		bool VisitCXXRecordDecl(clang::CXXRecordDecl* cxxRecordDecl);
 
-		bool VisitTypedefDecl(clang::TypedefDecl* typedefDecl);
-
-		bool VisitTypeAliasDecl(clang::TypeAliasDecl* typeAliasDecl);
-
 		bool VisitTypedefNameDecl(clang::TypedefNameDecl* typedefNameDecl);
 
 	 private:

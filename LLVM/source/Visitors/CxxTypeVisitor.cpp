@@ -180,16 +180,6 @@ namespace rg3::llvm::visitors
 		};
 	}
 
-	bool CxxTypeVisitor::VisitTypedefDecl(clang::TypedefDecl* typedefDecl)
-	{
-		return HandleNamedTypedefDecl(::llvm::dyn_cast<clang::TypedefNameDecl>(typedefDecl));
-	}
-
-	bool CxxTypeVisitor::VisitTypeAliasDecl(clang::TypeAliasDecl* typeAliasDecl)
-	{
-		return HandleNamedTypedefDecl(::llvm::dyn_cast<clang::TypedefNameDecl>(typeAliasDecl));
-	}
-
 	bool CxxTypeVisitor::VisitTypedefNameDecl(clang::TypedefNameDecl* typedefNameDecl)
 	{
 		return HandleNamedTypedefDecl(typedefNameDecl);
