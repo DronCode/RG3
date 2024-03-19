@@ -45,11 +45,14 @@ namespace rg3::llvm::visitors
 
 	bool CxxTypeVisitor::VisitEnumDecl(clang::EnumDecl* enumDecl)
 	{
+		if (!enumDecl->isCompleteDefinition())
+			return true; // skip incomplete declarations
+
 		// Extract tags
 		bool bHasComment = false;
 		cpp::Tags tags = getTagsForDecl(enumDecl, bHasComment);
 
-		if (!bHasComment)
+		if (!bHasComment && !compilerConfig.bAllowCollectNonRuntimeTypes)
 		{
 			// skip this decl
 			return true;
@@ -131,6 +134,11 @@ namespace rg3::llvm::visitors
 			);
 		}
 
+		// Save all extra types
+		std::move(std::begin(cppVisitor.vFoundExtraTypes),
+				  std::end(cppVisitor.vFoundExtraTypes),
+				  std::back_inserter(m_collectedTypes));
+
 		return true;
 	}
 
@@ -174,49 +182,28 @@ namespace rg3::llvm::visitors
 
 	bool CxxTypeVisitor::VisitTypedefDecl(clang::TypedefDecl* typedefDecl)
 	{
-		// Extract tags
-		bool bHasComment = false;
-		cpp::Tags tags = getTagsForDecl(typedefDecl, bHasComment);
-
-		if (!bHasComment)
-		{
-			return true;
-		}
-
-		// Check this somewhere else
-		if (!tags.hasTag(std::string(rg3::cpp::BuiltinTags::kRuntime)) && !compilerConfig.bAllowCollectNonRuntimeTypes)
-			return true;
-
-		// Extract base info
-		const std::string sName = typedefDecl->getNameAsString();
-		const std::string sPrettyName = Utils::getPrettyNameOfDecl(typedefDecl);
-
-		rg3::cpp::CppNamespace sNamespace {};
-		Utils::getDeclInfo(typedefDecl, sNamespace);
-
-		rg3::cpp::DefinitionLocation sDefLoc = Utils::getDeclDefinitionInfo(typedefDecl);
-
-		// Try to resolve target type
-		rg3::cpp::TypeReference rTargetType {};
-		rg3::cpp::DefinitionLocation sTargetTypeDefLoc {};
-
-		// Get base information about canonical type
-		rg3::cpp::TypeStatement stmt {};
-		fillTypeStatementFromUnderlyingType(stmt, typedefDecl->getUnderlyingType(), typedefDecl->getASTContext());
-
-		// Save found type
-		m_collectedTypes.emplace_back(std::make_unique<rg3::cpp::TypeAlias>(sName, sPrettyName, sNamespace, sDefLoc, tags, stmt));
-
-		return true;
+		return HandleNamedTypedefDecl(::llvm::dyn_cast<clang::TypedefNameDecl>(typedefDecl));
 	}
 
 	bool CxxTypeVisitor::VisitTypeAliasDecl(clang::TypeAliasDecl* typeAliasDecl)
 	{
+		return HandleNamedTypedefDecl(::llvm::dyn_cast<clang::TypedefNameDecl>(typeAliasDecl));
+	}
+
+	bool CxxTypeVisitor::VisitTypedefNameDecl(clang::TypedefNameDecl* typedefNameDecl)
+	{
+		return HandleNamedTypedefDecl(typedefNameDecl);
+	}
+
+	bool CxxTypeVisitor::HandleNamedTypedefDecl(clang::TypedefNameDecl* typedefNameDecl)
+	{
+		if (!typedefNameDecl) { return true; }
+
 		// Extract tags
 		bool bHasComment = false;
-		cpp::Tags tags = getTagsForDecl(typeAliasDecl, bHasComment);
+		cpp::Tags tags = getTagsForDecl(typedefNameDecl, bHasComment);
 
-		if (!bHasComment)
+		if (!bHasComment && !compilerConfig.bAllowCollectNonRuntimeTypes)
 		{
 			return true;
 		}
@@ -226,16 +213,16 @@ namespace rg3::llvm::visitors
 			return true;
 
 		// Extract base info
-		const std::string sName = typeAliasDecl->getNameAsString();
-		const std::string sPrettyName = Utils::getPrettyNameOfDecl(typeAliasDecl);
+		const std::string sName = typedefNameDecl->getNameAsString();
+		const std::string sPrettyName = Utils::getPrettyNameOfDecl(typedefNameDecl);
 		rg3::cpp::CppNamespace sNamespace {};
-		Utils::getDeclInfo(typeAliasDecl, sNamespace);
+		Utils::getDeclInfo(typedefNameDecl, sNamespace);
 
-		rg3::cpp::DefinitionLocation sDefLoc = Utils::getDeclDefinitionInfo(typeAliasDecl);
+		rg3::cpp::DefinitionLocation sDefLoc = Utils::getDeclDefinitionInfo(typedefNameDecl);
 
 		// Get base information about canonical type
 		rg3::cpp::TypeStatement stmt {};
-		fillTypeStatementFromUnderlyingType(stmt, typeAliasDecl->getUnderlyingType(), typeAliasDecl->getASTContext());
+		fillTypeStatementFromUnderlyingType(stmt, typedefNameDecl->getUnderlyingType(), typedefNameDecl->getASTContext());
 
 		// Save found type
 		m_collectedTypes.emplace_back(std::make_unique<rg3::cpp::TypeAlias>(sName, sPrettyName, sNamespace, sDefLoc, tags, stmt));

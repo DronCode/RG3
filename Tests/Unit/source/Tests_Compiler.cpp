@@ -56,3 +56,33 @@ struct MySecondStruct
 		ASSERT_EQ(result.vFoundTypes[1]->getPrettyName(), "MySecondStruct") << "Wront type";
 	}
 }
+
+TEST_F(Tests_Compiler, CheckNotCompletedTemplateSpecialization) // Bugfix
+{
+	g_Analyzer->getCompilerConfig().cppStandard = rg3::llvm::CxxStandard::CC_17;
+
+	g_Analyzer->setSourceCode(R"(
+/// @runtime
+template <typename T> struct TSample;
+)");
+
+	auto result = g_Analyzer->analyze();
+
+	ASSERT_TRUE(result.vIssues.empty()) << "No issues in this test";
+	ASSERT_TRUE(result.vFoundTypes.empty()) << "No types expected to have here";
+}
+
+TEST_F(Tests_Compiler, CheckEnumForwardDeclaration)
+{
+	g_Analyzer->getCompilerConfig().cppStandard = rg3::llvm::CxxStandard::CC_17;
+
+	g_Analyzer->setSourceCode(R"(
+/// @runtime
+enum class EBoomer;
+)");
+
+	auto result = g_Analyzer->analyze();
+
+	ASSERT_TRUE(result.vIssues.empty()) << "No issues in this test";
+	ASSERT_TRUE(result.vFoundTypes.empty()) << "No types expected to have here";
+}
