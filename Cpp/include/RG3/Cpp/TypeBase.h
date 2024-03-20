@@ -24,6 +24,7 @@ namespace rg3::cpp
 		[[nodiscard]] const CppNamespace& getNamespace() const;
 		[[nodiscard]] const std::string& getPrettyName() const;
 		[[nodiscard]] const DefinitionLocation& getDefinition() const;
+		void setDefinition(DefinitionLocation&& newLoc);
 
 		[[nodiscard]] bool areSame(const TypeBase* pOther) const;
 

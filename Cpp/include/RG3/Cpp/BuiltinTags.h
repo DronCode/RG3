@@ -50,5 +50,13 @@ namespace rg3::cpp
 		 * @note Use string escape symbol \" to use strings inside tags inside annotation
 		 */
 		static constexpr std::string_view kRegisterTag { "RG3_RegisterTag" };
+
+		/**
+		 * @brief Annotation for override final type location place. Semantics: RG3_OverrideLication[new/path]
+		 * @note Path will be marked as 'angled' ie to use as #include <my_path>
+		 * @note Line & column will be always zeroed
+		 * @note Only last annotation will affect final path!
+		 */
+		static constexpr std::string_view kOverrideLocation { "RG3_OverrideLocation" };
 	};
 }

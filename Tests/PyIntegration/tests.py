@@ -593,3 +593,61 @@ def test_check_global_type_aliases():
     assert as_alias2.target_description.is_const_ptr is False
     assert as_alias2.target_description.is_template is False
     assert as_alias2.target_description.is_const is False
+
+
+def test_check_type_annotations():
+    analyzer: rg3py.CodeAnalyzer = rg3py.CodeAnalyzer.make()
+
+    analyzer.set_code("""
+#include <string>
+
+// Registrator
+template <typename T> struct RegisterType {};
+
+template <> struct
+	__attribute__((annotate("RG3_RegisterRuntime")))
+	__attribute__((annotate("RG3_OverrideLocation[string]")))
+RegisterType<std::string> {
+	using Type = std::string;
+};
+
+/// @runtime
+struct Geo
+{
+    /// @property(Lat)
+    double rLat;
+    
+    /// @property(Long)
+    double rLong;
+};
+                       """)
+
+    analyzer.set_cpp_standard(rg3py.CppStandard.CXX_17)
+    analyzer.analyze()
+
+    assert len(analyzer.issues) == 0
+    assert len(analyzer.types) == 2
+
+    assert analyzer.types[0].name == "string"
+    assert analyzer.types[0].pretty_name == "std::string"
+    assert analyzer.types[0].kind == rg3py.CppTypeKind.TK_STRUCT_OR_CLASS
+    assert analyzer.types[0].location.path == "string"
+    assert analyzer.types[0].location.line == 0
+    assert analyzer.types[0].location.column == 0
+    assert analyzer.types[0].location.angled
+    assert len(analyzer.types[0].properties) == 0
+    assert len(analyzer.types[0].functions) == 0
+
+    assert analyzer.types[1].name == "Geo"
+    assert analyzer.types[1].pretty_name == "Geo"
+    assert analyzer.types[1].kind == rg3py.CppTypeKind.TK_STRUCT_OR_CLASS
+    assert analyzer.types[1].location.path == "id0.hpp"
+    assert analyzer.types[1].location.line > 0
+    assert analyzer.types[1].location.column > 0
+    assert analyzer.types[1].location.angled == False
+    assert len(analyzer.types[1].properties) == 2
+    assert analyzer.types[1].properties[0].name == "rLat"
+    assert analyzer.types[1].properties[0].alias == "Lat"
+    assert analyzer.types[1].properties[1].name == "rLong"
+    assert analyzer.types[1].properties[1].alias == "Long"
+    assert len(analyzer.types[1].functions) == 0

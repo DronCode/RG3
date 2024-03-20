@@ -9,6 +9,7 @@
 #include <clang/AST/Decl.h>
 
 #include <boost/algorithm/string.hpp>
+#include <optional>
 
 
 namespace rg3::llvm::visitors
@@ -332,6 +333,7 @@ namespace rg3::llvm::visitors
 				// Try to locate properties
 				std::vector<std::string> vFunctionsToCollect {};
 				std::vector<PropertyDescription> vExtraProperties {};
+				std::optional<std::string> kOverrideLocationPath = std::nullopt;
 				rg3::cpp::Tags sExtraTags;
 
 				for (const auto* pAttr : cxxRecordDecl->attrs())
@@ -393,6 +395,17 @@ namespace rg3::llvm::visitors
 								{
 									sExtraTags.getTags()[name] = tag;
 								}
+							}
+						}
+						else if (annotation.starts_with(rg3::cpp::BuiltinAnnotations::kOverrideLocation))
+						{
+							// Here we have annotation to override type location
+							std::vector<std::string> splitResult;
+							boost::algorithm::split(splitResult, annotation, boost::is_any_of("[]"));
+
+							if (splitResult.size() >= 2)
+							{
+								kOverrideLocationPath = splitResult[1];
 							}
 						}
 					}
@@ -551,6 +564,12 @@ namespace rg3::llvm::visitors
 								// Override in any case
 								vFoundExtraTypes[i]->getTags().getTags()[name] = tag;
 							}
+
+							// Override location if allowed
+							if (kOverrideLocationPath.has_value())
+							{
+								vFoundExtraTypes[i]->setDefinition(rg3::cpp::DefinitionLocation(kOverrideLocationPath.value(), 0, 0, true));
+							}
 						}
 					}
 				}
@@ -644,6 +663,9 @@ namespace rg3::llvm::visitors
 			newConfig.bAllowCollectNonRuntimeTypes = true;
 
 			CxxClassTypeVisitor sClassVisitor { newConfig };
+
+
+			// NOTE: Here we should handle template, template specializations and something like that. For v0.0.3 I'm ignoring that case, so nothing will be found.
 
 			if (auto* asCxxRecord = ::llvm::dyn_cast<clang::CXXRecordDecl>(pAsRecord->getDecl()))
 			{

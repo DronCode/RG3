@@ -44,6 +44,11 @@ namespace rg3::cpp
 		return m_location;
 	}
 
+	void TypeBase::setDefinition(rg3::cpp::DefinitionLocation&& newLoc)
+	{
+		m_location = std::move(newLoc);
+	}
+
 	bool TypeBase::areSame(const TypeBase* pOther) const
 	{
 		if (!pOther)

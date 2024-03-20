@@ -96,6 +96,14 @@ namespace rg3::cpp
 					while (!argumentString.empty() && argumentString[0] == ' ')
 						argumentString.erase(0, 1);
 
+					// Remove escape symbols
+					auto it = argumentString.find('\"');
+					while (it != std::string::npos)
+					{
+						argumentString.erase(it, 1);
+						it = argumentString.find('\"');
+					}
+
 					if (argumentString.empty())
 						continue;
 

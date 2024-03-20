@@ -89,6 +89,9 @@ class Location:
     @property
     def column(self) -> int: ...
 
+    @property
+    def angled(self) -> bool: ...
+
 
 class CppNamespace:
     def __eq__(self, other) -> bool: ...
