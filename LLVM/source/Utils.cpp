@@ -159,26 +159,21 @@ namespace rg3::llvm
 
 		if (!pDeclContext->isNamespace() && !pDeclContext->isRecord()) {
 			// We aren't namespace or record (struct, class)
+#ifdef __APPLE__
+			// v0.0.3 workaround: will fix later
+			if (pDecl->getNameAsString() == "__1")
+			{
+				return {};
+			}
+#endif
+
 			return pDecl->getNameAsString();
 		}
 
 		clang::NamedDecl* parentDecl = nullptr;
 		if (pDeclContext->isNamespace())
 		{
-#ifdef __APPLE__
-			bool bAllowed = true;
-
-			// v0.0.3 workaround: I hate macOS for this. __1 inside namespace is an awful practice. So, I'm fixing that by this shitty fix, sorry :(
-			// !!! Pls, fix me later !!!
-			if (auto* pNamespaceDecl = ::llvm::dyn_cast<clang::NamespaceDecl>(pDeclContext))
-			{
-				bAllowed = pNamespaceDecl->getNameAsString() != "__1";
-			}
-
-			parentDecl = bAllowed ? clang::NamespaceDecl::castFromDeclContext(pDeclContext) : nullptr;
-#else
 			parentDecl = clang::NamespaceDecl::castFromDeclContext(pDeclContext);
-#endif
 		}
 		else if (pDeclContext->isRecord())
 		{
@@ -194,6 +189,14 @@ namespace rg3::llvm
 
 		if (!parentName.empty())
 		{
+#ifdef __APPLE__
+			// v0.0.3 workaround: will fix later
+			if (pDecl->getNameAsString() == "__1")
+			{
+				return parentName;
+			}
+#endif
+
 			return parentName + "::" + pDecl->getNameAsString();
 		}
 
