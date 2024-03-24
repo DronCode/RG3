@@ -195,6 +195,7 @@ BOOST_PYTHON_MODULE(rg3py)
 		.add_property("path", make_function(&rg3::cpp::DefinitionLocation::getPath, return_value_policy<return_by_value>()))
 		.add_property("line", &rg3::cpp::DefinitionLocation::getLine)
 		.add_property("column", &rg3::cpp::DefinitionLocation::getInLineOffset)
+		.add_property("angled", &rg3::cpp::DefinitionLocation::isAngledPath)
 	;
 
 	class_<rg3::cpp::TagArgument>("TagArgument")

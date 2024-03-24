@@ -89,7 +89,6 @@ jobs:
         run: |
           brew install pyenv
           brew install ninja
-          brew install python@3.10
           pyenv install 3.10-dev -s
           echo "Python3_ROOT_DIR=$HOME/.pyenv/versions/3.10-dev" >> $GITHUB_ENV
 

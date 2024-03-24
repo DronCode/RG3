@@ -111,6 +111,11 @@ namespace rg3::llvm
 		m_source.emplace<std::filesystem::path>(sourceFile);
 	}
 
+	void CodeAnalyzer::setCompilerEnvironment(const CompilerEnvironment& env)
+	{
+		m_env = env;
+	}
+
 	CompilerConfig& CodeAnalyzer::getCompilerConfig()
 	{
 		return m_compilerConfig;
@@ -140,18 +145,24 @@ namespace rg3::llvm
 	AnalyzerResult CodeAnalyzer::analyze()
 	{
 		AnalyzerResult result;
-
+		const CompilerEnvironment* pCompilerEnv = nullptr;
 		// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		// Run platform env detector
-		const auto compilerEnvironment = CompilerConfigDetector::detectSystemCompilerEnvironment();
-		if (auto pEnvFailure = std::get_if<CompilerEnvError>(&compilerEnvironment))
+		if (!m_env.has_value())
 		{
-			// Fatal error
-			result.vIssues.emplace_back(AnalyzerResult::CompilerIssue { AnalyzerResult::CompilerIssue::IssueKind::IK_ERROR, sourceToString(m_source), 0, 0, pEnvFailure->message });
-			return result;
+			const auto compilerEnvironment = CompilerConfigDetector::detectSystemCompilerEnvironment();
+			if (auto pEnvFailure = std::get_if<CompilerEnvError>(&compilerEnvironment))
+			{
+				// Fatal error
+				result.vIssues.emplace_back(AnalyzerResult::CompilerIssue { AnalyzerResult::CompilerIssue::IssueKind::IK_ERROR, sourceToString(m_source), 0, 0, pEnvFailure->message });
+				return result;
+			}
+
+			// Override env
+			m_env = *std::get_if<CompilerEnvironment>(&compilerEnvironment);
 		}
 
-		const auto* pCompilerEnv = std::get_if<CompilerEnvironment>(&compilerEnvironment);
+		pCompilerEnv = &m_env.value();
 
 		// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

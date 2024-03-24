@@ -9,6 +9,7 @@
 #include <RG3/Cpp/TypeBase.h>
 
 #include <vector>
+#include <set>
 
 
 namespace rg3::llvm::visitors
@@ -22,9 +23,10 @@ namespace rg3::llvm::visitors
 
 		bool VisitCXXRecordDecl(clang::CXXRecordDecl* cxxRecordDecl);
 
-		bool VisitTypedefDecl(clang::TypedefDecl* typedefDecl);
+		bool VisitTypedefNameDecl(clang::TypedefNameDecl* typedefNameDecl);
 
-		bool VisitTypeAliasDecl(clang::TypeAliasDecl* typeAliasDecl);
+	 private:
+		bool HandleNamedTypedefDecl(clang::TypedefNameDecl* typedefNameDecl);
 
 	 private:
 		template <typename T>

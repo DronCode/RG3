@@ -14,6 +14,16 @@ namespace rg3::llvm
 		const clang::DeclContext* context = decl->getDeclContext();
 		while (context) {
 			if (const clang::NamespaceDecl* nsDecl = ::llvm::dyn_cast<clang::NamespaceDecl>(context)) {
+#ifdef __APPLE__
+				// v0.0.3 workaround: I hate macOS for this. __1 inside namespace is an awful practice. So, I'm fixing that by this shitty fix, sorry :(
+				// !!! Pls, fix me later !!!
+				if (nsDecl->getName().str() == "__1")
+				{
+					context = context->getParent();
+					continue;
+				}
+#endif
+
 				nameSpace.prepend(nsDecl->getName().str());
 			}
 			context = context->getParent();
@@ -149,6 +159,14 @@ namespace rg3::llvm
 
 		if (!pDeclContext->isNamespace() && !pDeclContext->isRecord()) {
 			// We aren't namespace or record (struct, class)
+#ifdef __APPLE__
+			// v0.0.3 workaround: will fix later
+			if (pDecl->getNameAsString() == "__1")
+			{
+				return {};
+			}
+#endif
+
 			return pDecl->getNameAsString();
 		}
 
@@ -171,9 +189,17 @@ namespace rg3::llvm
 
 		if (!parentName.empty())
 		{
+#ifdef __APPLE__
+			// v0.0.3 workaround: will fix later
+			if (pDecl->getNameAsString() == "__1")
+			{
+				return parentName;
+			}
+#endif
+
 			return parentName + "::" + pDecl->getNameAsString();
 		}
 
-		return pDecl->getNameAsString();;
+		return pDecl->getNameAsString();
 	}
 }

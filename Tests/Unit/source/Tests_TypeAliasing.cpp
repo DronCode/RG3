@@ -24,6 +24,33 @@ class Tests_TypeAliasing : public ::testing::Test
 	std::unique_ptr<rg3::llvm::CodeAnalyzer> g_Analyzer { nullptr };
 };
 
+TEST_F(Tests_TypeAliasing, CheckSingleReg)
+{
+	g_Analyzer->setSourceCode(R"(
+template <typename T> struct FakeT;
+
+namespace gg {
+	/// @runtime
+	using f32 = float;
+}
+)");
+
+	g_Analyzer->getCompilerConfig().cppStandard = rg3::llvm::CxxStandard::CC_17;
+
+	const auto analyzeResult = g_Analyzer->analyze();
+
+	// expected to have 8 aliases
+	ASSERT_TRUE(analyzeResult.vIssues.empty()) << "No issues should be here";
+	ASSERT_EQ(analyzeResult.vFoundTypes.size(), 1) << "Only 1 type should be here";
+
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getKind(), rg3::cpp::TypeKind::TK_ALIAS);
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getName(), "f32");
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getPrettyName(), "gg::f32");
+
+	auto asAlias = static_cast<const rg3::cpp::TypeAlias*>(analyzeResult.vFoundTypes[0].get()); // NOLINT(*-pro-type-static-cast-downcast)
+	ASSERT_EQ(asAlias->getTargetType().getRefName(), "float");
+}
+
 TEST_F(Tests_TypeAliasing, CheckTrivialTypeAliasing)
 {
 	g_Analyzer->setSourceCode(R"(
