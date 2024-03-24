@@ -1,7 +1,10 @@
+#include <RG3/LLVM/Visitors/CxxTemplateSpecializationVisitor.h>
 #include <RG3/LLVM/Visitors/CxxClassTypeVisitor.h>
 #include <RG3/LLVM/Visitors/CxxTypeVisitor.h>
+
 #include <RG3/Cpp/BuiltinTags.h>
 #include <RG3/Cpp/TypeEnum.h>
+
 #include <RG3/LLVM/Utils.h>
 
 #include <clang/Basic/SourceLocation.h>
@@ -25,6 +28,24 @@ namespace rg3::llvm::visitors
 			});
 
 			return it != vKnownProperties.end();
+		}
+
+		/**
+		 * @brief Mutator overflow: this method return true if property acceptable and modified for future use
+		 */
+		bool operator()(rg3::cpp::ClassProperty& sProperty)
+		{
+			auto it = std::find_if(vKnownProperties.begin(), vKnownProperties.end(), [&sProperty](const CxxClassTypeVisitor::PropertyDescription& pd) -> bool {
+				return pd.propertyRefName == sProperty.sName;
+			});
+
+			if (it != vKnownProperties.end())
+			{
+				sProperty.sAlias = it->propertyAliasName;
+				return true;
+			}
+
+			return false;
 		}
 	};
 
@@ -340,6 +361,21 @@ namespace rg3::llvm::visitors
 				{
 					if (const auto* pAnnotationAttr = ::llvm::dyn_cast<clang::AnnotateAttr>(pAttr))
 					{
+						auto eraseDeclaration = [](std::vector<std::string>& v, std::string_view sSelfDecl)
+						{
+							for (auto it = v.begin(); it != v.end(); )
+							{
+								if (it->empty() || (*it) == sSelfDecl)
+								{
+									it = v.erase(it);
+								}
+								else
+								{
+									++it;
+								}
+							}
+						};
+
 						const auto annotation = static_cast<std::string_view>(pAnnotationAttr->getAnnotation());
 
 						if (annotation.starts_with(rg3::cpp::BuiltinAnnotations::kRegisterField))
@@ -349,23 +385,15 @@ namespace rg3::llvm::visitors
 							std::vector<std::string> splitResult;
 							boost::algorithm::split(splitResult, annotation, boost::is_any_of("[]:"));
 
-							if (splitResult.size() == 3 || splitResult.size() == 4)
-							{
-								// Vlaid in this case
-								splitResult.erase(splitResult.begin()); // remove first element
-
-								if (splitResult.size() == 3)
-								{
-									splitResult.erase(std::prev(splitResult.end()));
-								}
-							}
+							// First of all we need to remove empty parts or ref itself
+							eraseDeclaration(splitResult, rg3::cpp::BuiltinAnnotations::kRegisterField);
 
 							if (!splitResult.empty())
 							{
 								// Nice, ready to save
 								PropertyDescription& newProperty = vExtraProperties.emplace_back();
 								newProperty.propertyRefName = splitResult[0];
-								newProperty.propertyAliasName = (splitResult.size() > 1) ? splitResult[1] : splitResult[0];
+								newProperty.propertyAliasName = (splitResult.size() == 2) ? splitResult[1] : splitResult[0];
 							}
 						}
 						else if (annotation.starts_with(rg3::cpp::BuiltinAnnotations::kRegisterFunction))
@@ -655,46 +683,120 @@ namespace rg3::llvm::visitors
 			return;
 		}
 
-		auto* pAsRecord = pType->getAs<clang::RecordType>();
-		if (pAsRecord)
+		const bool bIsRecord = pType->getDecl()->getUnderlyingType()->isRecordType();
+		if (bIsRecord)
 		{
-			// We have class or struct
-			rg3::llvm::CompilerConfig newConfig = compilerConfig;
-			newConfig.bAllowCollectNonRuntimeTypes = true;
+			// Take record
+			clang::RecordDecl* pAsRecordDecl = pType->getDecl()->getUnderlyingType()->getAsRecordDecl();
 
-			CxxClassTypeVisitor sClassVisitor { newConfig };
-
-
-			// NOTE: Here we should handle template, template specializations and something like that. For v0.0.3 I'm ignoring that case, so nothing will be found.
-
-			if (auto* asCxxRecord = ::llvm::dyn_cast<clang::CXXRecordDecl>(pAsRecord->getDecl()))
+			if (auto kind = pAsRecordDecl->getKind(); kind == clang::Decl::Kind::Record || kind == clang::Decl::Kind::CXXRecord)
 			{
-				sClassVisitor.VisitCXXRecordDecl(asCxxRecord);
-
-				if (!sClassVisitor.sClassName.empty())
+				if (auto* asCxxRecord = ::llvm::dyn_cast<clang::CXXRecordDecl>(pAsRecordDecl))
 				{
-					// Really found. Now we need to iterate over decls and locate methods and fields
-					handleCxxDeclAndOverridePropertiesOwner(asCxxRecord,
-															pTypeDefInfo.get(),
-															sClassVisitor,
-															ExtraPropertiesFilter { vKnownProperties },
-															ExtraFunctionsFilter { vKnownFunctions });
+					rg3::llvm::CompilerConfig newConfig = compilerConfig;
+					newConfig.bAllowCollectNonRuntimeTypes = true;
 
-					// And store a new type
-					vFoundExtraTypes.emplace_back(
-						std::make_unique<rg3::cpp::TypeClass>(
-							pTypeDefInfo->getName(),
-							pTypeDefInfo->getPrettyName(),
-							pTypeDefInfo->getNamespace(),
-							pTypeDefInfo->getDefinition(),
-							pTypeDefInfo->getTags(),
-							sClassVisitor.foundProperties,
-							sClassVisitor.foundFunctions,
-							sClassVisitor.bIsStruct,
-							sClassVisitor.bTriviallyConstructible,
-							sClassVisitor.parentClasses
-						)
-					);
+					CxxClassTypeVisitor sClassVisitor { newConfig };
+					sClassVisitor.VisitCXXRecordDecl(asCxxRecord);
+
+					if (!sClassVisitor.sClassName.empty())
+					{
+						// Really found. Now we need to iterate over decls and locate methods and fields
+						handleCxxDeclAndOverridePropertiesOwner(asCxxRecord,
+																pTypeDefInfo.get(),
+																sClassVisitor,
+																ExtraPropertiesFilter { vKnownProperties },
+																ExtraFunctionsFilter { vKnownFunctions });
+
+						// And store a new type
+						vFoundExtraTypes.emplace_back(
+							std::make_unique<rg3::cpp::TypeClass>(
+								pTypeDefInfo->getName(),
+								pTypeDefInfo->getPrettyName(),
+								pTypeDefInfo->getNamespace(),
+								pTypeDefInfo->getDefinition(),
+								pTypeDefInfo->getTags(),
+								sClassVisitor.foundProperties,
+								sClassVisitor.foundFunctions,
+								sClassVisitor.bIsStruct,
+								sClassVisitor.bTriviallyConstructible,
+								sClassVisitor.parentClasses
+							)
+						);
+					}
+				}
+			}
+			else if (kind == clang::Decl::Kind::ClassTemplateSpecialization)
+			{
+				// Template specialization
+				if (auto* pAsClassTemplateSpecDecl = ::llvm::dyn_cast<clang::ClassTemplateSpecializationDecl>(pType->getDecl()->getUnderlyingType()->getAsRecordDecl()))
+				{
+					if (auto* pClassTemplateDecl = pAsClassTemplateSpecDecl->getSpecializedTemplate())
+					{
+						// Here we need to start visitor from this AST node
+						rg3::llvm::CompilerConfig newConfig = compilerConfig;
+						newConfig.bAllowCollectNonRuntimeTypes = true;
+
+						// Filters
+						ExtraPropertiesFilter sPropertiesFilter { vKnownProperties };
+						ExtraFunctionsFilter  sFunctionsFilter  { vKnownFunctions };
+
+						CxxTemplateSpecializationVisitor sTemplateSpecVisitor  {
+							newConfig,
+							pAsClassTemplateSpecDecl,
+							!vKnownProperties.empty(),
+							!vKnownFunctions.empty(),
+							sPropertiesFilter,
+							sFunctionsFilter
+						};
+
+						sTemplateSpecVisitor.TraverseDecl(pClassTemplateDecl);
+
+						if (sTemplateSpecVisitor.getClassDefInfo().has_value())
+						{
+							auto rFoundType = sTemplateSpecVisitor.getClassDefInfo().value();
+							if (!rFoundType.bHasResolverErrors)
+							{
+								// Post filter: override properties (filter & override)
+								for (auto it = rFoundType.vProperties.begin(); it != rFoundType.vProperties.end(); )
+								{
+									if (!sPropertiesFilter(*it)) // call mutator overflow here
+									{
+										// not accepted
+										it = rFoundType.vProperties.erase(it);
+									}
+									else
+									{
+										// modified & accepted
+										++it;
+									}
+								}
+
+								// Post filter: override functions (filter & override class ownership)
+								for (auto& sFunction : rFoundType.vFunctions)
+								{
+									sFunction.sOwnerClassName = pTypeDefInfo->getPrettyName();
+								}
+
+								// And store type
+								vFoundExtraTypes.emplace_back(
+									std::make_unique<rg3::cpp::TypeClass>(
+										pTypeDefInfo->getName(),
+										pTypeDefInfo->getPrettyName(),
+										pTypeDefInfo->getNamespace(),
+										pTypeDefInfo->getDefinition(),
+										pTypeDefInfo->getTags(),
+										rFoundType.vProperties,
+										rFoundType.vFunctions,
+										rFoundType.bIsStruct,
+										rFoundType.bTriviallyConstructible,
+										rFoundType.vParents
+									)
+								);
+							}
+						}
+					}
+					// NOTE: Here we should handle partial specialization (ClassTemplatePartialSpecializationDecl *) but we won'ts
 				}
 			}
 

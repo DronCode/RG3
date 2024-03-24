@@ -265,50 +265,199 @@ RegisterType<EScopedEnum> {
 	ASSERT_EQ(reinterpret_cast<rg3::cpp::TypeEnum*>(analyzeResult.vFoundTypes[1].get())->getEntries()[1].sName, "SE_FF");
 	ASSERT_EQ(reinterpret_cast<rg3::cpp::TypeEnum*>(analyzeResult.vFoundTypes[1].get())->getEntries()[1].iValue, 255);
 }
-// Commented for v0.0.3, for v0.0.4 will support this
-//TEST_F(Tests_AnonymousRegistration, CheckTemplateSpecilizationBehaviour)
-//{
-//	g_Analyzer->setSourceCode(R"(
-//namespace engine::math {
-//	template <typename T>
-//	struct Vector2D
-//	{
-//		T x;
-//		T y;
-//	};
-//}
-//
-//namespace game {
-//	using V2F = engine::math::Vector2D<float>;
-//	using V2I = engine::math::Vector2D<int>;
-//}
-//
-//
-//// Registrator
-//template <typename T> struct RegisterType {};
-//
-//template <> struct
-//	__attribute__((annotate("RG3_RegisterRuntime")))
-//	__attribute__((annotate("RG3_RegisterField[x]")))
-//	__attribute__((annotate("RG3_RegisterField[y]")))
-//RegisterType<game::V2F> {
-//	using Type = game::V2F;
-//};
-//
-//template <> struct
-//	__attribute__((annotate("RG3_RegisterRuntime")))
-//	__attribute__((annotate("RG3_RegisterField[x]")))
-//	__attribute__((annotate("RG3_RegisterField[y]")))
-//RegisterType<game::V2I> {
-//	using Type = game::V2I;
-//};
-//)");
-//
-//	auto& compilerConfig = g_Analyzer->getCompilerConfig();
-//	compilerConfig.cppStandard = rg3::llvm::CxxStandard::CC_17;
-//
-//	const auto analyzeResult = g_Analyzer->analyze();
-//
-//	ASSERT_TRUE(analyzeResult.vIssues.empty()) << "Got errors!";
-//	ASSERT_EQ(analyzeResult.vFoundTypes.size(), 2) << "Expected to have 1 type here, got " << analyzeResult.vFoundTypes.size();
-//}
+
+TEST_F(Tests_AnonymousRegistration, CheckTemplateSpecilizationBehaviour)
+{
+	g_Analyzer->setSourceCode(R"(
+namespace engine::math {
+	template <typename T>
+	struct Vector2D
+	{
+		const T* x;
+		const T y;
+
+		T SetAndReturnMul(T _x, T _y);
+	};
+}
+
+namespace game {
+	using V2F = engine::math::Vector2D<float>;
+	using V2I = engine::math::Vector2D<int>;
+}
+
+
+// Registrator
+template <typename T> struct RegisterType {};
+
+template <> struct
+	__attribute__((annotate("RG3_RegisterRuntime")))
+	__attribute__((annotate("RG3_RegisterField[x]")))
+	__attribute__((annotate("RG3_RegisterField[y]")))
+	__attribute__((annotate("RG3_RegisterFunction[SetAndReturnMul]")))
+RegisterType<game::V2F> {
+	using Type = game::V2F;
+};
+
+template <> struct
+	__attribute__((annotate("RG3_RegisterRuntime")))
+	__attribute__((annotate("RG3_RegisterField[x]")))
+	__attribute__((annotate("RG3_RegisterField[y]")))
+RegisterType<game::V2I> {
+	using Type = game::V2I;
+};
+)");
+
+	auto& compilerConfig = g_Analyzer->getCompilerConfig();
+	compilerConfig.cppStandard = rg3::llvm::CxxStandard::CC_17;
+
+	const auto analyzeResult = g_Analyzer->analyze();
+
+	ASSERT_TRUE(analyzeResult.vIssues.empty()) << "Got errors!";
+	ASSERT_EQ(analyzeResult.vFoundTypes.size(), 2) << "Expected to have 2 types here";
+
+	// *** FIRST TYPE ***
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getName(), "V2F");
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getPrettyName(), "game::V2F");
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getNamespace().asString(), "game");
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getKind(), rg3::cpp::TypeKind::TK_STRUCT_OR_CLASS);
+
+	auto* asClass0 = reinterpret_cast<rg3::cpp::TypeClass*>(analyzeResult.vFoundTypes[0].get());
+	ASSERT_EQ(asClass0->getProperties().size(), 2);
+	ASSERT_EQ(asClass0->getProperties()[0].sName, "x");
+	ASSERT_EQ(asClass0->getProperties()[0].sAlias, "x");
+	ASSERT_EQ(asClass0->getProperties()[0].sTypeInfo.sDefinitionLocation, std::nullopt);
+	ASSERT_EQ(asClass0->getProperties()[0].sTypeInfo.sTypeRef.getRefName(), "float");
+	ASSERT_EQ(asClass0->getProperties()[0].sTypeInfo.bIsPtrConst, true);
+	ASSERT_EQ(asClass0->getProperties()[0].sTypeInfo.bIsPointer, true);
+
+	ASSERT_EQ(asClass0->getProperties()[1].sName, "y");
+	ASSERT_EQ(asClass0->getProperties()[1].sAlias, "y");
+	ASSERT_EQ(asClass0->getProperties()[1].sTypeInfo.sDefinitionLocation, std::nullopt);
+	ASSERT_EQ(asClass0->getProperties()[1].sTypeInfo.sTypeRef.getRefName(), "float");
+	ASSERT_EQ(asClass0->getProperties()[1].sTypeInfo.bIsConst, true);
+	ASSERT_EQ(asClass0->getProperties()[1].sTypeInfo.bIsPointer, false);
+	ASSERT_EQ(asClass0->getFunctions().size(), 1);
+	ASSERT_EQ(asClass0->getFunctions()[0].sName, "SetAndReturnMul");
+	ASSERT_EQ(asClass0->getFunctions()[0].sOwnerClassName, "game::V2F");
+	ASSERT_EQ(asClass0->getFunctions()[0].sReturnType.sDefinitionLocation, std::nullopt);
+	ASSERT_EQ(asClass0->getFunctions()[0].sReturnType.sTypeRef.getRefName(), "float");
+
+	// *** SECOND TYPE ***
+	ASSERT_EQ(analyzeResult.vFoundTypes[1]->getName(), "V2I");
+	ASSERT_EQ(analyzeResult.vFoundTypes[1]->getPrettyName(), "game::V2I");
+	ASSERT_EQ(analyzeResult.vFoundTypes[1]->getNamespace().asString(), "game");
+	ASSERT_EQ(analyzeResult.vFoundTypes[1]->getKind(), rg3::cpp::TypeKind::TK_STRUCT_OR_CLASS);
+
+	auto* asClass1 = reinterpret_cast<rg3::cpp::TypeClass*>(analyzeResult.vFoundTypes[1].get());
+	ASSERT_EQ(asClass1->getProperties().size(), 2);
+	ASSERT_EQ(asClass1->getProperties()[0].sName, "x");
+	ASSERT_EQ(asClass1->getProperties()[0].sAlias, "x");
+	ASSERT_EQ(asClass1->getProperties()[0].sTypeInfo.sDefinitionLocation, std::nullopt);
+	ASSERT_EQ(asClass1->getProperties()[0].sTypeInfo.sTypeRef.getRefName(), "int");
+	ASSERT_EQ(asClass1->getProperties()[0].sTypeInfo.bIsPtrConst, true);
+	ASSERT_EQ(asClass1->getProperties()[0].sTypeInfo.bIsPointer, true);
+	ASSERT_EQ(asClass1->getProperties()[1].sName, "y");
+	ASSERT_EQ(asClass1->getProperties()[1].sAlias, "y");
+	ASSERT_EQ(asClass1->getProperties()[1].sTypeInfo.sDefinitionLocation, std::nullopt);
+	ASSERT_EQ(asClass1->getProperties()[1].sTypeInfo.sTypeRef.getRefName(), "int");
+	ASSERT_EQ(asClass1->getProperties()[1].sTypeInfo.bIsConst, true);
+	ASSERT_EQ(asClass1->getProperties()[1].sTypeInfo.bIsPointer, false);
+	ASSERT_EQ(asClass1->getFunctions().size(), 0);
+}
+
+TEST_F(Tests_AnonymousRegistration, CheckVoidTypeInteract)
+{
+	g_Analyzer->setSourceCode(R"(
+template <typename T>
+struct AActorBase
+{
+	T iResult;
+
+	void DoAct();
+	T GetResult(bool bShouldCheck = true) const;
+};
+
+using IntActor = AActorBase<int>;
+using BoolActor = AActorBase<bool>;
+
+// Registrator
+template <typename T> struct RegisterType {};
+
+template <> struct
+	__attribute__((annotate("RG3_RegisterRuntime")))
+	__attribute__((annotate("RG3_RegisterField[iResult]")))
+	__attribute__((annotate("RG3_RegisterFunction[DoAct]")))
+	__attribute__((annotate("RG3_RegisterFunction[GetResult]")))
+RegisterType<IntActor> {
+	using Type = IntActor;
+};
+
+template <> struct
+	__attribute__((annotate("RG3_RegisterRuntime")))
+	__attribute__((annotate("RG3_RegisterField[iResult]")))
+	__attribute__((annotate("RG3_RegisterFunction[DoAct]")))
+	__attribute__((annotate("RG3_RegisterFunction[GetResult]")))
+RegisterType<BoolActor> {
+	using Type = BoolActor;
+};
+)");
+
+	auto& compilerConfig = g_Analyzer->getCompilerConfig();
+	compilerConfig.cppStandard = rg3::llvm::CxxStandard::CC_17;
+
+	const auto analyzeResult = g_Analyzer->analyze();
+
+	ASSERT_TRUE(analyzeResult.vIssues.empty()) << "Got errors!";
+	ASSERT_EQ(analyzeResult.vFoundTypes.size(), 2) << "Expected to have 2 types here";
+
+	// Check first type
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getKind(), rg3::cpp::TypeKind::TK_STRUCT_OR_CLASS);
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getName(), "IntActor");
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getPrettyName(), "IntActor");
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getNamespace().asString(), "");
+	auto* asClass0 = reinterpret_cast<rg3::cpp::TypeClass*>(analyzeResult.vFoundTypes[0].get());
+	ASSERT_EQ(asClass0->getProperties().size(), 1);
+	ASSERT_EQ(asClass0->getProperties()[0].sName, "iResult");
+	ASSERT_EQ(asClass0->getProperties()[0].sAlias, "iResult");
+	ASSERT_EQ(asClass0->getProperties()[0].sTypeInfo.sTypeRef.getRefName(), "int");
+
+	ASSERT_EQ(asClass0->getFunctions().size(), 2);
+	ASSERT_EQ(asClass0->getFunctions()[0].sName, "DoAct");
+	ASSERT_EQ(asClass0->getFunctions()[0].sOwnerClassName, "IntActor");
+	ASSERT_EQ(asClass0->getFunctions()[0].sReturnType.isVoid(), true);
+	ASSERT_EQ(asClass0->getFunctions()[0].vArguments.size(), 0);
+
+	ASSERT_EQ(asClass0->getFunctions()[1].sName, "GetResult");
+	ASSERT_EQ(asClass0->getFunctions()[1].sOwnerClassName, "IntActor");
+	ASSERT_EQ(asClass0->getFunctions()[1].sReturnType.sTypeRef.getRefName(), "int");
+	ASSERT_EQ(asClass0->getFunctions()[1].vArguments.size(), 1);
+	ASSERT_EQ(asClass0->getFunctions()[1].vArguments[0].sType.sTypeRef.getRefName(), "bool");
+	ASSERT_EQ(asClass0->getFunctions()[1].vArguments[0].sArgumentName, "bShouldCheck");
+	ASSERT_EQ(asClass0->getFunctions()[1].vArguments[0].bHasDefaultValue, true);
+
+	// Check second type
+	ASSERT_EQ(analyzeResult.vFoundTypes[1]->getKind(), rg3::cpp::TypeKind::TK_STRUCT_OR_CLASS);
+	ASSERT_EQ(analyzeResult.vFoundTypes[1]->getName(), "BoolActor");
+	ASSERT_EQ(analyzeResult.vFoundTypes[1]->getPrettyName(), "BoolActor");
+	ASSERT_EQ(analyzeResult.vFoundTypes[1]->getNamespace().asString(), "");
+	auto* asClass1 = reinterpret_cast<rg3::cpp::TypeClass*>(analyzeResult.vFoundTypes[1].get());
+
+	ASSERT_EQ(asClass1->getProperties().size(), 1);
+	ASSERT_EQ(asClass1->getProperties()[0].sName, "iResult");
+	ASSERT_EQ(asClass1->getProperties()[0].sAlias, "iResult");
+	ASSERT_EQ(asClass1->getProperties()[0].sTypeInfo.sTypeRef.getRefName(), "bool");
+
+	ASSERT_EQ(asClass1->getFunctions().size(), 2);
+	ASSERT_EQ(asClass1->getFunctions()[0].sName, "DoAct");
+	ASSERT_EQ(asClass1->getFunctions()[0].sOwnerClassName, "BoolActor");
+	ASSERT_EQ(asClass1->getFunctions()[0].sReturnType.isVoid(), true);
+	ASSERT_EQ(asClass1->getFunctions()[0].vArguments.size(), 0);
+
+	ASSERT_EQ(asClass1->getFunctions()[1].sName, "GetResult");
+	ASSERT_EQ(asClass1->getFunctions()[1].sOwnerClassName, "BoolActor");
+	ASSERT_EQ(asClass1->getFunctions()[1].sReturnType.sTypeRef.getRefName(), "bool");
+	ASSERT_EQ(asClass1->getFunctions()[1].vArguments.size(), 1);
+	ASSERT_EQ(asClass1->getFunctions()[1].vArguments[0].sType.sTypeRef.getRefName(), "bool");
+	ASSERT_EQ(asClass1->getFunctions()[1].vArguments[0].sArgumentName, "bShouldCheck");
+	ASSERT_EQ(asClass1->getFunctions()[1].vArguments[0].bHasDefaultValue, true);
+}
