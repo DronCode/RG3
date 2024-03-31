@@ -26,6 +26,8 @@ namespace rg3::cpp
 
 		const std::string& asString() const { return m_sNamespace; }
 
+		bool isEmpty() const { return m_vNamespace.empty(); }
+
     private:
         void parseNamespace();
 

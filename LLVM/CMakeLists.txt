@@ -32,6 +32,11 @@ target_include_directories(RG3_LLVM PUBLIC ${CLANG_INCLUDE_DIRS})
 target_include_directories(RG3_LLVM PUBLIC ${LLVM_INCLUDE_DIRS})
 target_include_directories(RG3_LLVM PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
+if (MSVC)
+    # /bigobj support
+    target_compile_options(RG3_LLVM PUBLIC /bigobj)
+endif()
+
 target_link_libraries(RG3_LLVM PUBLIC
         # LLVM
         LLVMCore

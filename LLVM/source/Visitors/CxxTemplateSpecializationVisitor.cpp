@@ -72,10 +72,12 @@ namespace rg3::llvm::visitors
 			return true;
 		}
 
-		// Create entry
-		sDef.sClassName = cxxRecordDecl->getName().str();
-		sDef.sPrettyClassName = Utils::getPrettyNameOfDecl(cxxRecordDecl);
+		// Namespace
 		Utils::getDeclInfo(cxxRecordDecl, sDef.sNameSpace);
+
+		// Get name & pretty name
+		sDef.sClassName       = cxxRecordDecl->getName().str();
+		sDef.sPrettyClassName = Utils::getPrettyNameOfDecl(cxxRecordDecl);  // Are you sure that this shit is correct?
 
 		// Location
 		sDef.sDefLocation = Utils::getDeclDefinitionInfo(cxxRecordDecl);
@@ -208,7 +210,7 @@ namespace rg3::llvm::visitors
 		cpp::ClassFunction newFunction;
 		newFunction.sName = cxxMethodDecl->getNameAsString();
 		newFunction.bIsStatic = cxxMethodDecl->isStatic();
-		newFunction.sOwnerClassName = sDef.sClassName;
+		newFunction.sOwnerClassName = sDef.sPrettyClassName;
 		newFunction.bIsConst = cxxMethodDecl->isConst();
 
 		if (!m_functionFilterFunc(cxxMethodDecl->getNameAsString()))

@@ -95,5 +95,11 @@ namespace rg3::cpp
 		[[nodiscard]] Tag getTag(const std::string& tag) const;
 		[[nodiscard]] const Storage_t& getTags() const;
 		[[nodiscard]] Storage_t& getTags();
+
+		bool isEmpty() const { return m_tags.empty(); }
+
+		Tags& operator+=(const Tags& another);
+		Tags& operator+=(const Tag& another);
+		friend Tags operator+(const Tags& a, const Tags& b);
 	};
 }

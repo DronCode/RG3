@@ -196,7 +196,7 @@ RegisterType<game::Vec2> {
 	ASSERT_EQ(pClass->getFunctions()[0].sName, "IsNormalized");
 	ASSERT_EQ(pClass->getFunctions()[0].bIsConst, true);
 	ASSERT_EQ(pClass->getFunctions()[0].vTags.getTags().size(), 0);
-	ASSERT_EQ(pClass->getFunctions()[0].sOwnerClassName, "Vec2");
+	ASSERT_EQ(pClass->getFunctions()[0].sOwnerClassName, "game::Vec2");
 	ASSERT_EQ(pClass->getFunctions()[0].vArguments.size(), 0);
 	ASSERT_EQ(pClass->getFunctions()[0].eVisibility, rg3::cpp::ClassEntryVisibility::CEV_PRIVATE);
 	ASSERT_EQ(pClass->getFunctions()[0].sReturnType.sTypeRef.getRefName(), "bool");
@@ -289,6 +289,7 @@ namespace game {
 // Registrator
 template <typename T> struct RegisterType {};
 
+// Alias registration
 template <> struct
 	__attribute__((annotate("RG3_RegisterRuntime")))
 	__attribute__((annotate("RG3_RegisterField[x]")))
@@ -305,6 +306,15 @@ template <> struct
 RegisterType<game::V2I> {
 	using Type = game::V2I;
 };
+
+// Direct registration
+template <> struct
+	__attribute__((annotate("RG3_RegisterRuntime")))
+	__attribute__((annotate("RG3_RegisterField[x]")))
+	__attribute__((annotate("RG3_RegisterField[y]")))
+RegisterType<engine::math::Vector2D<short>> {
+	using Type = engine::math::Vector2D<short>;
+};
 )");
 
 	auto& compilerConfig = g_Analyzer->getCompilerConfig();
@@ -313,7 +323,7 @@ RegisterType<game::V2I> {
 	const auto analyzeResult = g_Analyzer->analyze();
 
 	ASSERT_TRUE(analyzeResult.vIssues.empty()) << "Got errors!";
-	ASSERT_EQ(analyzeResult.vFoundTypes.size(), 2) << "Expected to have 2 types here";
+	ASSERT_EQ(analyzeResult.vFoundTypes.size(), 3) << "Expected to have 3 types here";
 
 	// *** FIRST TYPE ***
 	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getName(), "V2F");
@@ -363,6 +373,28 @@ RegisterType<game::V2I> {
 	ASSERT_EQ(asClass1->getProperties()[1].sTypeInfo.bIsConst, true);
 	ASSERT_EQ(asClass1->getProperties()[1].sTypeInfo.bIsPointer, false);
 	ASSERT_EQ(asClass1->getFunctions().size(), 0);
+
+	// *** THIRD TYPE ***
+	ASSERT_EQ(analyzeResult.vFoundTypes[2]->getName(), "Vector2D<short>");
+	ASSERT_EQ(analyzeResult.vFoundTypes[2]->getPrettyName(), "engine::math::Vector2D<short>");
+	ASSERT_EQ(analyzeResult.vFoundTypes[2]->getNamespace().asString(), "engine::math");
+	ASSERT_EQ(analyzeResult.vFoundTypes[2]->getKind(), rg3::cpp::TypeKind::TK_STRUCT_OR_CLASS);
+
+	auto* asClass2 = reinterpret_cast<rg3::cpp::TypeClass*>(analyzeResult.vFoundTypes[2].get());
+	ASSERT_EQ(asClass2->getProperties().size(), 2);
+	ASSERT_EQ(asClass2->getProperties()[0].sName, "x");
+	ASSERT_EQ(asClass2->getProperties()[0].sAlias, "x");
+	ASSERT_EQ(asClass2->getProperties()[0].sTypeInfo.sDefinitionLocation, std::nullopt);
+	ASSERT_EQ(asClass2->getProperties()[0].sTypeInfo.sTypeRef.getRefName(), "short");
+	ASSERT_EQ(asClass2->getProperties()[0].sTypeInfo.bIsPtrConst, true);
+	ASSERT_EQ(asClass2->getProperties()[0].sTypeInfo.bIsPointer, true);
+	ASSERT_EQ(asClass2->getProperties()[1].sName, "y");
+	ASSERT_EQ(asClass2->getProperties()[1].sAlias, "y");
+	ASSERT_EQ(asClass2->getProperties()[1].sTypeInfo.sDefinitionLocation, std::nullopt);
+	ASSERT_EQ(asClass2->getProperties()[1].sTypeInfo.sTypeRef.getRefName(), "short");
+	ASSERT_EQ(asClass2->getProperties()[1].sTypeInfo.bIsConst, true);
+	ASSERT_EQ(asClass2->getProperties()[1].sTypeInfo.bIsPointer, false);
+	ASSERT_EQ(asClass2->getFunctions().size(), 0);
 }
 
 TEST_F(Tests_AnonymousRegistration, CheckVoidTypeInteract)
@@ -379,6 +411,10 @@ struct AActorBase
 
 using IntActor = AActorBase<int>;
 using BoolActor = AActorBase<bool>;
+
+using SomeType = float;
+
+enum class CoolEnum { CE_0 = 0, CE_64 = 64 };
 
 // Registrator
 template <typename T> struct RegisterType {};
@@ -400,6 +436,18 @@ template <> struct
 RegisterType<BoolActor> {
 	using Type = BoolActor;
 };
+
+template <> struct
+	__attribute__((annotate("RG3_RegisterRuntime")))
+RegisterType<SomeType> {
+	using Type = SomeType;
+};
+
+template <> struct
+	__attribute__((annotate("RG3_RegisterRuntime")))
+RegisterType<CoolEnum> {
+	using Type = CoolEnum;
+};
 )");
 
 	auto& compilerConfig = g_Analyzer->getCompilerConfig();
@@ -408,7 +456,7 @@ RegisterType<BoolActor> {
 	const auto analyzeResult = g_Analyzer->analyze();
 
 	ASSERT_TRUE(analyzeResult.vIssues.empty()) << "Got errors!";
-	ASSERT_EQ(analyzeResult.vFoundTypes.size(), 2) << "Expected to have 2 types here";
+	ASSERT_EQ(analyzeResult.vFoundTypes.size(), 4) << "Expected to have 4 types here";
 
 	// Check first type
 	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getKind(), rg3::cpp::TypeKind::TK_STRUCT_OR_CLASS);
@@ -460,4 +508,119 @@ RegisterType<BoolActor> {
 	ASSERT_EQ(asClass1->getFunctions()[1].vArguments[0].sType.sTypeRef.getRefName(), "bool");
 	ASSERT_EQ(asClass1->getFunctions()[1].vArguments[0].sArgumentName, "bShouldCheck");
 	ASSERT_EQ(asClass1->getFunctions()[1].vArguments[0].bHasDefaultValue, true);
+
+	// Check third type
+	ASSERT_EQ(analyzeResult.vFoundTypes[2]->getKind(), rg3::cpp::TypeKind::TK_TRIVIAL);
+	ASSERT_EQ(analyzeResult.vFoundTypes[2]->getName(), "SomeType");
+	ASSERT_EQ(analyzeResult.vFoundTypes[2]->getPrettyName(), "SomeType");
+	ASSERT_EQ(analyzeResult.vFoundTypes[2]->getNamespace().asString(), "");
+
+	// Check fouth type
+	ASSERT_EQ(analyzeResult.vFoundTypes[3]->getKind(), rg3::cpp::TypeKind::TK_ENUM);
+	ASSERT_EQ(analyzeResult.vFoundTypes[3]->getName(), "CoolEnum");
+	ASSERT_EQ(analyzeResult.vFoundTypes[3]->getPrettyName(), "CoolEnum");
+	ASSERT_EQ(analyzeResult.vFoundTypes[3]->getNamespace().asString(), "");
+	auto* asEnum3 = reinterpret_cast<rg3::cpp::TypeEnum*>(analyzeResult.vFoundTypes[3].get());
+	ASSERT_EQ(asEnum3->getEntries().size(), 2);
+	ASSERT_EQ(asEnum3->getEntries()[0].sName, "CE_0");
+	ASSERT_EQ(asEnum3->getEntries()[0].iValue, 0);
+	ASSERT_EQ(asEnum3->getEntries()[1].sName, "CE_64");
+	ASSERT_EQ(asEnum3->getEntries()[1].iValue, 64);
+	ASSERT_EQ(asEnum3->isScoped(), true);
+}
+
+TEST_F(Tests_AnonymousRegistration, CheckTemplateThroughAlias)
+{
+	g_Analyzer->setSourceCode(R"(
+template <typename T>
+struct SomePointer
+{ // no reason to have here any fields, nothing will be expored
+};
+
+namespace ns
+{
+	/// @runtime
+	using IntPtr = SomePointer<int>;
+
+	using FPTR = SomePointer<float>;
+
+	/// @runtime
+	using FloatPtr = FPTR;
+}
+)");
+
+	auto& compilerConfig = g_Analyzer->getCompilerConfig();
+	compilerConfig.cppStandard = rg3::llvm::CxxStandard::CC_17;
+
+	const auto analyzeResult = g_Analyzer->analyze();
+
+	ASSERT_TRUE(analyzeResult.vIssues.empty()) << "Got errors!";
+	ASSERT_EQ(analyzeResult.vFoundTypes.size(), 2) << "Expected to have 2 types here";
+
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getName(), "IntPtr");
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getPrettyName(), "ns::IntPtr");
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getNamespace().asString(), "ns");
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getTags().hasTag("runtime"), true);
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getKind(), rg3::cpp::TypeKind::TK_STRUCT_OR_CLASS);
+
+	auto* asClass0 = static_cast<rg3::cpp::TypeClass*>(analyzeResult.vFoundTypes[0].get());
+	ASSERT_EQ(asClass0->getFunctions().size(), 0) << "Nothing to be here (functions)";
+	ASSERT_EQ(asClass0->getProperties().size(), 0) << "Nothing to be here (properties)";
+
+	/// * SECOND TYPE *
+	ASSERT_EQ(analyzeResult.vFoundTypes[1]->getName(), "FloatPtr");
+	ASSERT_EQ(analyzeResult.vFoundTypes[1]->getPrettyName(), "ns::FloatPtr");
+	ASSERT_EQ(analyzeResult.vFoundTypes[1]->getNamespace().asString(), "ns");
+	ASSERT_EQ(analyzeResult.vFoundTypes[1]->getTags().hasTag("runtime"), true);
+	ASSERT_EQ(analyzeResult.vFoundTypes[1]->getKind(), rg3::cpp::TypeKind::TK_STRUCT_OR_CLASS);
+
+	auto* asClass1 = static_cast<rg3::cpp::TypeClass*>(analyzeResult.vFoundTypes[1].get());
+	ASSERT_EQ(asClass1->getFunctions().size(), 0) << "Nothing to be here (functions)";
+	ASSERT_EQ(asClass1->getProperties().size(), 0) << "Nothing to be here (properties)";
+}
+
+TEST_F(Tests_AnonymousRegistration, IsolatedSandbox)
+{
+	g_Analyzer->setSourceCode(R"(
+template <typename T>
+struct AActorBase
+{
+	T iResult;
+
+	void DoAct();
+	T GetResult(bool bShouldCheck = true) const;
+};
+
+using IntActor = AActorBase<int>;
+
+template <typename T> struct RegisterType {};
+
+template <> struct
+	__attribute__((annotate("RG3_RegisterRuntime")))
+	__attribute__((annotate("RG3_RegisterField[iResult]")))
+	__attribute__((annotate("RG3_RegisterFunction[DoAct]")))
+	__attribute__((annotate("RG3_RegisterFunction[GetResult]")))
+RegisterType<IntActor> {
+	using Type = IntActor;
+};
+)");
+
+	auto& compilerConfig = g_Analyzer->getCompilerConfig();
+	compilerConfig.cppStandard = rg3::llvm::CxxStandard::CC_17;
+
+	const auto analyzeResult = g_Analyzer->analyze();
+
+	ASSERT_TRUE(analyzeResult.vIssues.empty()) << "Got errors!";
+	ASSERT_EQ(analyzeResult.vFoundTypes.size(), 1) << "Expected to have 1 types here";
+
+	// Check first type
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getKind(), rg3::cpp::TypeKind::TK_STRUCT_OR_CLASS);
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getName(), "IntActor");
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getPrettyName(), "IntActor");
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getNamespace().asString(), "");
+	auto* asClass0 = reinterpret_cast<rg3::cpp::TypeClass*>(analyzeResult.vFoundTypes[0].get());
+	ASSERT_EQ(asClass0->getProperties().size(), 1);
+	ASSERT_EQ(asClass0->getProperties()[0].sName, "iResult");
+	ASSERT_EQ(asClass0->getProperties()[0].sAlias, "iResult");
+	ASSERT_EQ(asClass0->getProperties()[0].sTypeInfo.sTypeRef.getRefName(), "int");
 }

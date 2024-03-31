@@ -1,5 +1,5 @@
 #include <RG3/LLVM/Consumers/CollectTypesFromTU.h>
-#include <RG3/LLVM/Visitors/CxxTypeVisitor.h>
+#include <RG3/LLVM/Visitors/CxxRouterVisitor.h>
 
 
 namespace rg3::llvm::consumers
@@ -18,7 +18,7 @@ namespace rg3::llvm::consumers
 
 	void CollectTypesFromTUConsumer::HandleTranslationUnit(clang::ASTContext& ctx)
 	{
-		rg3::llvm::visitors::CxxTypeVisitor visitor { collectedTypes, compilerConfig };
-		visitor.TraverseDecl(ctx.getTranslationUnitDecl());
+		rg3::llvm::visitors::CxxRouterVisitor router { collectedTypes, compilerConfig };
+		router.TraverseDecl(ctx.getTranslationUnitDecl());
 	}
 }

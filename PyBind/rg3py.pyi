@@ -33,9 +33,6 @@ class CppTypeKind:
     TK_TRIVIAL = 1
     TK_ENUM = 2
     TK_STRUCT_OR_CLASS = 3
-    TK_ALIAS = 4
-    TK_TEMPLATE_SPECIALIZATION = 5
-
 
 class CppEnum:
     @property
@@ -46,17 +43,6 @@ class CppEnum:
 
     @property
     def underlying_type(self) -> str: ...
-
-
-class CppAlias:
-    @property
-    def target(self) -> CppTypeReference: ...
-
-    @property
-    def target_location(self) -> Optional[Location]: ...
-
-    @property
-    def target_description(self) -> TypeStatement: ...
 
 
 class CppIncludeKind:

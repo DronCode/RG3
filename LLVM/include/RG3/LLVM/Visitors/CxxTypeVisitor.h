@@ -23,11 +23,6 @@ namespace rg3::llvm::visitors
 
 		bool VisitCXXRecordDecl(clang::CXXRecordDecl* cxxRecordDecl);
 
-		bool VisitTypedefNameDecl(clang::TypedefNameDecl* typedefNameDecl);
-
-	 private:
-		bool HandleNamedTypedefDecl(clang::TypedefNameDecl* typedefNameDecl);
-
 	 private:
 		template <typename T>
 		static bool isDeclInsideClassOrStruct(T* pDecl) requires (std::is_base_of_v<clang::Decl, T>)

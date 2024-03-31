@@ -13,7 +13,6 @@
 #include <RG3/LLVM/Utils.h>
 #include <RG3/Cpp/TypeEnum.h>
 #include <RG3/Cpp/TypeClass.h>
-#include <RG3/Cpp/TypeAlias.h>
 #include <RG3/Cpp/BuiltinTags.h>
 
 #include <cassert>
@@ -178,45 +177,5 @@ namespace rg3::llvm::visitors
 		stmt.sTypeRef = rg3::cpp::TypeReference {
 			sFinalName
 		};
-	}
-
-	bool CxxTypeVisitor::VisitTypedefNameDecl(clang::TypedefNameDecl* typedefNameDecl)
-	{
-		return HandleNamedTypedefDecl(typedefNameDecl);
-	}
-
-	bool CxxTypeVisitor::HandleNamedTypedefDecl(clang::TypedefNameDecl* typedefNameDecl)
-	{
-		if (!typedefNameDecl) { return true; }
-
-		// Extract tags
-		bool bHasComment = false;
-		cpp::Tags tags = getTagsForDecl(typedefNameDecl, bHasComment);
-
-		if (!bHasComment && !compilerConfig.bAllowCollectNonRuntimeTypes)
-		{
-			return true;
-		}
-
-		// Check this somewhere else
-		if (!tags.hasTag(std::string(rg3::cpp::BuiltinTags::kRuntime)) && !compilerConfig.bAllowCollectNonRuntimeTypes)
-			return true;
-
-		// Extract base info
-		const std::string sName = typedefNameDecl->getNameAsString();
-		const std::string sPrettyName = Utils::getPrettyNameOfDecl(typedefNameDecl);
-		rg3::cpp::CppNamespace sNamespace {};
-		Utils::getDeclInfo(typedefNameDecl, sNamespace);
-
-		rg3::cpp::DefinitionLocation sDefLoc = Utils::getDeclDefinitionInfo(typedefNameDecl);
-
-		// Get base information about canonical type
-		rg3::cpp::TypeStatement stmt {};
-		fillTypeStatementFromUnderlyingType(stmt, typedefNameDecl->getUnderlyingType(), typedefNameDecl->getASTContext());
-
-		// Save found type
-		m_collectedTypes.emplace_back(std::make_unique<rg3::cpp::TypeAlias>(sName, sPrettyName, sNamespace, sDefLoc, tags, stmt));
-
-		return true;
 	}
 }

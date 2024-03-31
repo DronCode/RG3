@@ -196,4 +196,39 @@ namespace rg3::cpp
 	{
 		return m_tags;
 	}
+	Tags operator+(const Tags& a, const Tags& b)
+	{
+		Tags result = a;
+
+		for (const auto& [name, tag] : b.getTags())
+		{
+			// DronCode: maybe we need to avoid of override keys here?
+			result.getTags()[name] = tag;
+		}
+
+		return result;
+	}
+
+	Tags& Tags::operator+=(const Tags& another)
+	{
+		for (const auto& [name, tag] : another.getTags())
+		{
+			if (m_tags.contains(name))
+				continue;
+
+			m_tags[name] = tag;
+		}
+
+		return *this;
+	}
+
+	Tags& Tags::operator+=(const Tag& another)
+	{
+		if (!m_tags.contains(another.getName()))
+		{
+			m_tags[another.getName()] = another;
+		}
+
+		return *this;
+	}
 }
