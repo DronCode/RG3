@@ -178,30 +178,47 @@ namespace rg3::llvm::visitors
 				{
 					if (auto* pClassTemplateDecl = pSpecDecl->getSpecializedTemplate())
 					{
-						auto newConfig = m_compilerConfig;
-						newConfig.bAllowCollectNonRuntimeTypes = true; // allow to read type without runtime tag
+						clang::Decl* pTargetDecl = nullptr;
 
-						CxxTemplateSpecializationVisitor visitor { newConfig, pSpecDecl, false, false, nullptr, nullptr };
-						visitor.TraverseDecl(pClassTemplateDecl);
-
-						if (visitor.getClassDefInfo().has_value())
+						for (auto* pDecl : pClassTemplateDecl->redecls())
 						{
-							const auto& sClassDefInfo = visitor.getClassDefInfo().value();
+							if (auto* classTemplateDecl = ::llvm::dyn_cast<clang::ClassTemplateDecl>(pDecl))
+							{
+								if (classTemplateDecl->isThisDeclarationADefinition())
+								{
+									pTargetDecl = classTemplateDecl;
+									break;
+								}
+							}
+						}
 
-							m_vFoundTypes.emplace_back(
-								std::make_unique<cpp::TypeClass>(
-									typedefNameDecl->getNameAsString(),  // I'm not sure that this is correct.
-									typedefPrettyName,
-									typedefNamespace,
-									typedefLocation,
-									typeTags,
-									sClassDefInfo.vProperties,
-									sClassDefInfo.vFunctions,
-									sClassDefInfo.bIsStruct,
-									sClassDefInfo.bTriviallyConstructible,
-									sClassDefInfo.vParents
-								)
-							);
+						if (pTargetDecl)
+						{
+							auto newConfig = m_compilerConfig;
+							newConfig.bAllowCollectNonRuntimeTypes = true; // allow to read type without runtime tag
+
+							CxxTemplateSpecializationVisitor visitor { newConfig, pSpecDecl, false, false, nullptr, nullptr };
+							visitor.TraverseDecl(pTargetDecl);
+
+							if (visitor.getClassDefInfo().has_value())
+							{
+								const auto& sClassDefInfo = visitor.getClassDefInfo().value();
+
+								m_vFoundTypes.emplace_back(
+									std::make_unique<cpp::TypeClass>(
+										typedefNameDecl->getNameAsString(),  // I'm not sure that this is correct.
+										typedefPrettyName,
+										typedefNamespace,
+										typedefLocation,
+										typeTags,
+										sClassDefInfo.vProperties,
+										sClassDefInfo.vFunctions,
+										sClassDefInfo.bIsStruct,
+										sClassDefInfo.bTriviallyConstructible,
+										sClassDefInfo.vParents
+										)
+								);
+							}
 						}
 					}
 				}
@@ -470,46 +487,63 @@ namespace rg3::llvm::visitors
 
 						if (auto* pSpecializedTemplate = pTemplateSpecDecl->getSpecializedTemplate())
 						{
-							// run visitor
-							visitor.TraverseDecl(pSpecializedTemplate);
+							clang::Decl* pTargetDecl = nullptr;
 
-							if (visitor.getClassDefInfo().has_value())
+							for (auto* pDecl : pSpecializedTemplate->redecls())
 							{
-								const auto& sClassDef = visitor.getClassDefInfo().value();
-
-								// Nice, smth found. Need to register type 'as-is' because parent router will override our results if required
-								auto pNewType = std::make_unique<cpp::TypeClass>(
-													sClassDef.sClassName,
-													sClassDef.sPrettyClassName,
-													sClassDef.sNameSpace,
-													sClassDef.sDefLocation,
-													sClassDef.sTags,
-													sClassDef.vProperties,
-													sClassDef.vFunctions,
-													sClassDef.bIsStruct,
-													sClassDef.bTriviallyConstructible,
-													sClassDef.vParents);
-
-								auto opaquePtr = clang::QualType::getFromOpaquePtr(pAsTemplateSpec);
-								if (opaquePtr->isLinkageValid() && bDirectInvoke)
+								if (auto* classTemplateDecl = ::llvm::dyn_cast<clang::ClassTemplateDecl>(pDecl))
 								{
-									const std::string sOldPrettyTypeName = pNewType->getPrettyName();
-									std::string sName = opaquePtr.getAsString();
-									std::string sPrettyName = sClassDef.sNameSpace.isEmpty() ? sName : fmt::format("{}::{}", sClassDef.sNameSpace.asString(), sName);
-
-									for (auto& func : pNewType->getFunctions())
+									if (classTemplateDecl->isThisDeclarationADefinition())
 									{
-										if (func.sOwnerClassName == sOldPrettyTypeName)
+										pTargetDecl = classTemplateDecl;
+										break;
+									}
+								}
+							}
+
+							if (pTargetDecl)
+							{
+								// run visitor
+								visitor.TraverseDecl(pTargetDecl);
+
+								if (visitor.getClassDefInfo().has_value())
+								{
+									const auto& sClassDef = visitor.getClassDefInfo().value();
+
+									// Nice, smth found. Need to register type 'as-is' because parent router will override our results if required
+									auto pNewType = std::make_unique<cpp::TypeClass>(
+										sClassDef.sClassName,
+										sClassDef.sPrettyClassName,
+										sClassDef.sNameSpace,
+										sClassDef.sDefLocation,
+										sClassDef.sTags,
+										sClassDef.vProperties,
+										sClassDef.vFunctions,
+										sClassDef.bIsStruct,
+										sClassDef.bTriviallyConstructible,
+										sClassDef.vParents);
+
+									auto opaquePtr = clang::QualType::getFromOpaquePtr(pAsTemplateSpec);
+									if (opaquePtr->isLinkageValid() && bDirectInvoke)
+									{
+										const std::string sOldPrettyTypeName = pNewType->getPrettyName();
+										std::string sName = opaquePtr.getAsString();
+										std::string sPrettyName = sClassDef.sNameSpace.isEmpty() ? sName : fmt::format("{}::{}", sClassDef.sNameSpace.asString(), sName);
+
+										for (auto& func : pNewType->getFunctions())
 										{
-											func.sOwnerClassName = sPrettyName;
+											if (func.sOwnerClassName == sOldPrettyTypeName)
+											{
+												func.sOwnerClassName = sPrettyName;
+											}
 										}
+
+										pNewType->overrideTypeData(sName, sPrettyName);
 									}
 
-									pNewType->overrideTypeData(sName, sPrettyName);
+									m_vFoundTypes.emplace_back(std::move(pNewType));
+									bHandled = true;
 								}
-
-								m_vFoundTypes.emplace_back(std::move(pNewType));
-								bHandled = true;
 							}
 						}
 					}
