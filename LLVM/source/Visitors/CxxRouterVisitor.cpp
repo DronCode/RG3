@@ -526,8 +526,12 @@ namespace rg3::llvm::visitors
 									auto opaquePtr = clang::QualType::getFromOpaquePtr(pAsTemplateSpec);
 									if (opaquePtr->isLinkageValid() && bDirectInvoke)
 									{
+										// avoid of _Bool on MSVC
+										clang::PrintingPolicy printingPolicy { ctx.getLangOpts() };
+										printingPolicy.Bool = true;
+
 										const std::string sOldPrettyTypeName = pNewType->getPrettyName();
-										std::string sName = opaquePtr.getAsString();
+										std::string sName = opaquePtr.getAsString(printingPolicy);
 										std::string sPrettyName = sClassDef.sNameSpace.isEmpty() ? sName : fmt::format("{}::{}", sClassDef.sNameSpace.asString(), sName);
 
 										for (auto& func : pNewType->getFunctions())

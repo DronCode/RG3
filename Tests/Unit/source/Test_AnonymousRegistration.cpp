@@ -579,7 +579,7 @@ namespace ns
 	ASSERT_EQ(asClass1->getProperties().size(), 0) << "Nothing to be here (properties)";
 }
 
-TEST_F(Tests_AnonymousRegistration, IsolatedSandbox)
+TEST_F(Tests_AnonymousRegistration, CheckTemplateBehaviour)
 {
 	g_Analyzer->setSourceCode(R"(
 template <typename T>
@@ -623,4 +623,45 @@ RegisterType<IntActor> {
 	ASSERT_EQ(asClass0->getProperties()[0].sName, "iResult");
 	ASSERT_EQ(asClass0->getProperties()[0].sAlias, "iResult");
 	ASSERT_EQ(asClass0->getProperties()[0].sTypeInfo.sTypeRef.getRefName(), "int");
+}
+
+TEST_F(Tests_AnonymousRegistration, CheckForwardDecl)
+{
+	g_Analyzer->setSourceCode(R"(
+template <typename T> struct CoolPtr;
+template <typename T> struct CoolPtr
+{
+	int iRefCount = 0;
+	T* pPtr = nullptr;
+};
+
+using IntPtr = CoolPtr<int>;
+
+template <typename T> struct RegisterType {};
+
+template <> struct
+	__attribute__((annotate("RG3_RegisterRuntime")))
+	__attribute__((annotate("RG3_RegisterField[iRefCount]")))
+RegisterType<IntPtr> {
+	using Type = IntPtr;
+};
+
+template <> struct
+	__attribute__((annotate("RG3_RegisterRuntime")))
+	__attribute__((annotate("RG3_RegisterField[iRefCount]")))
+RegisterType<CoolPtr<bool>> {
+	using Type = CoolPtr<bool>;
+};
+)");
+
+	auto& compilerConfig = g_Analyzer->getCompilerConfig();
+	compilerConfig.cppStandard = rg3::llvm::CxxStandard::CC_17;
+
+	const auto analyzeResult = g_Analyzer->analyze();
+
+	ASSERT_TRUE(analyzeResult.vIssues.empty()) << "Got errors!";
+	ASSERT_EQ(analyzeResult.vFoundTypes.size(), 2) << "Expected to have 2 types here";
+
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getName(), "IntPtr");
+	ASSERT_EQ(analyzeResult.vFoundTypes[1]->getName(), "CoolPtr<bool>");
 }
