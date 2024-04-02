@@ -12,7 +12,7 @@ Install
 Make sure that your system has clang (any version):
  * **macOS**: you need to install XCode (tested on 15.x but should work everywhere)
  * **Window**: you need to install clang 17.x or later and add it into PATH 
- * **Linux**: default g++ is enough
+ * **Linux**: gcc & g++ at least 13 version (temporary limitation, planned to fix at 0.0.4)
  * **Other platforms & archs**: Contact us in [our GitHub](https://github.com/DronCode/RG3).
 
 It's a better way to use RG3 inside virtualenv:
@@ -28,7 +28,13 @@ Usage:
 Sample code analyze code from buffer:
 
 ```python
-from rg3py import CodeAnalyzer, CppStandard, CppCompilerIssueKind
+from rg3py import CodeAnalyzer, CppStandard, CppCompilerIssueKind, CppTypeKind, CppClass, FunctionArgument
+from typing import List
+
+
+def prepare_args(args: List[FunctionArgument]) -> str:
+    return ','.join(f'{arg.type_info.get_name()} {arg.name}' for arg in args)
+
 
 analyzer: CodeAnalyzer = CodeAnalyzer.make()
 analyzer.set_code("""
@@ -41,6 +47,29 @@ analyzer.set_code("""
             CE_ANOTHER_ENTRY = 0xFFEE,
             CE_DUMMY = 256
         };
+
+        /// @runtime
+        struct MyGeniusStruct
+        {};
+
+        struct SomeThirdPartyStruct
+        {
+            float fProperty = 42.f;
+            MyGeniusStruct sGenius {};
+
+            static bool IsGeniusDesc(bool bCanReplace) const;
+        };
+
+        template <typename T> struct ThirdPartyRegistrator {};
+        template <> struct 
+            __attribute__((annotate("RG3_RegisterRuntime")))
+            __attribute__((annotate("RG3_RegisterField[fProperty:Property]")))
+            __attribute__((annotate("RG3_RegisterField[sGenius:GeniusData]")))
+            __attribute__((annotate("RG3_RegisterFunction[IsGeniusDesc]")))
+        ThirdPartyRegistrator<SomeThirdPartyStruct>
+        {
+            using Type = SomeThirdPartyStruct;
+        };
     }
     """)
 
@@ -49,11 +78,25 @@ analyzer.analyze()
 
 for t in analyzer.types:
     print(f"We have a type {t.pretty_name} ({t.kind})")
+
+    if t.kind == CppTypeKind.TK_STRUCT_OR_CLASS:
+        as_class: CppClass = t
+        for prop in as_class.properties:
+            print(f"\tProperty {prop.name} (aka {prop.alias}) of type {prop.type_info.get_name()}")
+
+        for func in as_class.functions:
+            args_as_str: str = prepare_args(func.arguments)
+            print(f"\tFunction {'static' if func.is_static else ''} {func.return_type.get_name()} {func.name}({args_as_str}){' const' if func.is_const else ''}")
 ```
 
 expected output is
 ```text
 We have a type my::cool::name_space::ECoolEnum (TK_ENUM)
+We have a type my::cool::name_space::MyGeniusStruct (TK_STRUCT_OR_CLASS)
+We have a type my::cool::name_space::SomeThirdPartyStruct (TK_STRUCT_OR_CLASS)
+	Property fProperty (aka Property) of type float
+	Property sGenius (aka GeniusData) of type MyGeniusStruct
+	Function static bool IsGeniusDesc(bool bCanReplace)
 ```
 
 Features
@@ -64,7 +107,8 @@ Features
  * Supported threads in analysis on native side (see Tests/PyIntegration/test.py test: **test_analyzer_context_sample** for example)
  * Statically linked, no external dependencies (except Clang instance on machine)
  * Special macro definitions to hide unnecessary code
- * Template specializations reporting (partially, see tests for details)
+ * Template specializations reporting
+ * Anonymous registration without changes in third party code
 
 Current limitations
 -------------------
