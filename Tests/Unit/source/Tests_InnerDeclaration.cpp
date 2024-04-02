@@ -4,7 +4,6 @@
 #include <RG3/Cpp/TypeBase.h>
 #include <RG3/Cpp/TypeClass.h>
 #include <RG3/Cpp/TypeEnum.h>
-#include <RG3/Cpp/TypeAlias.h>
 #include <RG3/LLVM/CodeAnalyzer.h>
 
 

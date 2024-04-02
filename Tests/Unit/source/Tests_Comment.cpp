@@ -115,3 +115,39 @@ struct MyCoolStructure
 	ASSERT_EQ(asClass->getFunctions()[0].vTags.getTag("use_anyway").getArguments()[0].getHoldedType(), rg3::cpp::TagArgumentType::AT_I64) << "Expected to have i64";
 	ASSERT_EQ(asClass->getFunctions()[0].vTags.getTag("use_anyway").getArguments()[0].asI64(0), 1) << "Expected to have 1";
 }
+
+TEST_F(Tests_Comments, CommentWithDots)
+{
+	g_Analyzer->setSourceCode(R"(
+/**
+ * @runtime
+ * @ecs.component(1024, true)
+ **/
+class PlayerComponent
+{
+};
+)");
+
+	g_Analyzer->getCompilerConfig().cppStandard = rg3::llvm::CxxStandard::CC_14;
+
+	const auto analyzeResult = g_Analyzer->analyze();
+
+	ASSERT_TRUE(analyzeResult.vIssues.empty()) << "No issues should be here";
+	ASSERT_EQ(analyzeResult.vFoundTypes.size(), 1) << "Only 1 type should be here";
+
+	const auto& tags = analyzeResult.vFoundTypes[0]->getTags();
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getName(), "PlayerComponent");
+	ASSERT_TRUE(tags.hasTag("runtime")) << "Type must have 'runtime' tag";
+	ASSERT_TRUE(tags.hasTag("ecs.component")) << "Type must have 'ecs.component' tag";
+	ASSERT_FALSE(tags.hasTag("ecs")) << "Type must have not 'ecs' tag";
+	ASSERT_EQ(tags.getTag("ecs.component").getArgumentsCount(), 2) << "Invalid args count";
+	ASSERT_EQ(tags.getTag("ecs.component").getArguments()[0].getHoldedType(), rg3::cpp::TagArgumentType::AT_I64) << "A0 must be i64";
+	ASSERT_EQ(tags.getTag("ecs.component").getArguments()[0].asI64(0), 1024) << "A0 == 1024";
+	ASSERT_EQ(tags.getTag("ecs.component").getArguments()[1].getHoldedType(), rg3::cpp::TagArgumentType::AT_BOOL) << "A1 must be bool";
+	ASSERT_EQ(tags.getTag("ecs.component").getArguments()[1].asBool(false), true) << "A1 == true";
+
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getKind(), rg3::cpp::TypeKind::TK_STRUCT_OR_CLASS) << "Type 0 must be struct or class";
+
+	auto asClass = static_cast<rg3::cpp::TypeClass*>(analyzeResult.vFoundTypes[0].get()); // NOLINT(*-pro-type-static-cast-downcast)
+	ASSERT_FALSE(asClass->isStruct()) << "T0 must be a class!";
+}

@@ -2,8 +2,8 @@
 #include <RG3/PyBind/PyTypeBase.h>
 #include <RG3/PyBind/PyTypeClass.h>
 #include <RG3/PyBind/PyTypeEnum.h>
-#include <RG3/PyBind/PyTypeAlias.h>
 #include <RG3/LLVM/CodeAnalyzer.h>
+#include <RG3/LLVM/CompilerConfigDetector.h>
 #include <RG3/Cpp/TransactionGuard.h>
 #include <RG3/Cpp/TypeClass.h>
 #include <RG3/Cpp/TypeEnum.h>
@@ -91,6 +91,7 @@ namespace rg3::pybind
 		std::mutex lockMtx;
 		Storage tasks;
 		std::vector<std::thread> workers;
+		std::optional<rg3::llvm::CompilerEnvironment> m_compilerEnv {};
 
 		PyFoundSubjects* pAnalyzerStorage{ nullptr };
 
@@ -161,6 +162,11 @@ namespace rg3::pybind
 			return Transaction(lockMtx, tasks);
 		}
 
+		void setCompilerEnvironment(const rg3::llvm::CompilerEnvironment& compilerEnv)
+		{
+			m_compilerEnv = compilerEnv;
+		}
+
 		bool runWorkers(int workersAmount)
 		{
 			if (workersAmount <= 1)
@@ -173,7 +179,7 @@ namespace rg3::pybind
 			{
 				std::thread worker {
 					[this, iWorkerIndex = static_cast<size_t>(i)]() {
-						workerEntryPoint(iWorkerIndex);
+						workerEntryPoint(iWorkerIndex, m_compilerEnv);
 					}
 				};
 
@@ -193,12 +199,13 @@ namespace rg3::pybind
 		}
 
 	 private:
-		void workerEntryPoint(size_t iWorkerId)
+		void workerEntryPoint(size_t iWorkerId, const std::optional<rg3::llvm::CompilerEnvironment>& sCompilerEnvironment)
 		{
 			struct Visitor
 			{
 				bool* stopFlag;
 				PyFoundSubjects* pAnalyzerStorage { nullptr };
+				std::optional<rg3::llvm::CompilerEnvironment> sCompilerEnv { std::nullopt };
 
 				void operator()(NullTask)
 				{
@@ -218,6 +225,12 @@ namespace rg3::pybind
 				{
 					// Do analyze stub
 					rg3::llvm::CodeAnalyzer codeAnalyzer { analyzeHeader.headerPath, analyzeHeader.compilerConfig };
+					if (sCompilerEnv.has_value())
+					{
+						// set environment from cache
+						codeAnalyzer.setCompilerEnvironment(sCompilerEnv.value());
+					}
+
 					rg3::llvm::AnalyzerResult analyzeResult = codeAnalyzer.analyze();
 
 					{
@@ -237,7 +250,6 @@ namespace rg3::pybind
 							switch (type->getKind())
 							{
 								case cpp::TypeKind::TK_NONE:
-								case cpp::TypeKind::TK_TEMPLATE_SPECIALIZATION:
 									// Unsupported yet, lost, yep
 									break;
 								case cpp::TypeKind::TK_TRIVIAL:
@@ -273,17 +285,6 @@ namespace rg3::pybind
 									}
 								}
 								break;
-								case cpp::TypeKind::TK_ALIAS:
-								{
-									auto object = boost::shared_ptr<PyTypeAlias>(new PyTypeAlias(std::move(type)));
-									auto [_iter, bInserted] = pAnalyzerStorage->vFoundTypeInstances.try_emplace(object->getNative()->getPrettyName(), object);
-
-									if (bInserted)
-									{
-										pAnalyzerStorage->pyFoundTypes.append(object);
-									}
-								}
-								break;
 							}
 						}
 					}
@@ -292,7 +293,7 @@ namespace rg3::pybind
 
 
 			bool bShouldStop = false;
-			Visitor v { &bShouldStop, pAnalyzerStorage };
+			Visitor v { &bShouldStop, pAnalyzerStorage, sCompilerEnvironment };
 
 			while (!bShouldStop)
 			{
@@ -514,6 +515,22 @@ namespace rg3::pybind
 		m_pySubjects.pyFoundIssues = {};
 		m_pySubjects.vFoundTypeInstances.clear();
 		bool bResult = false;
+
+		// Collect compiler environment
+		auto environmentExtractResult = rg3::llvm::CompilerConfigDetector::detectSystemCompilerEnvironment();
+		if (rg3::llvm::CompilerEnvError* pError = std::get_if<rg3::llvm::CompilerEnvError>(&environmentExtractResult))
+		{
+			rg3::llvm::AnalyzerResult::CompilerIssue issue;
+			issue.kind = rg3::llvm::AnalyzerResult::CompilerIssue::IssueKind::IK_ERROR;
+			issue.sSourceFile = "RG3_GLOBAL_SCOPE";
+			issue.sMessage = fmt::format("RG3|Detect compiler environment failed: {}", pError->message);
+
+			m_pySubjects.pyFoundIssues.append(issue);
+			return false;
+		}
+
+		// Set environment to minimize future clang invocations
+		m_pContext->setCompilerEnvironment(*std::get_if<rg3::llvm::CompilerEnvironment>(&environmentExtractResult));
 
 		// Create tasks
 		{

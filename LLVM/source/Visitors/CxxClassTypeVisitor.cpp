@@ -1,10 +1,19 @@
+#include <RG3/LLVM/Visitors/CxxTemplateSpecializationVisitor.h>
 #include <RG3/LLVM/Visitors/CxxClassTypeVisitor.h>
+#include <RG3/LLVM/Visitors/CxxTypeVisitor.h>
+#include <RG3/LLVM/Annotations.h>
+
 #include <RG3/Cpp/BuiltinTags.h>
+#include <RG3/Cpp/TypeEnum.h>
+
 #include <RG3/LLVM/Utils.h>
 
 #include <clang/Basic/SourceLocation.h>
 #include <clang/Basic/SourceManager.h>
 #include <clang/AST/Decl.h>
+
+#include <boost/algorithm/string.hpp>
+#include <optional>
 
 
 namespace rg3::llvm::visitors
@@ -28,6 +37,9 @@ namespace rg3::llvm::visitors
 
 	bool CxxClassTypeVisitor::VisitCXXRecordDecl(clang::CXXRecordDecl* cxxRecordDecl)
 	{
+		if (!cxxRecordDecl->isCompleteDefinition())
+			return true; // skip uncompleted types
+
 		// Extract comment
 		clang::ASTContext& ctx = cxxRecordDecl->getASTContext();
 		clang::SourceManager& sm = ctx.getSourceManager();
@@ -41,7 +53,10 @@ namespace rg3::llvm::visitors
 		}
 
 		if (!vTags.hasTag(std::string(rg3::cpp::BuiltinTags::kRuntime)) && !compilerConfig.bAllowCollectNonRuntimeTypes)
+		{
+			// Finish
 			return true;
+		}
 
 		// Create entry
 		sClassName = cxxRecordDecl->getName().str();
@@ -129,7 +144,7 @@ namespace rg3::llvm::visitors
 		cpp::ClassFunction& newFunction = foundFunctions.emplace_back();
 		newFunction.sName = cxxMethodDecl->getNameAsString();
 		newFunction.bIsStatic = cxxMethodDecl->isStatic();
-		newFunction.sOwnerClassName = sClassName;
+		newFunction.sOwnerClassName = sClassPrettyName;
 		newFunction.bIsConst = cxxMethodDecl->isConst();
 
 		clang::ASTContext& ctx = cxxMethodDecl->getASTContext();

@@ -4,7 +4,9 @@
 #include <clang/AST/ASTConsumer.h>
 
 #include <RG3/LLVM/CompilerConfig.h>
+#include <RG3/LLVM/Annotations.h>
 #include <RG3/Cpp/TypeClass.h>
+#include <functional>
 #include <vector>
 
 
@@ -29,6 +31,9 @@ namespace rg3::llvm::visitors
 		bool bIsStruct { false };
 		bool bTriviallyConstructible { false };
 		std::vector<cpp::ClassParent> parentClasses {};
+
+		// Extra types
+		std::vector<rg3::cpp::TypeBasePtr> vFoundExtraTypes {};
 
 	 private:
 		const CompilerConfig& compilerConfig;

@@ -2,7 +2,6 @@
 #include <RG3/PyBind/PyTypeClass.h>
 #include <RG3/PyBind/PyTypeBase.h>
 #include <RG3/PyBind/PyTypeEnum.h>
-#include <RG3/PyBind/PyTypeAlias.h>
 #include <RG3/Cpp/TypeClass.h>
 #include <RG3/Cpp/TypeEnum.h>
 
@@ -115,9 +114,6 @@ namespace rg3::pybind
 			switch (type->getKind())
 			{
 				case cpp::TypeKind::TK_NONE:
-				case cpp::TypeKind::TK_TEMPLATE_SPECIALIZATION:
-					// Unsupported yet, lost, yep
-				break;
 				case cpp::TypeKind::TK_TRIVIAL:
 				{
 					auto object = boost::shared_ptr<PyTypeBase>(new PyTypeBase(std::move(type)));
@@ -133,12 +129,6 @@ namespace rg3::pybind
 				case cpp::TypeKind::TK_STRUCT_OR_CLASS:
 				{
 					auto object = boost::shared_ptr<PyTypeClass>(new PyTypeClass(std::move(type)));
-					m_foundTypes.append(object);
-				}
-				break;
-				case cpp::TypeKind::TK_ALIAS:
-				{
-					auto object = boost::shared_ptr<PyTypeAlias>(new PyTypeAlias(std::move(type)));
 					m_foundTypes.append(object);
 				}
 				break;

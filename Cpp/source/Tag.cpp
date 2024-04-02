@@ -55,7 +55,7 @@ namespace rg3::cpp
 	Tags Tag::parseFromCommentString(std::string_view commentText)
 	{
 		std::vector<Tag> tags;
-		std::regex tagRegex("@([a-zA-Z_]+)(\\([^)]*\\))?");
+		std::regex tagRegex("@([a-zA-Z_.]+)(\\([^)]*\\))?");
 		std::smatch tagMatch;
 
 		auto commentBegin = std::cregex_iterator(commentText.data(), commentText.data() + commentText.size(), tagRegex);
@@ -95,6 +95,14 @@ namespace rg3::cpp
 					// Remove trailing spaces
 					while (!argumentString.empty() && argumentString[0] == ' ')
 						argumentString.erase(0, 1);
+
+					// Remove escape symbols
+					auto it = argumentString.find('\"');
+					while (it != std::string::npos)
+					{
+						argumentString.erase(it, 1);
+						it = argumentString.find('\"');
+					}
 
 					if (argumentString.empty())
 						continue;
@@ -187,5 +195,40 @@ namespace rg3::cpp
 	Tags::Storage_t& Tags::getTags()
 	{
 		return m_tags;
+	}
+	Tags operator+(const Tags& a, const Tags& b)
+	{
+		Tags result = a;
+
+		for (const auto& [name, tag] : b.getTags())
+		{
+			// DronCode: maybe we need to avoid of override keys here?
+			result.getTags()[name] = tag;
+		}
+
+		return result;
+	}
+
+	Tags& Tags::operator+=(const Tags& another)
+	{
+		for (const auto& [name, tag] : another.getTags())
+		{
+			if (m_tags.contains(name))
+				continue;
+
+			m_tags[name] = tag;
+		}
+
+		return *this;
+	}
+
+	Tags& Tags::operator+=(const Tag& another)
+	{
+		if (!m_tags.contains(another.getName()))
+		{
+			m_tags[another.getName()] = another;
+		}
+
+		return *this;
 	}
 }

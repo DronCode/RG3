@@ -24,6 +24,7 @@ namespace rg3::cpp
 		[[nodiscard]] const CppNamespace& getNamespace() const;
 		[[nodiscard]] const std::string& getPrettyName() const;
 		[[nodiscard]] const DefinitionLocation& getDefinition() const;
+		void setDefinition(DefinitionLocation&& newLoc);
 
 		[[nodiscard]] bool areSame(const TypeBase* pOther) const;
 
@@ -32,6 +33,13 @@ namespace rg3::cpp
 
 		[[nodiscard]] bool operator==(const TypeBase& other) const { return  areSame(&other); }
 		[[nodiscard]] bool operator!=(const TypeBase& other) const { return !areSame(&other); }
+
+		void overrideTypeData(const std::string& name, const std::string& prettyName);
+		void overrideTypeData(const std::string& name, const std::string& prettyName, const CppNamespace& aNamespace);
+		void overrideTypeData(const std::string& name, const std::string& prettyName, const CppNamespace& aNamespace, const DefinitionLocation& aLocation);
+		void overrideTypeData(const std::string& name, const std::string& prettyName, const CppNamespace& aNamespace, const DefinitionLocation& aLocation, const Tags& tags);
+
+		void addTags(const Tags& vTags);
 
 	 protected:
 		virtual bool doAreSame(const TypeBase* pOther) const;

@@ -44,6 +44,11 @@ namespace rg3::cpp
 		return m_location;
 	}
 
+	void TypeBase::setDefinition(rg3::cpp::DefinitionLocation&& newLoc)
+	{
+		m_location = std::move(newLoc);
+	}
+
 	bool TypeBase::areSame(const TypeBase* pOther) const
 	{
 		if (!pOther)
@@ -60,6 +65,41 @@ namespace rg3::cpp
 	Tags& TypeBase::getTags()
 	{
 		return m_tags;
+	}
+
+	void TypeBase::overrideTypeData(const std::string& name, const std::string& prettyName)
+	{
+		m_name = name;
+		m_prettyName = prettyName;
+	}
+
+	void TypeBase::overrideTypeData(const std::string& name, const std::string& prettyName, const rg3::cpp::CppNamespace& aNamespace)
+	{
+		m_name = name;
+		m_prettyName = prettyName;
+		m_nameSpace = aNamespace;
+	}
+
+	void TypeBase::overrideTypeData(const std::string& name, const std::string& prettyName, const rg3::cpp::CppNamespace& aNamespace, const rg3::cpp::DefinitionLocation& aLocation)
+	{
+		m_name = name;
+		m_prettyName = prettyName;
+		m_nameSpace = aNamespace;
+		m_location = aLocation;
+	}
+
+	void TypeBase::overrideTypeData(const std::string& name, const std::string& prettyName, const CppNamespace& aNamespace, const DefinitionLocation& aLocation, const Tags& tags)
+	{
+		m_name = name;
+		m_prettyName = prettyName;
+		m_nameSpace = aNamespace;
+		m_location = aLocation;
+		m_tags = tags;
+	}
+
+	void TypeBase::addTags(const Tags& vTags)
+	{
+		m_tags += vTags;
 	}
 
 	bool TypeBase::doAreSame(const TypeBase* pOther) const
