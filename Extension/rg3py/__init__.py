@@ -3,7 +3,6 @@ from .rg3py import InheritanceVisibility
 from .rg3py import CppEnumEntry
 from .rg3py import CppTypeKind
 from .rg3py import CppEnum
-from .rg3py import CppAlias
 from .rg3py import CppIncludeKind
 from .rg3py import CppIncludeInfo
 from .rg3py import Location
