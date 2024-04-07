@@ -55,7 +55,7 @@ namespace rg3::cpp
 	Tags Tag::parseFromCommentString(std::string_view commentText)
 	{
 		std::vector<Tag> tags;
-		std::regex tagRegex("@([a-zA-Z_.]+)(\\([^)]*\\))?");
+		std::regex tagRegex("@([a-zA-Z_]{1}[a-zA-Z_.0-9]+)(\\([^)]*\\))?");
 		std::smatch tagMatch;
 
 		auto commentBegin = std::cregex_iterator(commentText.data(), commentText.data() + commentText.size(), tagRegex);

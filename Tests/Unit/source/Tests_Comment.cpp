@@ -151,3 +151,88 @@ class PlayerComponent
 	auto asClass = static_cast<rg3::cpp::TypeClass*>(analyzeResult.vFoundTypes[0].get()); // NOLINT(*-pro-type-static-cast-downcast)
 	ASSERT_FALSE(asClass->isStruct()) << "T0 must be a class!";
 }
+
+TEST_F(Tests_Comments, CheckCommentPoisonous)
+{
+	g_Analyzer->setSourceCode(R"(
+/// @runtime
+/// @test1(640,"Test")
+enum class ELayer
+{
+    L_FIRST,
+    L_LAST
+};
+
+/// @runtime
+/// @test23(true)
+enum class EPicType
+{
+    PC_GENERIC = (1 << 10),
+    PC_ALPHA = (1 << 15),
+    PC_DIRTY = (1 << 4)
+};
+
+/**
+ * @runtime
+ * @serializer(@common::Serializer<DrawableBase>)
+ * @world_mgmt(false)
+ */
+class DrawableBase
+{
+public:
+    /// @property(Layer)
+    ELayer  m_eLayer { ELayer::L_FIRST };
+};
+
+)");
+
+	g_Analyzer->getCompilerConfig().cppStandard = rg3::llvm::CxxStandard::CC_14;
+
+	const auto analyzeResult = g_Analyzer->analyze();
+
+	ASSERT_TRUE(analyzeResult.vIssues.empty()) << "No issues should be here";
+	ASSERT_EQ(analyzeResult.vFoundTypes.size(), 3) << "Only 3 type should be here";
+
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getTags().getTags().size(), 2);
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getTags().hasTag("runtime"), true);
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getTags().getTag("runtime").getArgumentsCount(), 0);
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getTags().hasTag("test1"), true);
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getTags().hasTag("serializer"), false);
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getTags().getTag("test1").getArgumentsCount(), 2);
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getTags().getTag("test1").getArguments()[0].getHoldedType(), rg3::cpp::TagArgumentType::AT_I64);
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getTags().getTag("test1").getArguments()[0].asI64(0), 640);
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getTags().getTag("test1").getArguments()[1].getHoldedType(), rg3::cpp::TagArgumentType::AT_STRING);
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getTags().getTag("test1").getArguments()[1].asString(""), "Test");
+
+	ASSERT_EQ(analyzeResult.vFoundTypes[1]->getTags().getTags().size(), 2);  // only runtime
+	ASSERT_EQ(analyzeResult.vFoundTypes[1]->getTags().hasTag("runtime"), true);
+	ASSERT_EQ(analyzeResult.vFoundTypes[1]->getTags().getTag("runtime").getArgumentsCount(), 0);
+	ASSERT_EQ(analyzeResult.vFoundTypes[1]->getTags().hasTag("test23"), true);
+	ASSERT_EQ(analyzeResult.vFoundTypes[1]->getTags().hasTag("serializer"), false);
+	ASSERT_EQ(analyzeResult.vFoundTypes[1]->getTags().getTag("test23").getArgumentsCount(), 1);
+	ASSERT_EQ(analyzeResult.vFoundTypes[1]->getTags().getTag("test23").getArguments()[0].getHoldedType(), rg3::cpp::TagArgumentType::AT_BOOL);
+	ASSERT_EQ(analyzeResult.vFoundTypes[1]->getTags().getTag("test23").getArguments()[0].asBool(false), true);
+
+	ASSERT_EQ(analyzeResult.vFoundTypes[2]->getTags().getTags().size(), 3);  // only runtime and serializer
+	ASSERT_EQ(analyzeResult.vFoundTypes[2]->getTags().hasTag("runtime"), true);
+	ASSERT_EQ(analyzeResult.vFoundTypes[2]->getTags().hasTag("serializer"), true);
+	ASSERT_EQ(analyzeResult.vFoundTypes[2]->getTags().hasTag("world_mgmt"), true);
+	ASSERT_EQ(analyzeResult.vFoundTypes[2]->getTags().getTag("runtime").getArgumentsCount(), 0);
+	ASSERT_EQ(analyzeResult.vFoundTypes[2]->getTags().getTag("serializer").getArgumentsCount(), 1);
+	ASSERT_EQ(analyzeResult.vFoundTypes[2]->getTags().getTag("serializer").getArguments()[0].getHoldedType(), rg3::cpp::TagArgumentType::AT_TYPEREF);
+	ASSERT_EQ(analyzeResult.vFoundTypes[2]->getTags().getTag("serializer").getArguments()[0].asTypeRefMutable()->getRefName(), "common::Serializer<DrawableBase>");
+	ASSERT_EQ(analyzeResult.vFoundTypes[2]->getTags().getTag("world_mgmt").getArgumentsCount(), 1);
+	ASSERT_EQ(analyzeResult.vFoundTypes[2]->getTags().getTag("world_mgmt").getArguments()[0].getHoldedType(), rg3::cpp::TagArgumentType::AT_BOOL);
+	ASSERT_EQ(analyzeResult.vFoundTypes[2]->getTags().getTag("world_mgmt").getArguments()[0].asBool(true), false);
+	ASSERT_EQ(analyzeResult.vFoundTypes[2]->getKind(), rg3::cpp::TypeKind::TK_STRUCT_OR_CLASS);
+
+	auto* asClass = reinterpret_cast<rg3::cpp::TypeClass*>(analyzeResult.vFoundTypes[2].get());
+	ASSERT_EQ(asClass->getProperties().size(), 1);
+	ASSERT_EQ(asClass->getFunctions().size(), 0);
+	ASSERT_EQ(asClass->getProperties()[0].vTags.hasTag("property"), true);
+	ASSERT_EQ(asClass->getProperties()[0].vTags.getTag("property").getArgumentsCount(), 1);
+	ASSERT_EQ(asClass->getProperties()[0].vTags.getTag("property").getArguments()[0].getHoldedType(), rg3::cpp::TagArgumentType::AT_STRING);
+	ASSERT_EQ(asClass->getProperties()[0].vTags.getTag("property").getArguments()[0].asString(""), "Layer");
+	ASSERT_EQ(asClass->getProperties()[0].vTags.hasTag("runtime"), false);
+	ASSERT_EQ(asClass->getProperties()[0].vTags.hasTag("serializer"), false);
+}

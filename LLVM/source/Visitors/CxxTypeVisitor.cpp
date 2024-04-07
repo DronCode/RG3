@@ -33,7 +33,7 @@ namespace rg3::llvm::visitors
 			return {};
 		}
 
-		std::string rawCommentStr = rawComment->getRawText(sm).data();
+		std::string rawCommentStr = rawComment->getFormattedText(sm, ctx.getDiagnostics());
 		bHasComment = !rawCommentStr.empty();
 		return cpp::Tag::parseFromCommentString(rawCommentStr);
 	}
