@@ -108,7 +108,7 @@ namespace rg3::llvm::visitors
 		cpp::ClassProperty& newProperty = foundProperties.emplace_back();
 		newProperty.sAlias = newProperty.sName = cxxFieldDecl->getNameAsString();
 
-		// Fill type info (and decl info)
+		// Collect common info
 		fillTypeStatementFromLLVMEntry(newProperty.sTypeInfo, cxxFieldDecl);
 
 		// Save other info

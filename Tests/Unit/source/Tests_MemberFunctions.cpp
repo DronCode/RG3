@@ -276,3 +276,93 @@ RegisterType<engine::core::Vec3<int>> {
 	ASSERT_EQ(asClass1->getFunctions()[0].vArguments[0].sType.bIsPtrConst, true);
 	ASSERT_EQ(asClass1->getFunctions()[0].vArguments[0].sType.bIsReference, true);
 }
+
+TEST_F(Tests_MemberFunctions, CheckMemberPropertyTypeReferenceForm)
+{
+	g_Analyzer->setSourceCode(R"(
+namespace cool::name::space::at::all {
+	/// @runtime
+	struct Vector3
+	{ // doesn't matter
+	};
+
+	template <typename T>
+	struct TVector2
+	{
+		T x;
+		T y;
+	};
+
+	namespace rg3 {
+		template <typename T> struct RegisterType {};
+		template <> struct
+			__attribute__((annotate("RG3_RegisterRuntime")))
+			__attribute__((annotate("RG3_RegisterField[x]")))
+			__attribute__((annotate("RG3_RegisterField[y]")))
+		RegisterType<cool::name::space::at::all::TVector2<float>> {
+			using Type = cool::name::space::at::all::TVector2<float>;
+		};
+	}
+}
+
+using namespace cool::name::space::at::all; // to avoid of full form later
+
+namespace engine::render
+{
+	using Vec2I = TVector2<int>;
+}
+
+using namespace engine::render;
+
+namespace engine {
+	/// @runtime
+	struct TransformComponent
+	{
+		/// @property(vPos)
+		const Vector3 position{};
+
+		/// @property(vDir)
+		Vector3 direction{};
+
+		/// @property(vUP)
+		TVector2<float> up {};
+
+		/// @property(vTex0UV)
+		Vec2I texUV {};
+	};
+}
+)");
+
+	g_Analyzer->getCompilerConfig().cppStandard = rg3::llvm::CxxStandard::CC_20;
+
+	const auto analyzeResult = g_Analyzer->analyze();
+
+	ASSERT_TRUE(analyzeResult.vIssues.empty()) << "No issues should be here";
+	ASSERT_EQ(analyzeResult.vFoundTypes.size(), 3) << "Only 3 type should be here";
+
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getPrettyName(), "cool::name::space::at::all::Vector3");
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getKind(), rg3::cpp::TypeKind::TK_STRUCT_OR_CLASS);
+	ASSERT_EQ(analyzeResult.vFoundTypes[1]->getPrettyName(), "cool::name::space::at::all::TVector2<float>");
+	ASSERT_EQ(analyzeResult.vFoundTypes[1]->getKind(), rg3::cpp::TypeKind::TK_STRUCT_OR_CLASS);
+	ASSERT_EQ(analyzeResult.vFoundTypes[2]->getPrettyName(), "engine::TransformComponent");
+	ASSERT_EQ(analyzeResult.vFoundTypes[2]->getKind(), rg3::cpp::TypeKind::TK_STRUCT_OR_CLASS);
+
+	auto* asClass = reinterpret_cast<const rg3::cpp::TypeClass*>(analyzeResult.vFoundTypes[2].get());
+	ASSERT_EQ(asClass->getProperties().size(), 4);
+
+	ASSERT_EQ(asClass->getProperties()[0].sName, "position");
+	ASSERT_EQ(asClass->getProperties()[0].sAlias, "vPos");
+	ASSERT_EQ(asClass->getProperties()[0].sTypeInfo.sTypeRef.getRefName(), "cool::name::space::at::all::Vector3");
+
+	ASSERT_EQ(asClass->getProperties()[1].sName, "direction");
+	ASSERT_EQ(asClass->getProperties()[1].sAlias, "vDir");
+	ASSERT_EQ(asClass->getProperties()[1].sTypeInfo.sTypeRef.getRefName(), "cool::name::space::at::all::Vector3");
+
+	ASSERT_EQ(asClass->getProperties()[2].sName, "up");
+	ASSERT_EQ(asClass->getProperties()[2].sAlias, "vUP");
+	ASSERT_EQ(asClass->getProperties()[2].sTypeInfo.sTypeRef.getRefName(), "cool::name::space::at::all::TVector2<float>");
+
+	ASSERT_EQ(asClass->getProperties()[3].sName, "texUV");
+	ASSERT_EQ(asClass->getProperties()[3].sAlias, "vTex0UV");
+	ASSERT_EQ(asClass->getProperties()[3].sTypeInfo.sTypeRef.getRefName(), "engine::render::Vec2I");
+}

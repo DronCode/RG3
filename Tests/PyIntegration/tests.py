@@ -523,3 +523,172 @@ struct Geo
     assert analyzer.types[1].properties[1].name == "rLong"
     assert analyzer.types[1].properties[1].alias == "Long"
     assert len(analyzer.types[1].functions) == 0
+
+
+def test_check_member_property_type_ref():
+    analyzer: rg3py.CodeAnalyzer = rg3py.CodeAnalyzer.make()
+
+    analyzer.set_code("""
+namespace cool::name::space::at::all {
+	/// @runtime
+	struct Vector3
+	{ // doesn't matter
+	};
+
+	template <typename T>
+	struct TVector2
+	{
+		T x;
+		T y;
+	};
+
+	namespace rg3 {
+		template <typename T> struct RegisterType {};
+		template <> struct
+			__attribute__((annotate("RG3_RegisterRuntime")))
+			__attribute__((annotate("RG3_RegisterField[x]")))
+			__attribute__((annotate("RG3_RegisterField[y]")))
+		RegisterType<cool::name::space::at::all::TVector2<float>> {
+			using Type = cool::name::space::at::all::TVector2<float>;
+		};
+	}
+}
+
+using namespace cool::name::space::at::all; // to avoid of full form later
+
+namespace engine::render
+{
+	using Vec2I = TVector2<int>;
+}
+
+using namespace engine::render;
+
+namespace engine {
+	/// @runtime
+	struct TransformComponent
+	{
+		/// @property(vPos)
+		const Vector3 position{};
+
+		/// @property(vDir)
+		Vector3 direction{};
+
+		/// @property(vUP)
+		TVector2<float> up {};
+
+		/// @property(vTex0UV)
+		Vec2I texUV {};
+	};
+}
+                           """)
+
+    analyzer.set_cpp_standard(rg3py.CppStandard.CXX_17)
+    analyzer.analyze()
+
+    assert len(analyzer.issues) == 0
+    assert len(analyzer.types) == 3
+
+    # Base check (all check in C++ tests)
+    assert analyzer.types[2].pretty_name == "engine::TransformComponent"
+
+    as_class: rg3py.CppClass = analyzer.types[2]
+    assert len(as_class.properties) == 4
+
+    assert as_class.properties[0].name == "position"
+    assert as_class.properties[0].alias == "vPos"
+    assert as_class.properties[0].type_info.get_name() == "cool::name::space::at::all::Vector3"
+
+    assert as_class.properties[1].name == "direction"
+    assert as_class.properties[1].alias == "vDir"
+    assert as_class.properties[1].type_info.get_name() == "cool::name::space::at::all::Vector3"
+
+    assert as_class.properties[2].name == "up"
+    assert as_class.properties[2].alias == "vUP"
+    assert as_class.properties[2].type_info.get_name() == "cool::name::space::at::all::TVector2<float>"
+
+    assert as_class.properties[3].name == "texUV"
+    assert as_class.properties[3].alias == "vTex0UV"
+    assert as_class.properties[3].type_info.get_name() == "engine::render::Vec2I"
+
+
+def test_check_function_arg_property_type_ref():
+    analyzer: rg3py.CodeAnalyzer = rg3py.CodeAnalyzer.make()
+
+    analyzer.set_code("""
+    namespace cool::name::space::at::all {
+    	/// @runtime
+    	struct Vector3
+    	{ // doesn't matter
+    	};
+
+    	template <typename T>
+    	struct TVector2
+    	{
+    		T x;
+    		T y;
+    	};
+
+    	namespace rg3 {
+    		template <typename T> struct RegisterType {};
+    		template <> struct
+    			__attribute__((annotate("RG3_RegisterRuntime")))
+    			__attribute__((annotate("RG3_RegisterField[x]")))
+    			__attribute__((annotate("RG3_RegisterField[y]")))
+    		RegisterType<cool::name::space::at::all::TVector2<float>> {
+    			using Type = cool::name::space::at::all::TVector2<float>;
+    		};
+    	}
+    }
+
+    using namespace cool::name::space::at::all; // to avoid of full form later
+
+    namespace engine::render
+    {
+    	using Vec2I = TVector2<int>;
+    }
+
+    using namespace engine::render;
+
+    namespace engine {
+    	/// @runtime
+    	struct TransformComponent
+    	{
+    		void CalculateTangent(const Vector3& vIn, const TVector2<float>& vCorrectionScreenSpace, const Vec2I& inv, Vector3& vOut) const;
+    		static TVector2<float> MakeV2F_FromI(const Vec2I& v2I);
+    	};
+    }
+                               """)
+
+    analyzer.set_cpp_standard(rg3py.CppStandard.CXX_17)
+    analyzer.analyze()
+
+    assert len(analyzer.issues) == 0
+    assert len(analyzer.types) == 3
+
+    assert analyzer.types[2].pretty_name == "engine::TransformComponent"
+    as_class: rg3py.CppClass = analyzer.types[2]
+
+    assert len(as_class.functions) == 2
+    assert len(as_class.properties) == 0
+
+    assert as_class.functions[0].name == "CalculateTangent"
+    assert as_class.functions[0].return_type.is_void
+    assert as_class.functions[0].is_const
+    assert as_class.functions[0].return_type.get_name() == "void"
+    assert len(as_class.functions[0].arguments) == 4
+    assert as_class.functions[0].arguments[0].name == "vIn"
+    assert as_class.functions[0].arguments[0].type_info.get_name() == "cool::name::space::at::all::Vector3"
+    assert as_class.functions[0].arguments[1].name == "vCorrectionScreenSpace"
+    assert as_class.functions[0].arguments[1].type_info.get_name() == "cool::name::space::at::all::TVector2<float>"
+    assert as_class.functions[0].arguments[2].name == "inv"
+    assert as_class.functions[0].arguments[2].type_info.get_name() == "engine::render::Vec2I"
+    assert as_class.functions[0].arguments[3].name == "vOut"
+    assert as_class.functions[0].arguments[3].type_info.get_name() == "cool::name::space::at::all::Vector3"
+
+    assert as_class.functions[1].name == "MakeV2F_FromI"
+    assert as_class.functions[1].is_static
+    assert as_class.functions[1].return_type.get_name() == "cool::name::space::at::all::TVector2<float>"
+    assert as_class.functions[1].return_type.is_void == False
+    assert len(as_class.functions[1].arguments) == 1
+    assert as_class.functions[1].arguments[0].name == "v2I"
+    assert as_class.functions[1].arguments[0].type_info.get_name() == "engine::render::Vec2I"

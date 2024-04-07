@@ -376,6 +376,8 @@ namespace rg3::llvm::visitors
 
 					// Type is handled here
 					const size_t iKnownTypes = m_vFoundTypes.size();
+
+					// In my case pAsTypedefDecl contains correct pointer in glm case, but... it's weird. Anyway I'm unable to deconstruct this inside that func
 					bHandled = handleAnnotationBasedType(pInnerType, annotation, ctx, false);
 
 					// Ok, last inserted type is our new type (?)
@@ -485,6 +487,7 @@ namespace rg3::llvm::visitors
 						ExtraFunctionsFilter functionsFilter { annotation.knownFunctions };
 						CxxTemplateSpecializationVisitor visitor { newConfig, pTemplateSpecDecl, !annotation.knownProperties.empty(), !annotation.knownFunctions.empty(), propertiesFilter, functionsFilter };
 
+						// Here we need to find a correct specialization, but for glm there are no specialization at all...
 						if (auto* pSpecializedTemplate = pTemplateSpecDecl->getSpecializedTemplate())
 						{
 							clang::Decl* pTargetDecl = nullptr;
@@ -498,6 +501,7 @@ namespace rg3::llvm::visitors
 										pTargetDecl = classTemplateDecl;
 										break;
 									}
+									// wrong!
 								}
 							}
 

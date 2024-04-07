@@ -1,4 +1,5 @@
 #include <RG3/PyBind/PyTypeBase.h>
+#include <fmt/format.h>
 
 
 namespace rg3::pybind
@@ -17,16 +18,16 @@ namespace rg3::pybind
 				switch (m_base->getKind())
 				{
 				case cpp::TypeKind::TK_NONE:
-					str = "none";
+					str = "[INVALID TYPE]";
 					break;
 				case cpp::TypeKind::TK_TRIVIAL:
-					str = m_base->getPrettyName();
+					str = fmt::format("{} [TRIVIAL]", m_base->getPrettyName());
 					break;
 				case cpp::TypeKind::TK_ENUM:
-					str = "enum " + m_base->getPrettyName();
+					str = fmt::format("{} [ENUM]", m_base->getPrettyName());
 					break;
 				case cpp::TypeKind::TK_STRUCT_OR_CLASS:
-					str = "class " + m_base->getPrettyName();
+					str = fmt::format("{} [CLASS/STRUCT]", m_base->getPrettyName());
 					break;
 				}
 

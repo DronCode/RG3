@@ -11,6 +11,15 @@
 
 namespace rg3::llvm
 {
+	struct TypeBaseInfo
+	{
+		cpp::TypeKind eKind;
+		std::string sName;
+		std::string sPrettyName;
+		cpp::CppNamespace sNameSpace;
+		cpp::DefinitionLocation sDefLocation;
+	};
+
 	struct Utils
 	{
 		static void getDeclInfo(const clang::Decl* decl, rg3::cpp::CppNamespace& nameSpace);
@@ -19,7 +28,7 @@ namespace rg3::llvm
 
 		static cpp::ClassEntryVisibility getDeclVisibilityLevel(const clang::Decl* decl);
 
-		static std::string getNormalizedTypeRef(const std::string& typeName);
+		static bool getQualTypeBaseInfo(const clang::QualType& qualType, TypeBaseInfo& baseInfo, const clang::ASTContext& astContext);
 
 		static void fillTypeStatementFromQualType(rg3::cpp::TypeStatement& typeStatement, clang::QualType qt, const clang::ASTContext& astContext);
 
