@@ -146,6 +146,12 @@ namespace rg3::pybind::wrappers
 
 		return l;
 	}
+
+	static boost::python::str TagArgument_getArgumentAsString(const rg3::cpp::TagArgument& arg)
+	{
+		static const std::string s_Null {};
+		return boost::python::str(arg.asString(s_Null));
+	}
 }
 
 
@@ -205,7 +211,7 @@ BOOST_PYTHON_MODULE(rg3py)
 		.def("as_bool", make_function(&rg3::cpp::TagArgument::asBool, return_value_policy<return_by_value>()))
 		.def("as_float", make_function(&rg3::cpp::TagArgument::asFloat, return_value_policy<return_by_value>()))
 		.def("as_i64", make_function(&rg3::cpp::TagArgument::asI64, return_value_policy<return_by_value>()))
-		.def("as_string", make_function(&rg3::cpp::TagArgument::asString, return_value_policy<return_by_value>()))
+		.def("as_string", make_function(&rg3::pybind::wrappers::TagArgument_getArgumentAsString, return_value_policy<return_by_value>()))
 		.def("as_type_ref", &rg3::pybind::wrappers::TagArgument_getAsTypeReference)
 	;
 
