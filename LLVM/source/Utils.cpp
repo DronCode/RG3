@@ -88,7 +88,7 @@ namespace rg3::llvm
 		return cpp::ClassEntryVisibility::CEV_PRIVATE;
 	}
 
-	bool Utils::getQualTypeBaseInfo(const clang::QualType& qualType, TypeBaseInfo& baseInfo, const clang::ASTContext& astContext)
+	bool Utils::getQualTypeBaseInfo(const clang::QualType& qualType, cpp::TypeBaseInfo& baseInfo, const clang::ASTContext& astContext)
 	{
 		if (qualType->isTypedefNameType()) // must be first!
 		{
@@ -158,6 +158,7 @@ namespace rg3::llvm
 				baseInfo.sNameSpace   = baseInfo.sNameSpace;
 				baseInfo.sPrettyName  = baseInfo.sNameSpace.isEmpty() ? correctedName : fmt::format("{}::{}", baseInfo.sNameSpace.asString(), correctedName);
 				baseInfo.sDefLocation = aDefLocation;
+				baseInfo.eKind        = cpp::TypeKind::TK_STRUCT_OR_CLASS;
 				return true;
 			}
 
@@ -224,16 +225,18 @@ namespace rg3::llvm
 		const clang::SourceManager& sm = astContext.getSourceManager();
 
 		{
-			TypeBaseInfo typeBaseInfo {};
+			cpp::TypeBaseInfo typeBaseInfo {};
 			if (!getQualTypeBaseInfo(qt, typeBaseInfo, astContext))
 			{
 				// Use "pure" view
 				typeStatement.sTypeRef = cpp::TypeReference(qt.getUnqualifiedType().getAsString());
+				typeStatement.sBaseInfo = {}; // invalid in this case
 			}
 			else
 			{
 				// Use correct view
 				typeStatement.sTypeRef = cpp::TypeReference(typeBaseInfo.sPrettyName);
+				typeStatement.sBaseInfo = typeBaseInfo;
 			}
 		}
 
@@ -241,16 +244,18 @@ namespace rg3::llvm
 
 		if (qt->isPointerType() || qt->isReferenceType())
 		{
-			TypeBaseInfo typeBaseInfo {};
+			cpp::TypeBaseInfo typeBaseInfo {};
 			if (!getQualTypeBaseInfo(qt->getPointeeType().getUnqualifiedType(), typeBaseInfo, astContext))
 			{
 				// Use "pure" view
 				typeStatement.sTypeRef = cpp::TypeReference(qt->getPointeeType().getUnqualifiedType().getAsString());
+				typeStatement.sBaseInfo = {}; // override to invalid
 			}
 			else
 			{
 				// Use correct view
 				typeStatement.sTypeRef = cpp::TypeReference(typeBaseInfo.sPrettyName);
+				typeStatement.sBaseInfo = typeBaseInfo; // override
 			}
 
 			typeStatement.bIsPointer = qt->isPointerType();

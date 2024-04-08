@@ -170,6 +170,9 @@ class TypeStatement:
     def type_ref(self) -> CppTypeReference: ...
 
     @property
+    def type_info(self) -> TypeBaseInfo: ...
+
+    @property
     def location(self) -> Optional[Location]: ...
 
     @property
@@ -191,6 +194,23 @@ class TypeStatement:
     def is_void(self) -> bool: ...
 
     def get_name(self) -> str: ...
+
+
+class TypeBaseInfo:
+    @property
+    def kind(self) -> CppTypeKind: ...
+
+    @property
+    def namespace(self) -> CppNamespace: ...
+
+    @property
+    def location(self) -> Location: ...
+
+    @property
+    def name(self) -> str: ...
+
+    @property
+    def pretty_name(self) -> str: ...
 
 
 class FunctionArgument:

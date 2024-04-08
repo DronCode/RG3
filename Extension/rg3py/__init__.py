@@ -25,3 +25,4 @@ from .rg3py import CppCompilerIssueKind
 from .rg3py import CppCompilerIssue
 from .rg3py import CppTypeReference
 from .rg3py import ClangRuntime
+from .rg3py import TypeBaseInfo

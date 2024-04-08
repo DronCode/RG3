@@ -152,6 +152,10 @@ struct TransformComponent
 	ASSERT_EQ(asClass->getFunctions()[0].vArguments[0].sType.bIsPtrConst, true);
 	ASSERT_EQ(asClass->getFunctions()[0].vArguments[0].sType.bIsPointer, false);
 	ASSERT_EQ(asClass->getFunctions()[0].vArguments[0].sType.bIsReference, true);
+	ASSERT_EQ(asClass->getFunctions()[0].vArguments[0].sType.sBaseInfo.sName, "Vector3");
+	ASSERT_EQ(asClass->getFunctions()[0].vArguments[0].sType.sBaseInfo.sPrettyName, "Vector3");
+	ASSERT_EQ(asClass->getFunctions()[0].vArguments[0].sType.sBaseInfo.sDefLocation.getPath(), "id0.hpp");
+	ASSERT_EQ(asClass->getFunctions()[0].vArguments[0].sType.sBaseInfo.eKind, rg3::cpp::TypeKind::TK_STRUCT_OR_CLASS);
 	ASSERT_EQ(asClass->getFunctions()[0].vArguments[0].sType.sTypeRef.getRefName(), "Vector3");
 	ASSERT_EQ(asClass->getFunctions()[0].vArguments[0].sType.sDefinitionLocation.has_value(), true);
 	ASSERT_EQ(asClass->getFunctions()[0].vArguments[0].sType.sDefinitionLocation.value().getPath(), "id0.hpp");
@@ -165,6 +169,11 @@ struct TransformComponent
 	ASSERT_EQ(asClass->getFunctions()[1].sReturnType.sDefinitionLocation.has_value(), true);
 	ASSERT_EQ(asClass->getFunctions()[1].sReturnType.sDefinitionLocation.value().getPath(), "id0.hpp");
 	ASSERT_EQ(asClass->getFunctions()[1].sReturnType.sTypeRef.getRefName(), "Vector3");
+	ASSERT_EQ(asClass->getFunctions()[1].sReturnType.sBaseInfo.sName, "Vector3");
+	ASSERT_EQ(asClass->getFunctions()[1].sReturnType.sBaseInfo.sPrettyName, "Vector3");
+	ASSERT_EQ(asClass->getFunctions()[1].sReturnType.sBaseInfo.sDefLocation.getPath(), "id0.hpp");
+	ASSERT_EQ(asClass->getFunctions()[1].sReturnType.sBaseInfo.eKind, rg3::cpp::TypeKind::TK_STRUCT_OR_CLASS);
+
 	ASSERT_EQ(asClass->getFunctions()[1].bIsConst, true);
 
 	ASSERT_EQ(asClass->getFunctions()[2].sName, "IsSomething");
@@ -230,16 +239,28 @@ RegisterType<engine::core::Vec3<int>> {
 	ASSERT_EQ(asClass0->getProperties()[0].sName, "x");
 	ASSERT_EQ(asClass0->getProperties()[0].sAlias, "x");
 	ASSERT_EQ(asClass0->getProperties()[0].sTypeInfo.sTypeRef.getRefName(), "float");
+	ASSERT_EQ(asClass0->getProperties()[0].sTypeInfo.sBaseInfo.sName, "float");
+	ASSERT_EQ(asClass0->getProperties()[0].sTypeInfo.sBaseInfo.sPrettyName, "float");
+	ASSERT_EQ(asClass0->getProperties()[0].sTypeInfo.sBaseInfo.eKind, rg3::cpp::TypeKind::TK_TRIVIAL);
 	ASSERT_EQ(asClass0->getProperties()[1].sName, "y");
 	ASSERT_EQ(asClass0->getProperties()[1].sAlias, "y");
+	ASSERT_EQ(asClass0->getProperties()[1].sTypeInfo.sBaseInfo.sName, "float");
+	ASSERT_EQ(asClass0->getProperties()[1].sTypeInfo.sBaseInfo.sPrettyName, "float");
+	ASSERT_EQ(asClass0->getProperties()[1].sTypeInfo.sBaseInfo.eKind, rg3::cpp::TypeKind::TK_TRIVIAL);
 	ASSERT_EQ(asClass0->getProperties()[1].sTypeInfo.sTypeRef.getRefName(), "float");
 	ASSERT_EQ(asClass0->getProperties()[2].sName, "z");
 	ASSERT_EQ(asClass0->getProperties()[2].sAlias, "z");
+	ASSERT_EQ(asClass0->getProperties()[2].sTypeInfo.sBaseInfo.sName, "float");
+	ASSERT_EQ(asClass0->getProperties()[2].sTypeInfo.sBaseInfo.sPrettyName, "float");
+	ASSERT_EQ(asClass0->getProperties()[2].sTypeInfo.sBaseInfo.eKind, rg3::cpp::TypeKind::TK_TRIVIAL);
 	ASSERT_EQ(asClass0->getProperties()[2].sTypeInfo.sTypeRef.getRefName(), "float");
 
 	ASSERT_EQ(asClass0->getFunctions().size(), 1);
 	ASSERT_EQ(asClass0->getFunctions()[0].sOwnerClassName, "engine::core::Vec3<float>");
 	ASSERT_EQ(asClass0->getFunctions()[0].sReturnType.sTypeRef.getRefName(), "float");
+	ASSERT_EQ(asClass0->getFunctions()[0].sReturnType.sBaseInfo.sName, "float");
+	ASSERT_EQ(asClass0->getFunctions()[0].sReturnType.sBaseInfo.eKind, rg3::cpp::TypeKind::TK_TRIVIAL);
+	ASSERT_EQ(asClass0->getFunctions()[0].sReturnType.sBaseInfo.sPrettyName, "float");
 	ASSERT_EQ(asClass0->getFunctions()[0].bIsConst, true);
 	ASSERT_EQ(asClass0->getFunctions()[0].vArguments.size(), 1);
 	ASSERT_EQ(asClass0->getFunctions()[0].vArguments[0].bHasDefaultValue, false);
@@ -247,6 +268,9 @@ RegisterType<engine::core::Vec3<int>> {
 	ASSERT_EQ(asClass0->getFunctions()[0].vArguments[0].sType.sTypeRef.getRefName(), "float");
 	ASSERT_EQ(asClass0->getFunctions()[0].vArguments[0].sType.bIsPtrConst, true);
 	ASSERT_EQ(asClass0->getFunctions()[0].vArguments[0].sType.bIsReference, true);
+	ASSERT_EQ(asClass0->getFunctions()[0].vArguments[0].sType.sBaseInfo.sName, "float");
+	ASSERT_EQ(asClass0->getFunctions()[0].vArguments[0].sType.sBaseInfo.sPrettyName, "float");
+	ASSERT_EQ(asClass0->getFunctions()[0].vArguments[0].sType.sBaseInfo.eKind, rg3::cpp::TypeKind::TK_TRIVIAL);
 
 	// Second type
 	ASSERT_EQ(analyzeResult.vFoundTypes[1]->getKind(), rg3::cpp::TypeKind::TK_STRUCT_OR_CLASS);
@@ -258,11 +282,23 @@ RegisterType<engine::core::Vec3<int>> {
 	ASSERT_EQ(asClass1->getProperties()[0].sName, "x");
 	ASSERT_EQ(asClass1->getProperties()[0].sAlias, "x");
 	ASSERT_EQ(asClass1->getProperties()[0].sTypeInfo.sTypeRef.getRefName(), "int");
+	ASSERT_EQ(asClass1->getProperties()[0].sTypeInfo.sBaseInfo.sName, "int");
+	ASSERT_EQ(asClass1->getProperties()[0].sTypeInfo.sBaseInfo.sPrettyName, "int");
+	ASSERT_EQ(asClass1->getProperties()[0].sTypeInfo.sBaseInfo.eKind, rg3::cpp::TypeKind::TK_TRIVIAL);
+	ASSERT_EQ(asClass1->getProperties()[0].sTypeInfo.sTypeRef.getRefName(), "int");
 	ASSERT_EQ(asClass1->getProperties()[1].sName, "y");
 	ASSERT_EQ(asClass1->getProperties()[1].sAlias, "y");
 	ASSERT_EQ(asClass1->getProperties()[1].sTypeInfo.sTypeRef.getRefName(), "int");
+	ASSERT_EQ(asClass1->getProperties()[1].sTypeInfo.sBaseInfo.sName, "int");
+	ASSERT_EQ(asClass1->getProperties()[1].sTypeInfo.sBaseInfo.sPrettyName, "int");
+	ASSERT_EQ(asClass1->getProperties()[1].sTypeInfo.sBaseInfo.eKind, rg3::cpp::TypeKind::TK_TRIVIAL);
+	ASSERT_EQ(asClass1->getProperties()[1].sTypeInfo.sTypeRef.getRefName(), "int");
 	ASSERT_EQ(asClass1->getProperties()[2].sName, "z");
 	ASSERT_EQ(asClass1->getProperties()[2].sAlias, "z");
+	ASSERT_EQ(asClass1->getProperties()[2].sTypeInfo.sTypeRef.getRefName(), "int");
+	ASSERT_EQ(asClass1->getProperties()[2].sTypeInfo.sBaseInfo.sName, "int");
+	ASSERT_EQ(asClass1->getProperties()[2].sTypeInfo.sBaseInfo.sPrettyName, "int");
+	ASSERT_EQ(asClass1->getProperties()[2].sTypeInfo.sBaseInfo.eKind, rg3::cpp::TypeKind::TK_TRIVIAL);
 	ASSERT_EQ(asClass1->getProperties()[2].sTypeInfo.sTypeRef.getRefName(), "int");
 
 	ASSERT_EQ(asClass1->getFunctions().size(), 1);
@@ -275,6 +311,9 @@ RegisterType<engine::core::Vec3<int>> {
 	ASSERT_EQ(asClass1->getFunctions()[0].vArguments[0].sType.sTypeRef.getRefName(), "int");
 	ASSERT_EQ(asClass1->getFunctions()[0].vArguments[0].sType.bIsPtrConst, true);
 	ASSERT_EQ(asClass1->getFunctions()[0].vArguments[0].sType.bIsReference, true);
+	ASSERT_EQ(asClass1->getFunctions()[0].vArguments[0].sType.sBaseInfo.sName, "int");
+	ASSERT_EQ(asClass1->getFunctions()[0].vArguments[0].sType.sBaseInfo.sPrettyName, "int");
+	ASSERT_EQ(asClass1->getFunctions()[0].vArguments[0].sType.sBaseInfo.eKind, rg3::cpp::TypeKind::TK_TRIVIAL);
 }
 
 TEST_F(Tests_MemberFunctions, CheckMemberPropertyTypeReferenceForm)
@@ -342,8 +381,24 @@ namespace engine {
 
 	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getPrettyName(), "cool::name::space::at::all::Vector3");
 	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getKind(), rg3::cpp::TypeKind::TK_STRUCT_OR_CLASS);
+
 	ASSERT_EQ(analyzeResult.vFoundTypes[1]->getPrettyName(), "cool::name::space::at::all::TVector2<float>");
 	ASSERT_EQ(analyzeResult.vFoundTypes[1]->getKind(), rg3::cpp::TypeKind::TK_STRUCT_OR_CLASS);
+	auto* asClass0 = reinterpret_cast<const rg3::cpp::TypeClass*>(analyzeResult.vFoundTypes[1].get());
+	ASSERT_EQ(asClass0->getProperties().size(), 2);
+	ASSERT_EQ(asClass0->getProperties()[0].sName, "x");
+	ASSERT_EQ(asClass0->getProperties()[0].sAlias, "x");
+	ASSERT_EQ(asClass0->getProperties()[0].sTypeInfo.sBaseInfo.sName, "float");
+	ASSERT_EQ(asClass0->getProperties()[0].sTypeInfo.sBaseInfo.eKind, rg3::cpp::TypeKind::TK_TRIVIAL);
+	ASSERT_EQ(asClass0->getProperties()[0].sTypeInfo.sBaseInfo.sDefLocation.isAngledPath(), false);
+	ASSERT_EQ(asClass0->getProperties()[0].sTypeInfo.sBaseInfo.sDefLocation.getPath().empty(), true);
+	ASSERT_EQ(asClass0->getProperties()[1].sName, "y");
+	ASSERT_EQ(asClass0->getProperties()[1].sAlias, "y");
+	ASSERT_EQ(asClass0->getProperties()[1].sTypeInfo.sBaseInfo.sName, "float");
+	ASSERT_EQ(asClass0->getProperties()[1].sTypeInfo.sBaseInfo.eKind, rg3::cpp::TypeKind::TK_TRIVIAL);
+	ASSERT_EQ(asClass0->getProperties()[1].sTypeInfo.sBaseInfo.sDefLocation.isAngledPath(), false);
+	ASSERT_EQ(asClass0->getProperties()[1].sTypeInfo.sBaseInfo.sDefLocation.getPath().empty(), true);
+
 	ASSERT_EQ(analyzeResult.vFoundTypes[2]->getPrettyName(), "engine::TransformComponent");
 	ASSERT_EQ(analyzeResult.vFoundTypes[2]->getKind(), rg3::cpp::TypeKind::TK_STRUCT_OR_CLASS);
 
@@ -353,16 +408,32 @@ namespace engine {
 	ASSERT_EQ(asClass->getProperties()[0].sName, "position");
 	ASSERT_EQ(asClass->getProperties()[0].sAlias, "vPos");
 	ASSERT_EQ(asClass->getProperties()[0].sTypeInfo.sTypeRef.getRefName(), "cool::name::space::at::all::Vector3");
+	ASSERT_EQ(asClass->getProperties()[0].sTypeInfo.sBaseInfo.sName, "Vector3");
+	ASSERT_EQ(asClass->getProperties()[0].sTypeInfo.sBaseInfo.sPrettyName, "cool::name::space::at::all::Vector3");
+	ASSERT_EQ(asClass->getProperties()[0].sTypeInfo.sBaseInfo.eKind, rg3::cpp::TypeKind::TK_STRUCT_OR_CLASS);
+	ASSERT_EQ(asClass->getProperties()[0].sTypeInfo.sBaseInfo.sDefLocation.getPath(), "id0.hpp");
 
 	ASSERT_EQ(asClass->getProperties()[1].sName, "direction");
 	ASSERT_EQ(asClass->getProperties()[1].sAlias, "vDir");
 	ASSERT_EQ(asClass->getProperties()[1].sTypeInfo.sTypeRef.getRefName(), "cool::name::space::at::all::Vector3");
+	ASSERT_EQ(asClass->getProperties()[1].sTypeInfo.sBaseInfo.sName, "Vector3");
+	ASSERT_EQ(asClass->getProperties()[1].sTypeInfo.sBaseInfo.sPrettyName, "cool::name::space::at::all::Vector3");
+	ASSERT_EQ(asClass->getProperties()[1].sTypeInfo.sBaseInfo.eKind, rg3::cpp::TypeKind::TK_STRUCT_OR_CLASS);
+	ASSERT_EQ(asClass->getProperties()[1].sTypeInfo.sBaseInfo.sDefLocation.getPath(), "id0.hpp");
 
 	ASSERT_EQ(asClass->getProperties()[2].sName, "up");
 	ASSERT_EQ(asClass->getProperties()[2].sAlias, "vUP");
 	ASSERT_EQ(asClass->getProperties()[2].sTypeInfo.sTypeRef.getRefName(), "cool::name::space::at::all::TVector2<float>");
+	ASSERT_EQ(asClass->getProperties()[2].sTypeInfo.sBaseInfo.sName, "TVector2<float>");
+	ASSERT_EQ(asClass->getProperties()[2].sTypeInfo.sBaseInfo.sPrettyName, "cool::name::space::at::all::TVector2<float>");
+	ASSERT_EQ(asClass->getProperties()[2].sTypeInfo.sBaseInfo.eKind, rg3::cpp::TypeKind::TK_STRUCT_OR_CLASS);
+	ASSERT_EQ(asClass->getProperties()[2].sTypeInfo.sBaseInfo.sDefLocation.getPath(), "id0.hpp");
 
 	ASSERT_EQ(asClass->getProperties()[3].sName, "texUV");
 	ASSERT_EQ(asClass->getProperties()[3].sAlias, "vTex0UV");
 	ASSERT_EQ(asClass->getProperties()[3].sTypeInfo.sTypeRef.getRefName(), "engine::render::Vec2I");
+	ASSERT_EQ(asClass->getProperties()[3].sTypeInfo.sBaseInfo.sName, "Vec2I");
+	ASSERT_EQ(asClass->getProperties()[3].sTypeInfo.sBaseInfo.sPrettyName, "engine::render::Vec2I");
+	ASSERT_EQ(asClass->getProperties()[3].sTypeInfo.sBaseInfo.eKind, rg3::cpp::TypeKind::TK_STRUCT_OR_CLASS);
+	ASSERT_EQ(asClass->getProperties()[3].sTypeInfo.sBaseInfo.sDefLocation.getPath(), "id0.hpp");
 }

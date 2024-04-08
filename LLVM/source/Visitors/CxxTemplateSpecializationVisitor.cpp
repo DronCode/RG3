@@ -371,6 +371,7 @@ namespace rg3::llvm::visitors
 
 				// Override type name & location in sTargetStmt from sCoreStmt
 				stmt.sTypeRef = sTargetStmt.sTypeRef;
+				stmt.sBaseInfo = sTargetStmt.sBaseInfo;
 				stmt.sDefinitionLocation = sTargetStmt.sDefinitionLocation;
 				stmt.bIsConst = sTargetStmt.bIsConst || stmt.bIsConst;
 				stmt.bIsPointer = sTargetStmt.bIsPointer || stmt.bIsPointer;

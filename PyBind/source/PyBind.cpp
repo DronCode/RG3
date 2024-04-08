@@ -10,6 +10,7 @@
 #include <RG3/Cpp/CppNamespace.h>
 #include <RG3/Cpp/TypeClass.h>
 #include <RG3/Cpp/TypeEnum.h>
+#include <RG3/Cpp/TypeBaseInfo.h>
 
 #include <RG3/PyBind/PyCodeAnalyzerBuilder.h>
 #include <RG3/PyBind/PyTypeBase.h>
@@ -152,6 +153,16 @@ namespace rg3::pybind::wrappers
 		static const std::string s_Null {};
 		return boost::python::str(arg.asString(s_Null));
 	}
+
+	static boost::python::str TypeBaseInfo_getName(const rg3::cpp::TypeBaseInfo& sInfo)
+	{
+		return boost::python::str(sInfo.sName);
+	}
+
+	static boost::python::str TypeBaseInfo_getPrettyName(const rg3::cpp::TypeBaseInfo& sInfo)
+	{
+		return boost::python::str(sInfo.sPrettyName);
+	}
 }
 
 
@@ -250,17 +261,26 @@ BOOST_PYTHON_MODULE(rg3py)
 		.add_property("value", make_getter(&rg3::cpp::EnumEntry::iValue), "Value of entry")
 	;
 
+	class_<rg3::cpp::TypeBaseInfo>("TypeBaseInfo")
+	    .add_property("kind", make_getter(&rg3::cpp::TypeBaseInfo::eKind), "Kind of type")
+		.add_property("namespace", make_getter(&rg3::cpp::TypeBaseInfo::sNameSpace), "Namespace where type declared")
+		.add_property("location", make_getter(&rg3::cpp::TypeBaseInfo::sDefLocation), "Place where type declared")
+		.add_property("name", &rg3::pybind::wrappers::TypeBaseInfo_getName, "Name of type without namespace")
+		.add_property("pretty_name", &rg3::pybind::wrappers::TypeBaseInfo_getPrettyName, "Prettified name of type (included namespace and full form of name)")
+	;
+
 	class_<rg3::cpp::TypeStatement>("TypeStatement")
 	    .add_property("type_ref", make_getter(&rg3::cpp::TypeStatement::sTypeRef), "Reference to type info")
-		.add_property("location", &rg3::pybind::wrappers::TypeStatement_getDefinitionLocation)
+		.add_property("type_info", make_getter(&rg3::cpp::TypeStatement::sBaseInfo), "Base information about type")
+		.add_property("location", &rg3::pybind::wrappers::TypeStatement_getDefinitionLocation, "(optional) Where type statement info defined (not a type!)")
 		.add_property("is_const", make_getter(&rg3::cpp::TypeStatement::bIsConst), "Is declaration constant")
 		.add_property("is_const_ptr", make_getter(&rg3::cpp::TypeStatement::bIsPtrConst), "Is pointer type with const qualifier (unused when is_ptr is False)")
 		.add_property("is_ptr", make_getter(&rg3::cpp::TypeStatement::bIsPointer), "Is declaration pointer")
 		.add_property("is_ref", make_getter(&rg3::cpp::TypeStatement::bIsReference), "Is declaration reference")
 		.add_property("is_template", make_getter(&rg3::cpp::TypeStatement::bIsTemplateSpecialization), "Is declaration presented via template specialization")
-		.add_property("is_void", &rg3::cpp::TypeStatement::isVoid)
+		.add_property("is_void", &rg3::cpp::TypeStatement::isVoid, "Is type C++ void or not")
 
-		.def("get_name", &rg3::pybind::wrappers::TypeStatement_getTypeName)
+		.def("get_name", &rg3::pybind::wrappers::TypeStatement_getTypeName, "Return name of the type")
 	;
 
 	class_<rg3::cpp::FunctionArgument>("FunctionArgument")
