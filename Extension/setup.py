@@ -57,7 +57,7 @@ setup(
         'License :: OSI Approved :: MIT License',
         'Operating System :: POSIX :: Linux',
         'Operating System :: MacOS :: MacOS X',
-        'Operating System :: Microsoft :: Windows'
+        'Operating System :: Microsoft :: Windows',
         'Programming Language :: Python :: Implementation :: CPython',
         'Topic :: Software Development :: Code Generators',
         'Topic :: Software Development :: Libraries'
