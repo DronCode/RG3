@@ -11,14 +11,14 @@ known_os_ext: Dict[str, str] = {
 }
 
 known_os_to_os_tag: Dict[str, str] = {
-    'linux': 'Linux',
-    'macos': 'MacOS',
+    'linux':   'Linux',
+    'macos':   'MacOS',
     'windows': 'Windows'
 }
 
 os_classifiers: Dict[str, str] = {
-    'linux': 'Operating System :: POSIX :: Linux',
-    'macos': 'Operating System :: MacOS :: MacOS X',
+    'linux':   'Operating System :: POSIX :: Linux',
+    'macos':   'Operating System :: MacOS :: MacOS X',
     'windows': 'Operating System :: Microsoft :: Windows'
 }
 
@@ -55,7 +55,9 @@ setup(
     classifiers=[
         'Programming Language :: Python :: 3',
         'License :: OSI Approved :: MIT License',
-        os_classifiers[target_os],
+        'Operating System :: POSIX :: Linux',
+        'Operating System :: MacOS :: MacOS X',
+        'Operating System :: Microsoft :: Windows'
         'Programming Language :: Python :: Implementation :: CPython',
         'Topic :: Software Development :: Code Generators',
         'Topic :: Software Development :: Libraries'

@@ -316,7 +316,7 @@ jobs:
           mv RG3_Linux/rg3py.so Extension/rg3py
           mv RG3_Linux/rg3py.pyi Extension/rg3py
           cd Extension
-          python setup.py bdist_wheel
+          python setup.py bdist_wheel --plat-name manylinux_2_28_x86_64
           rm build/lib/rg3py/rg3py.so
           rm build/lib/rg3py/rg3py.pyi
           cd ..
