@@ -346,7 +346,7 @@ jobs:
           mv RG3_macOS/rg3py.so Extension/rg3py
           mv RG3_macOS/rg3py.pyi Extension/rg3py
           cd Extension
-          python setup.py bdist_wheel --plat-name macosx_12_7_universal2
+          python setup.py bdist_wheel --plat-name macosx_14_0_universal2
           rm build/lib/rg3py/rg3py.so
           rm build/lib/rg3py/rg3py.pyi
           cd ..
