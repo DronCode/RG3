@@ -49,6 +49,7 @@ namespace my::cool::ns {
 	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getKind(), rg3::cpp::TypeKind::TK_ENUM) << "Expected to have enum";
 	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getName(), "MyCoolEnum") << "Bad name";
 	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getNamespace().asString(), "my::cool::ns") << "Invalid namespace detected";
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->isForwardDeclarable(), true) << "This enum must be forward declarable!";
 
 	auto asEnum = static_cast<rg3::cpp::TypeEnum*>(analyzeResult.vFoundTypes[0].get()); // NOLINT(*-pro-type-static-cast-downcast)
 
@@ -97,6 +98,7 @@ namespace world
 	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getName(), "PerfectEnum") << "Bad name";
 	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getPrettyName(), "world::PerfectEnum") << "Bad pretty name";
 	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getNamespace().asString(), "world") << "Invalid namespace detected";
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->isForwardDeclarable(), false) << "This enum produced from alias and must be non forward declarable!";
 
 	auto asEnum = static_cast<rg3::cpp::TypeEnum*>(analyzeResult.vFoundTypes[0].get()); // NOLINT(*-pro-type-static-cast-downcast)
 

@@ -233,6 +233,7 @@ RegisterType<engine::core::Vec3<int>> {
 	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getKind(), rg3::cpp::TypeKind::TK_STRUCT_OR_CLASS);
 	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getName(), "Vec3<float>");
 	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getPrettyName(), "engine::core::Vec3<float>");
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->isForwardDeclarable(), false) << "Non forward declarable (template spec)";
 	auto* asClass0 = reinterpret_cast<rg3::cpp::TypeClass*>(analyzeResult.vFoundTypes[0].get());
 
 	ASSERT_EQ(asClass0->getProperties().size(), 3);
@@ -276,6 +277,7 @@ RegisterType<engine::core::Vec3<int>> {
 	ASSERT_EQ(analyzeResult.vFoundTypes[1]->getKind(), rg3::cpp::TypeKind::TK_STRUCT_OR_CLASS);
 	ASSERT_EQ(analyzeResult.vFoundTypes[1]->getName(), "Vec3<int>");
 	ASSERT_EQ(analyzeResult.vFoundTypes[1]->getPrettyName(), "engine::core::Vec3<int>");
+	ASSERT_EQ(analyzeResult.vFoundTypes[1]->isForwardDeclarable(), false) << "Non forward declarable (template spec)";
 	auto* asClass1 = reinterpret_cast<rg3::cpp::TypeClass*>(analyzeResult.vFoundTypes[1].get());
 
 	ASSERT_EQ(asClass1->getProperties().size(), 3);

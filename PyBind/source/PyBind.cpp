@@ -356,6 +356,7 @@ BOOST_PYTHON_MODULE(rg3py)
 		.add_property("location", make_function(&rg3::pybind::PyTypeBase::pyGetLocation, return_value_policy<copy_const_reference>()), "Location where type declared")
 		.add_property("pretty_name", &rg3::pybind::PyTypeBase::pyGetPrettyName, "Pretty name of type with namespace")
 		.add_property("tags", make_function(&rg3::pybind::PyTypeBase::pyGetTags, return_value_policy<copy_const_reference>()), "Tags presented in type")
+		.add_property("is_forward_declarable", make_function(&rg3::pybind::PyTypeBase::pyIsForwardDeclarable, return_value_policy<return_by_value>()), "Is type could be forward declared")
 
 		.def("__str__", make_function(&rg3::pybind::PyTypeBase::__str__, return_value_policy<copy_const_reference>()))
 		.def("__repr__", make_function(&rg3::pybind::PyTypeBase::__repr__, return_value_policy<copy_const_reference>()))

@@ -204,20 +204,22 @@ namespace rg3::llvm::visitors
 							{
 								const auto& sClassDefInfo = visitor.getClassDefInfo().value();
 
-								m_vFoundTypes.emplace_back(
-									std::make_unique<cpp::TypeClass>(
-										typedefNameDecl->getNameAsString(),  // I'm not sure that this is correct.
-										typedefPrettyName,
-										typedefNamespace,
-										typedefLocation,
-										typeTags,
-										sClassDefInfo.vProperties,
-										sClassDefInfo.vFunctions,
-										sClassDefInfo.bIsStruct,
-										sClassDefInfo.bTriviallyConstructible,
-										sClassDefInfo.vParents
-										)
-								);
+								auto pType = std::make_unique<cpp::TypeClass>(
+												 typedefNameDecl->getNameAsString(),  // I'm not sure that this is correct.
+												 typedefPrettyName,
+												 typedefNamespace,
+												 typedefLocation,
+												 typeTags,
+												 sClassDefInfo.vProperties,
+												 sClassDefInfo.vFunctions,
+												 sClassDefInfo.bIsStruct,
+												 sClassDefInfo.bTriviallyConstructible,
+												 sClassDefInfo.vParents);
+
+								pType->setProducedFromTemplate();
+								pType->setProducedFromAlias();
+
+								m_vFoundTypes.emplace_back(std::move(pType));
 							}
 						}
 					}
@@ -234,20 +236,23 @@ namespace rg3::llvm::visitors
 
 				if (!visitor.sClassName.empty())
 				{
-					m_vFoundTypes.emplace_back(
-						std::make_unique<cpp::TypeClass>(
-							typedefNameDecl->getNameAsString(),  // I'm not sure that this is correct.
-							typedefPrettyName,
-							typedefNamespace,
-							typedefLocation,
-							typeTags,
-							visitor.foundProperties,
-							visitor.foundFunctions,
-							visitor.bIsStruct,
-							visitor.bTriviallyConstructible,
-							visitor.parentClasses
-						)
-					);
+					auto pType = std::make_unique<cpp::TypeClass>(
+									 typedefNameDecl->getNameAsString(),  // I'm not sure that this is correct.
+									 typedefPrettyName,
+									 typedefNamespace,
+									 typedefLocation,
+									 typeTags,
+									 visitor.foundProperties,
+									 visitor.foundFunctions,
+									 visitor.bIsStruct,
+									 visitor.bTriviallyConstructible,
+									 visitor.parentClasses
+									 );
+
+					// produced from alias
+					pType->setProducedFromAlias();
+
+					m_vFoundTypes.emplace_back(std::move(pType));
 				}
 			}
 		}
@@ -276,6 +281,9 @@ namespace rg3::llvm::visitors
 							typedefLocation,
 							typeTags
 						);
+
+						// type produced from alias
+						vTypes[0]->setProducedFromAlias();
 
 						m_vFoundTypes.emplace_back(std::move(vTypes[0]));
 					}
@@ -385,6 +393,7 @@ namespace rg3::llvm::visitors
 					{
 						// Ok, type found & registered. For all types we need to override type name & locations
 						cpp::TypeBase* pAddedType = m_vFoundTypes[iKnownTypes].get();
+						pAddedType->setProducedFromAlias(); // type here produced from alias and it's ok
 
 						const std::string sOldClassName = pAddedType->getPrettyName();
 						const std::string & newName = pAsTypedef->getDecl()->getNameAsString();
@@ -526,6 +535,8 @@ namespace rg3::llvm::visitors
 										sClassDef.bIsStruct,
 										sClassDef.bTriviallyConstructible,
 										sClassDef.vParents);
+
+									pNewType->setProducedFromTemplate();
 
 									auto opaquePtr = clang::QualType::getFromOpaquePtr(pAsTemplateSpec);
 									if (opaquePtr->isLinkageValid() && bDirectInvoke)

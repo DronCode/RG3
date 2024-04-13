@@ -84,6 +84,7 @@ RegisterType<std::string> {
 	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getDefinition().getLine(), 0);
 	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getDefinition().getInLineOffset(), 0);
 	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getKind(), rg3::cpp::TypeKind::TK_TRIVIAL);
+	ASSERT_FALSE(analyzeResult.vFoundTypes[0]->isForwardDeclarable()) << "Builtin or alias not fwd declarable";
 
 	ASSERT_EQ(analyzeResult.vFoundTypes[1]->getName(), "int");
 	ASSERT_EQ(analyzeResult.vFoundTypes[1]->getPrettyName(), "int");
@@ -93,6 +94,7 @@ RegisterType<std::string> {
 	ASSERT_EQ(analyzeResult.vFoundTypes[1]->getDefinition().getLine(), 0);
 	ASSERT_EQ(analyzeResult.vFoundTypes[1]->getDefinition().getInLineOffset(), 0);
 	ASSERT_EQ(analyzeResult.vFoundTypes[1]->getKind(), rg3::cpp::TypeKind::TK_TRIVIAL);
+	ASSERT_FALSE(analyzeResult.vFoundTypes[1]->isForwardDeclarable()) << "Builtin or alias not fwd declarable";
 
 	ASSERT_EQ(analyzeResult.vFoundTypes[2]->getName(), "float");
 	ASSERT_EQ(analyzeResult.vFoundTypes[2]->getPrettyName(), "float");
@@ -102,6 +104,7 @@ RegisterType<std::string> {
 	ASSERT_EQ(analyzeResult.vFoundTypes[2]->getDefinition().getLine(), 0);
 	ASSERT_EQ(analyzeResult.vFoundTypes[2]->getDefinition().getInLineOffset(), 0);
 	ASSERT_EQ(analyzeResult.vFoundTypes[2]->getKind(), rg3::cpp::TypeKind::TK_TRIVIAL);
+	ASSERT_FALSE(analyzeResult.vFoundTypes[2]->isForwardDeclarable()) << "Builtin or alias not fwd declarable";
 
 	ASSERT_EQ(analyzeResult.vFoundTypes[3]->getName(), "double");
 	ASSERT_EQ(analyzeResult.vFoundTypes[3]->getPrettyName(), "double");
@@ -111,6 +114,7 @@ RegisterType<std::string> {
 	ASSERT_EQ(analyzeResult.vFoundTypes[3]->getDefinition().getLine(), 0);
 	ASSERT_EQ(analyzeResult.vFoundTypes[3]->getDefinition().getInLineOffset(), 0);
 	ASSERT_EQ(analyzeResult.vFoundTypes[3]->getKind(), rg3::cpp::TypeKind::TK_TRIVIAL);
+	ASSERT_FALSE(analyzeResult.vFoundTypes[3]->isForwardDeclarable()) << "Builtin or alias not fwd declarable";
 
 	ASSERT_EQ(analyzeResult.vFoundTypes[4]->getName(), "string");
 	ASSERT_EQ(analyzeResult.vFoundTypes[4]->getPrettyName(), "std::string");
@@ -120,6 +124,7 @@ RegisterType<std::string> {
 	ASSERT_EQ(analyzeResult.vFoundTypes[4]->getDefinition().getLine(), 0);
 	ASSERT_EQ(analyzeResult.vFoundTypes[4]->getDefinition().getInLineOffset(), 0);
 	ASSERT_EQ(analyzeResult.vFoundTypes[4]->getKind(), rg3::cpp::TypeKind::TK_STRUCT_OR_CLASS);
+	ASSERT_FALSE(analyzeResult.vFoundTypes[4]->isForwardDeclarable()) << "Fwd is not fwd declarable";
 
 	ASSERT_TRUE(reinterpret_cast<rg3::cpp::TypeClass*>(analyzeResult.vFoundTypes[4].get())->getProperties().empty());
 	ASSERT_TRUE(reinterpret_cast<rg3::cpp::TypeClass*>(analyzeResult.vFoundTypes[4].get())->getFunctions().empty());
@@ -186,6 +191,7 @@ RegisterType<game::Vec2> {
 	ASSERT_EQ(pType->getTags().getTag("serialize").getArgumentsCount(), 1);
 	ASSERT_EQ(pType->getTags().getTag("serialize").getArguments()[0].getHoldedType(), rg3::cpp::TagArgumentType::AT_STRING);
 	ASSERT_EQ(pType->getTags().getTag("serialize").getArguments()[0].asString(""), "MyCoolSerializer");
+	ASSERT_FALSE(pType->isForwardDeclarable()) << "game::Vec2 if alias so it's not fwd declarable";
 
 	// Check class
 	auto* pClass = reinterpret_cast<rg3::cpp::TypeClass*>(pType);
@@ -255,6 +261,7 @@ RegisterType<EScopedEnum> {
 	ASSERT_EQ(reinterpret_cast<rg3::cpp::TypeEnum*>(analyzeResult.vFoundTypes[0].get())->getEntries()[1].iValue, 3);
 	ASSERT_EQ(reinterpret_cast<rg3::cpp::TypeEnum*>(analyzeResult.vFoundTypes[0].get())->getEntries()[2].sName, "BE_THREE_HUNDRED_BUCKS");
 	ASSERT_EQ(reinterpret_cast<rg3::cpp::TypeEnum*>(analyzeResult.vFoundTypes[0].get())->getEntries()[2].iValue, 300);
+	ASSERT_TRUE(analyzeResult.vFoundTypes[0]->isForwardDeclarable()) << "It's simple enum and must be fwd declarable";
 
 	ASSERT_EQ(analyzeResult.vFoundTypes[1]->getName(), "EScopedEnum");
 	ASSERT_EQ(analyzeResult.vFoundTypes[1]->getKind(), rg3::cpp::TypeKind::TK_ENUM);
@@ -264,6 +271,7 @@ RegisterType<EScopedEnum> {
 	ASSERT_EQ(reinterpret_cast<rg3::cpp::TypeEnum*>(analyzeResult.vFoundTypes[1].get())->getEntries()[0].iValue, 1);
 	ASSERT_EQ(reinterpret_cast<rg3::cpp::TypeEnum*>(analyzeResult.vFoundTypes[1].get())->getEntries()[1].sName, "SE_FF");
 	ASSERT_EQ(reinterpret_cast<rg3::cpp::TypeEnum*>(analyzeResult.vFoundTypes[1].get())->getEntries()[1].iValue, 255);
+	ASSERT_TRUE(analyzeResult.vFoundTypes[1]->isForwardDeclarable()) << "It's simple scoped enum and must be fwd declrable";
 }
 
 TEST_F(Tests_AnonymousRegistration, CheckTemplateSpecilizationBehaviour)

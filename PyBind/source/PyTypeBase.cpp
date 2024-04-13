@@ -74,6 +74,10 @@ namespace rg3::pybind
 		return m_base ? m_base->getTags() : s_Empty;
 	}
 
+	bool PyTypeBase::pyIsForwardDeclarable() const
+	{
+		return m_base && m_base->isForwardDeclarable();
+	}
 
 	cpp::TypeKind PyTypeBase::pyGetTypeKind() const
 	{

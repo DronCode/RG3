@@ -27,6 +27,7 @@ namespace rg3::pybind
 
 		/// Methods
 		[[nodiscard]] const rg3::cpp::Tags& pyGetTags() const;
+		[[nodiscard]] bool pyIsForwardDeclarable() const;
 		[[nodiscard]] cpp::TypeKind pyGetTypeKind() const;
 		[[nodiscard]] boost::python::str pyGetName() const;
 		[[nodiscard]] boost::python::str pyGetPrettyName() const;

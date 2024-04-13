@@ -3,6 +3,12 @@
 
 namespace rg3::cpp
 {
+	enum TypeFlags : uint32_t
+	{
+		TF_PRODUCED_FROM_TEMPLATE = (1 << 0),
+		TF_PRODUCED_FROM_ALIAS = (1 << 1)
+	};
+
 	namespace utils
 	{
 		inline void hashCombine(TypeID& seed) { }
@@ -67,6 +73,17 @@ namespace rg3::cpp
 		return m_tags;
 	}
 
+	bool TypeBase::isForwardDeclarable() const
+	{
+		if (isProducedFromAlias())
+			return false;
+
+		if (isProducedFromTemplate())
+			return false;
+
+		return getKind() == TypeKind::TK_STRUCT_OR_CLASS || getKind() == TypeKind::TK_ENUM;
+	}
+
 	void TypeBase::overrideTypeData(const std::string& name, const std::string& prettyName)
 	{
 		m_name = name;
@@ -95,6 +112,26 @@ namespace rg3::cpp
 		m_nameSpace = aNamespace;
 		m_location = aLocation;
 		m_tags = tags;
+	}
+
+	void TypeBase::setProducedFromTemplate()
+	{
+		m_flags |= TypeFlags::TF_PRODUCED_FROM_TEMPLATE;
+	}
+
+	void TypeBase::setProducedFromAlias()
+	{
+		m_flags |= TypeFlags::TF_PRODUCED_FROM_ALIAS;
+	}
+
+	bool TypeBase::isProducedFromTemplate() const
+	{
+		return m_flags & TypeFlags::TF_PRODUCED_FROM_TEMPLATE;
+	}
+
+	bool TypeBase::isProducedFromAlias() const
+	{
+		return m_flags & TypeFlags::TF_PRODUCED_FROM_ALIAS;
 	}
 
 	void TypeBase::addTags(const Tags& vTags)

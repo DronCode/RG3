@@ -34,10 +34,18 @@ namespace rg3::cpp
 		[[nodiscard]] bool operator==(const TypeBase& other) const { return  areSame(&other); }
 		[[nodiscard]] bool operator!=(const TypeBase& other) const { return !areSame(&other); }
 
+		[[nodiscard]] bool isForwardDeclarable() const;
+
 		void overrideTypeData(const std::string& name, const std::string& prettyName);
 		void overrideTypeData(const std::string& name, const std::string& prettyName, const CppNamespace& aNamespace);
 		void overrideTypeData(const std::string& name, const std::string& prettyName, const CppNamespace& aNamespace, const DefinitionLocation& aLocation);
 		void overrideTypeData(const std::string& name, const std::string& prettyName, const CppNamespace& aNamespace, const DefinitionLocation& aLocation, const Tags& tags);
+
+		void setProducedFromTemplate();
+		void setProducedFromAlias();
+
+		bool isProducedFromTemplate() const;
+		bool isProducedFromAlias() const;
 
 		void addTags(const Tags& vTags);
 
@@ -51,6 +59,7 @@ namespace rg3::cpp
 		CppNamespace m_nameSpace;
 		DefinitionLocation m_location;
 		Tags m_tags;
+		uint32_t m_flags { 0u };
     };
 
 	using TypeBasePtr = std::unique_ptr<TypeBase>;
