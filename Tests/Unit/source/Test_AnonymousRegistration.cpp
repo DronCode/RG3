@@ -347,6 +347,8 @@ RegisterType<engine::math::Vector2D<short>> {
 	ASSERT_EQ(asClass0->getProperties()[0].sTypeInfo.sTypeRef.getRefName(), "float");
 	ASSERT_EQ(asClass0->getProperties()[0].sTypeInfo.bIsPtrConst, true);
 	ASSERT_EQ(asClass0->getProperties()[0].sTypeInfo.bIsPointer, true);
+	ASSERT_EQ(asClass0->getProperties()[0].vTags.isEmpty(), false);
+	ASSERT_EQ(asClass0->getProperties()[0].vTags.hasTag("property"), true);
 
 	ASSERT_EQ(asClass0->getProperties()[1].sName, "y");
 	ASSERT_EQ(asClass0->getProperties()[1].sAlias, "y");
