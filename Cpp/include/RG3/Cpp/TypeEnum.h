@@ -30,6 +30,7 @@ namespace rg3::cpp
 		TypeEnum(const std::string& name, const std::string& prettyName, const CppNamespace& aNamespace, const DefinitionLocation& aLocation, const Tags& tags, const EnumEntryVector& aValues, bool bIsScoped, TypeReference underlyingType);
 
 		[[nodiscard]] const EnumEntryVector& getEntries() const;
+		[[nodiscard]] EnumEntryVector& getEntries();
 		[[nodiscard]] bool containsValue(EnumEntry::ValueType value) const;
 		[[nodiscard]] std::string_view operator[](EnumEntry::ValueType value) const;
 		[[nodiscard]] bool isScoped() const;

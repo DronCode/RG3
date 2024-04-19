@@ -23,6 +23,8 @@ namespace rg3::llvm::visitors
 
 		bool VisitCXXRecordDecl(clang::CXXRecordDecl* cxxRecordDecl);
 
+		bool VisitEnumConstantDecl(clang::EnumConstantDecl* D);
+
 	 private:
 		template <typename T>
 		static bool isDeclInsideClassOrStruct(T* pDecl) requires (std::is_base_of_v<clang::Decl, T>)

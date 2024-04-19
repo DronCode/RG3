@@ -7,6 +7,7 @@
 #include <clang/AST/DeclCXX.h>
 #include <clang/AST/Decl.h>
 #include <llvm/Support/Casting.h>
+#include <boost/algorithm/string.hpp>
 #include <filesystem>
 #include <fmt/format.h>
 
@@ -97,21 +98,11 @@ namespace rg3::llvm
 			{
 				if (auto* pAsAliasDecl = pAsAliasType->getDecl())
 				{
-					// Detect name
-					clang::PrintingPolicy typeNamePrintingPolicy { astContext.getLangOpts() };
-					typeNamePrintingPolicy.SuppressTagKeyword = true;
-					typeNamePrintingPolicy.SuppressScope = false;
-					typeNamePrintingPolicy.Bool = true;
-
-					// Detect namespace
-					Utils::getDeclInfo(pAsAliasDecl, baseInfo.sNameSpace);
-
 					// Collect definition location
 					baseInfo.sDefLocation = Utils::getDeclDefinitionInfo(pAsAliasDecl);
 
-					// Store info
-					baseInfo.sName = qualType.getAsString(typeNamePrintingPolicy);
-					baseInfo.sPrettyName = baseInfo.sNameSpace.isEmpty() ? baseInfo.sName : fmt::format("{}::{}", baseInfo.sNameSpace.asString(), baseInfo.sName);
+					// Get info
+					Utils::getNamePrettyNameAndNamespaceForNamedDecl(pAsAliasDecl, baseInfo.sName, baseInfo.sPrettyName, baseInfo.sNameSpace);
 
 					// Detect kind
 					if (qualType->isRecordType())
@@ -139,24 +130,13 @@ namespace rg3::llvm
 			// No need to support full type analysis pipeline here. Just lookup as 'generic record' and trying to extract type
 			if (auto* pAsRecord = qualType->getAsRecordDecl())
 			{
-				// Collect valid name
-				clang::PrintingPolicy typeNamePrintingPolicy { astContext.getLangOpts() };
-				typeNamePrintingPolicy.SuppressTagKeyword = true;
-				typeNamePrintingPolicy.SuppressScope = true;
-				typeNamePrintingPolicy.Bool = true;
-
-				const auto correctedName = qualType.getUnqualifiedType().getAsString(typeNamePrintingPolicy);
-
-				// Collect namespace
-				Utils::getDeclInfo(pAsRecord, baseInfo.sNameSpace);
+				// Collect data
+				Utils::getNamePrettyNameAndNamespaceForNamedDecl(pAsRecord, baseInfo.sName, baseInfo.sPrettyName, baseInfo.sNameSpace);
 
 				// Collect definition location
 				cpp::DefinitionLocation aDefLocation = Utils::getDeclDefinitionInfo(pAsRecord);
 
 				// Save info
-				baseInfo.sName        = correctedName;
-				baseInfo.sNameSpace   = baseInfo.sNameSpace;
-				baseInfo.sPrettyName  = baseInfo.sNameSpace.isEmpty() ? correctedName : fmt::format("{}::{}", baseInfo.sNameSpace.asString(), correctedName);
 				baseInfo.sDefLocation = aDefLocation;
 				baseInfo.eKind        = cpp::TypeKind::TK_STRUCT_OR_CLASS;
 				return true;
@@ -182,10 +162,12 @@ namespace rg3::llvm
 
 					if (!vCollected.empty() && vCollected[0]->getKind() == cpp::TypeKind::TK_ENUM && !vCollected[0]->getPrettyName().empty())
 					{
+						Utils::getNamePrettyNameAndNamespaceForNamedDecl(pAsEnumDecl, baseInfo.sName, baseInfo.sPrettyName, baseInfo.sNameSpace);
+
 						baseInfo.eKind = cpp::TypeKind::TK_ENUM;
-						baseInfo.sName = vCollected[0]->getName();
-						baseInfo.sNameSpace = vCollected[0]->getNamespace();
-						baseInfo.sPrettyName = vCollected[0]->getPrettyName();
+//						baseInfo.sName = vCollected[0]->getName();
+//						baseInfo.sNameSpace = vCollected[0]->getNamespace();
+//						baseInfo.sPrettyName = vCollected[0]->getPrettyName();
 						baseInfo.sDefLocation = vCollected[0]->getDefinition();
 
 						return true;
@@ -299,55 +281,46 @@ namespace rg3::llvm
 		}
 	}
 
-	std::string Utils::getPrettyNameOfDecl(clang::NamedDecl* pDecl)
+	void collectDeclNameUntilNamespace(const clang::NamedDecl* pDecl, std::vector<std::string>& parts)
 	{
-		if (!pDecl) return {};
-
-		const clang::DeclContext* pDeclContext = pDecl->getDeclContext();
-
-		if (!pDeclContext->isNamespace() && !pDeclContext->isRecord()) {
-			// We aren't namespace or record (struct, class)
-#ifdef __APPLE__
-			// v0.0.3 workaround: will fix later
-			if (pDecl->getNameAsString() == "__1")
-			{
-				return {};
-			}
-#endif
-
-			return pDecl->getNameAsString();
-		}
-
-		clang::NamedDecl* parentDecl = nullptr;
-		if (pDeclContext->isNamespace())
+		if (!pDecl || ::llvm::isa<clang::NamespaceDecl>(pDecl))
 		{
-			parentDecl = clang::NamespaceDecl::castFromDeclContext(pDeclContext);
+			return;
 		}
-		else if (pDeclContext->isRecord())
+
+		if (const clang::ClassTemplateSpecializationDecl* pAsTemplDecl = ::llvm::dyn_cast<clang::ClassTemplateSpecializationDecl>(pDecl))
 		{
-			parentDecl = clang::RecordDecl::castFromDeclContext(pDeclContext);
+			// Ok, it's harder
+			std::string sFinalName {};
+			::llvm::raw_string_ostream ss { sFinalName };
+			clang::PrintingPolicy pp { pDecl->getASTContext().getLangOpts() };
+
+			pAsTemplDecl->getNameForDiagnostic(ss, pp, false);
+			parts.insert(parts.begin(), sFinalName);
 		}
-
-		std::string parentName {};
-
-		if (parentDecl)
+		else
 		{
-			parentName = getPrettyNameOfDecl(parentDecl);
+			parts.insert(parts.begin(), pDecl->getNameAsString());
 		}
 
-		if (!parentName.empty())
-		{
-#ifdef __APPLE__
-			// v0.0.3 workaround: will fix later
-			if (pDecl->getNameAsString() == "__1")
-			{
-				return parentName;
-			}
-#endif
+		collectDeclNameUntilNamespace(::llvm::dyn_cast<clang::NamedDecl>(clang::NamedDecl::castFromDeclContext(pDecl->getLexicalDeclContext())), parts);
+	}
 
-			return parentName + "::" + pDecl->getNameAsString();
-		}
+	void Utils::getNamePrettyNameAndNamespaceForNamedDecl(const clang::NamedDecl* pDecl, std::string& sName, std::string& sPrettyName, cpp::CppNamespace& sNameSpace)
+	{
+		// Find a name
+		std::vector<std::string> parts {};
 
-		return pDecl->getNameAsString();
+		parts.reserve(3); // for most cases that's enough
+		collectDeclNameUntilNamespace(pDecl, parts);
+
+		// Join them
+		sName = boost::algorithm::join(parts, "::");
+
+		// Find namespace
+		getDeclInfo(pDecl, sNameSpace);
+		
+		// Fill pretty name
+		sPrettyName = sNameSpace.isEmpty() ? sName : fmt::format("{}::{}", sNameSpace.asString(), sName);
 	}
 }

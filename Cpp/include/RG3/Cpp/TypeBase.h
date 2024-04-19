@@ -43,9 +43,11 @@ namespace rg3::cpp
 
 		void setProducedFromTemplate();
 		void setProducedFromAlias();
+		void setDeclaredInAnotherType();
 
 		bool isProducedFromTemplate() const;
 		bool isProducedFromAlias() const;
+		bool isDeclaredInAnotherType() const;
 
 		void addTags(const Tags& vTags);
 

@@ -24,6 +24,6 @@ namespace rg3::llvm
 
 		static void fillTypeStatementFromQualType(rg3::cpp::TypeStatement& typeStatement, clang::QualType qt, const clang::ASTContext& astContext);
 
-		static std::string getPrettyNameOfDecl(clang::NamedDecl* pDecl);
+		static void getNamePrettyNameAndNamespaceForNamedDecl(const clang::NamedDecl* pDecl, std::string& sName, std::string& sPrettyName, cpp::CppNamespace& sNameSpace);
 	};
 }

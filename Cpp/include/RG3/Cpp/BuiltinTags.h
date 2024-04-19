@@ -58,5 +58,12 @@ namespace rg3::cpp
 		 * @note Only last annotation will affect final path!
 		 */
 		static constexpr std::string_view kOverrideLocation { "RG3_OverrideLocation" };
+
+		/**
+		 * @brief Override type original kind and mark it as trivial. Loss all extras. Just save only base info about the type
+		 * @note  Type will loss all extras.
+		 * @note  RG3 can ignore some checks when this annotation declared
+		 */
+		static constexpr std::string_view kInterpretTypeAsTrivial { "RG3_MakeTypeTrivial" };
 	};
 }

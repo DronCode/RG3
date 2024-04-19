@@ -71,7 +71,12 @@ namespace rg3::cpp
 		while ((pos = s.find(kNamespaceDelimiter)) != std::string::npos)
 		{
 			tok = s.substr(0, pos);
-			m_vNamespace.push_back(tok);
+#ifdef __APPLE__ // A special fix for macOS (their sdk contains __1 part)
+			if (tok != "__1")
+#endif
+			{
+				m_vNamespace.push_back(tok);
+			}
 			s.erase(0, pos + kNamespaceDelimiter.length());
 		}
 	}

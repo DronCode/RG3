@@ -64,6 +64,7 @@ namespace rg3::llvm
 	struct Annotations
 	{
 		bool bIsRuntime { false };
+		bool bInterpretAsTrivial { false };
 		std::optional<std::string> overrideLocation {};
 		std::vector<PropertyDescription> knownProperties {};
 		std::vector<std::string> knownFunctions {};

@@ -96,6 +96,10 @@ namespace rg3::llvm
 						overrideLocation.emplace(splitResult[1]);
 					}
 				}
+				else if (sAnnotationItself == cpp::BuiltinAnnotations::kInterpretTypeAsTrivial)
+				{
+					bInterpretAsTrivial = true;
+				}
 			}
 		}
 	}

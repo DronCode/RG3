@@ -50,6 +50,9 @@ namespace rg3::llvm::visitors
 							visitor.parentClasses
 						)
 					);
+
+					if (visitor.bIsDeclaredInsideAnotherType)
+						m_vFoundTypes.back()->setDeclaredInAnotherType();
 				}
 			} // otherwise it's declaration of template, not specialization
 		}
@@ -125,7 +128,9 @@ namespace rg3::llvm::visitors
 	{
 		// Handle simple enum
 		CxxTypeVisitor visitor { m_vFoundTypes, m_compilerConfig };
-		visitor.VisitEnumDecl(enumDecl);
+
+		// Here we need to traverse this type because enum presented via multiple AST tree nodes
+		visitor.TraverseDecl(enumDecl);
 		return true;
 	}
 
@@ -154,11 +159,12 @@ namespace rg3::llvm::visitors
 		}
 
 		// Extract name, namespace and location of this typedef/using
-		std::string typedefPrettyName = Utils::getPrettyNameOfDecl(typedefNameDecl);
+		std::string typedefName {};
+		std::string typedefPrettyName {};
 		cpp::CppNamespace typedefNamespace {};
 		cpp::DefinitionLocation typedefLocation = Utils::getDeclDefinitionInfo(typedefNameDecl);
 
-		Utils::getDeclInfo(typedefNameDecl, typedefNamespace);
+		Utils::getNamePrettyNameAndNamespaceForNamedDecl(typedefNameDecl, typedefName, typedefPrettyName, typedefNamespace);
 
 		// So, our type is registrable (by runtime tag or by flag in compiler config)
 		clang::QualType    pUnderlyingType = typedefNameDecl->getUnderlyingType();
@@ -205,7 +211,7 @@ namespace rg3::llvm::visitors
 								const auto& sClassDefInfo = visitor.getClassDefInfo().value();
 
 								auto pType = std::make_unique<cpp::TypeClass>(
-												 typedefNameDecl->getNameAsString(),  // I'm not sure that this is correct.
+												 typedefName, // typedefNameDecl->getNameAsString(),  // I'm not sure that this is correct.
 												 typedefPrettyName,
 												 typedefNamespace,
 												 typedefLocation,
@@ -252,6 +258,12 @@ namespace rg3::llvm::visitors
 					// produced from alias
 					pType->setProducedFromAlias();
 
+					// declared inside another type
+					if (visitor.bIsDeclaredInsideAnotherType)
+					{
+						pType->setDeclaredInAnotherType();
+					}
+
 					m_vFoundTypes.emplace_back(std::move(pType));
 				}
 			}
@@ -270,7 +282,9 @@ namespace rg3::llvm::visitors
 
 					std::vector<cpp::TypeBasePtr> vTypes;
 					CxxTypeVisitor visitor { vTypes, newConfig };
-					visitor.VisitEnumDecl(pEnumDecl);
+
+					// Need traverse decl because inner decls contains data for enum
+					visitor.TraverseDecl(pEnumDecl);
 
 					if (!vTypes.empty())
 					{
@@ -363,8 +377,26 @@ namespace rg3::llvm::visitors
 		 */
 		bool bHandled = false; // is type variation handler or not
 
+		if (annotation.bInterpretAsTrivial)
+		{
+			// Just collect base info and save it as type. Nothing more.
+			const std::string sName { cpp::BuiltinTags::kRuntime };
+			cpp::TypeBaseInfo sBase {};
+			cpp::Tags vBaseNewTags {};
+
+			Utils::getQualTypeBaseInfo(pType->getLocallyUnqualifiedSingleStepDesugaredType(), sBase, ctx);
+
+			// Add more tags
+			vBaseNewTags += annotation.additionalTags;
+
+			auto pNewType = std::make_unique<cpp::TypeBase>(rg3::cpp::TypeKind::TK_TRIVIAL, sBase.sName, sBase.sPrettyName, sBase.sNameSpace, sBase.sDefLocation, vBaseNewTags);
+			m_vFoundTypes.emplace_back(std::move(pNewType));
+
+			bHandled = true;
+		}
+
 		// Must be first: it's because typedef can contain other options! So, we need to run recursively this stub
-		if (pType->isTypedefNameType())
+		if (!bHandled && pType->isTypedefNameType())
 		{
 			// It's typedef based declaration. Need handle this properly
 			// Need check what's inside that typedef
@@ -395,13 +427,14 @@ namespace rg3::llvm::visitors
 						cpp::TypeBase* pAddedType = m_vFoundTypes[iKnownTypes].get();
 						pAddedType->setProducedFromAlias(); // type here produced from alias and it's ok
 
-						const std::string sOldClassName = pAddedType->getPrettyName();
-						const std::string & newName = pAsTypedef->getDecl()->getNameAsString();
-						const std::string & prettyName = Utils::getPrettyNameOfDecl(pAsTypedef->getDecl());
+						std::string sOldClassName = pAddedType->getPrettyName();
+						std::string newName = {};
+						std::string prettyName {};
+
+						cpp::CppNamespace aNamespace {};
+						Utils::getNamePrettyNameAndNamespaceForNamedDecl(pAsTypedefDecl, newName, prettyName, aNamespace);
 
 						cpp::DefinitionLocation defLoc = Utils::getDeclDefinitionInfo(pAsTypedef->getDecl());
-						cpp::CppNamespace aNamespace;
-						Utils::getDeclInfo(pAsTypedef->getDecl(), aNamespace);
 
 						// Here we need to override source type
 						pAddedType->overrideTypeData(newName, prettyName, aNamespace, defLoc);
@@ -436,14 +469,72 @@ namespace rg3::llvm::visitors
 				newConfig.bAllowCollectNonRuntimeTypes = true;
 				std::vector<cpp::TypeBasePtr> vFoundTypes {};
 				CxxTypeVisitor visitor { vFoundTypes, newConfig };
-				visitor.TraverseDecl(pAsEnum->getDecl());
+				std::optional<cpp::TypeBaseInfo> sNewBaseInfo = std::nullopt;
 
-				if (!vFoundTypes.empty())
+				clang::EnumDecl* pEnumDecl = pAsEnum->getDecl();
+
+				if (pEnumDecl->isCompleteDefinition())
 				{
-					m_vFoundTypes.emplace_back(std::move(vFoundTypes[0]));
-					bHandled = true;
+					pEnumDecl = pAsEnum->getDecl();
+				}
+				else
+				{
+					// Actually it's redeclaration. We need to find a source declaration of the type and use it as 'data source' but then we need to override type base info
+					bool bResolved = false;
 
-					// No need to handle "real" type naming here (like in struct/class/typedef)
+					if (const auto* pAsTemplateInstantiationPattern = pEnumDecl->getTemplateInstantiationPattern())
+					{
+						if (const auto* pDefinition = pAsTemplateInstantiationPattern->getDefinition())
+						{
+							for (const auto* pRed : pDefinition->redecls())
+							{
+								if (bResolved)
+									break;
+
+								if (pRed && pRed->isThisDeclarationADefinition())
+								{
+									pEnumDecl = const_cast<clang::EnumDecl*>(::llvm::dyn_cast<clang::EnumDecl>(pRed));
+									bResolved = pEnumDecl != nullptr;
+								}
+							}
+						}
+					}
+
+					if (!bResolved)
+					{
+						// Do not use this decl
+						pEnumDecl = nullptr;
+					}
+					else
+					{
+						// Save original basics
+						auto& info = sNewBaseInfo.emplace();
+						Utils::getNamePrettyNameAndNamespaceForNamedDecl(pAsEnum->getDecl(), info.sName, info.sPrettyName, info.sNameSpace);
+						info.sDefLocation = Utils::getDeclDefinitionInfo(pAsEnum->getDecl());
+					}
+				}
+
+				if (pEnumDecl)
+				{
+					visitor.TraverseDecl(pEnumDecl);
+
+					if (!vFoundTypes.empty())
+					{
+						if (sNewBaseInfo.has_value())
+						{
+							vFoundTypes[0]->overrideTypeData(sNewBaseInfo->sName, sNewBaseInfo->sPrettyName, sNewBaseInfo->sNameSpace, sNewBaseInfo->sDefLocation);
+
+							if (sNewBaseInfo->sName.find("::") != std::string::npos)
+							{
+								vFoundTypes[0]->setDeclaredInAnotherType();
+							}
+						}
+
+						m_vFoundTypes.emplace_back(std::move(vFoundTypes[0]));
+						bHandled = true;
+
+						// No need to handle "real" type naming here (like in struct/class/typedef)
+					}
 				}
 			}
 		}
@@ -592,6 +683,11 @@ namespace rg3::llvm::visitors
 										  sTypeVisitor.bIsStruct,
 										  sTypeVisitor.bTriviallyConstructible,
 										  sTypeVisitor.parentClasses);
+
+					if (sTypeVisitor.bIsDeclaredInsideAnotherType)
+					{
+						pClassType->setDeclaredInAnotherType();
+					}
 
 					// Save
 					m_vFoundTypes.emplace_back(std::move(pClassType));

@@ -59,9 +59,10 @@ namespace rg3::llvm::visitors
 		}
 
 		// Create entry
-		sClassName = cxxRecordDecl->getName().str();
-		sClassPrettyName = Utils::getPrettyNameOfDecl(cxxRecordDecl);
-		Utils::getDeclInfo(cxxRecordDecl, sNameSpace);
+		Utils::getNamePrettyNameAndNamespaceForNamedDecl(cxxRecordDecl, sClassName, sClassPrettyName, sNameSpace);
+
+		// Detect is type declared inside another type
+		bIsDeclaredInsideAnotherType = sClassName.find("::") != std::string::npos;
 
 		// Location
 		sDefinitionLocation = Utils::getDeclDefinitionInfo(cxxRecordDecl);

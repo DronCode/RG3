@@ -72,12 +72,8 @@ namespace rg3::llvm::visitors
 			return true;
 		}
 
-		// Namespace
-		Utils::getDeclInfo(cxxRecordDecl, sDef.sNameSpace);
-
-		// Get name & pretty name
-		sDef.sClassName       = cxxRecordDecl->getName().str();
-		sDef.sPrettyClassName = Utils::getPrettyNameOfDecl(cxxRecordDecl);  // Are you sure that this shit is correct?
+		// Get name, pretty name & namespace
+		Utils::getNamePrettyNameAndNamespaceForNamedDecl(cxxRecordDecl, sDef.sClassName, sDef.sPrettyClassName, sDef.sNameSpace);
 
 		// Location
 		sDef.sDefLocation = Utils::getDeclDefinitionInfo(cxxRecordDecl);

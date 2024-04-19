@@ -30,6 +30,7 @@ namespace rg3::llvm::visitors
 		cpp::ClassFunctionVector foundFunctions {};
 		bool bIsStruct { false };
 		bool bTriviallyConstructible { false };
+		bool bIsDeclaredInsideAnotherType { false };
 		std::vector<cpp::ClassParent> parentClasses {};
 
 		// Extra types

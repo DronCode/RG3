@@ -65,20 +65,16 @@ namespace rg3::llvm::visitors
 		bool bScoped = enumDecl->isScoped();
 		cpp::EnumEntryVector entries;
 
-		std::string typeName = enumDecl->getName().str();
-		std::string enumPrettyName = Utils::getPrettyNameOfDecl(enumDecl);
-		rg3::cpp::CppNamespace nameSpace;
-		rg3::llvm::Utils::getDeclInfo(enumDecl, nameSpace);
+		std::string typeName {};
+		std::string enumPrettyName {};
+		rg3::cpp::CppNamespace nameSpace {};
+
+		Utils::getNamePrettyNameAndNamespaceForNamedDecl(enumDecl, typeName, enumPrettyName, nameSpace);
 
 		// Location
 		rg3::cpp::DefinitionLocation aDefLoc = Utils::getDeclDefinitionInfo(enumDecl);
 
-		for (const auto& enumerator : enumDecl->enumerators())
-		{
-			const std::string sEntryName = enumerator->getNameAsString();
-			int64_t iEntryValue = enumerator->getInitVal().getExtValue();
-			entries.emplace_back(sEntryName, iEntryValue);
-		}
+		// Enum constants will be computed at CxxTypeVisitor::VisitEnumConstantDecl. Enum will be commited without any values
 
 		// Take underlying type
 		cpp::TypeReference underlyingTypeRef;
@@ -106,6 +102,41 @@ namespace rg3::llvm::visitors
 			)
 		);
 
+		if (typeName.find("::") != std::string::npos)
+			m_collectedTypes.back()->setDeclaredInAnotherType(); // type name never contains :: when it's not declared inside another type
+
+		return true;
+	}
+
+	bool CxxTypeVisitor::VisitEnumConstantDecl(clang::EnumConstantDecl* enumConstantDecl)
+	{
+		// Safe us against shit usage
+		if (m_collectedTypes.size() != 1) return true;
+		if (m_collectedTypes[0]->getKind() != rg3::cpp::TypeKind::TK_ENUM) return true;
+
+		auto* pAsEnum = reinterpret_cast<cpp::TypeEnum*>(m_collectedTypes[0].get());
+
+		// Calculate final value
+		int64_t iVal = 0;
+
+		if (const auto* pInitExpression = enumConstantDecl->getInitExpr())
+		{
+			// Sometimes values are presented with expressions. So here we need to evaluate it
+			clang::Expr::EvalResult r;
+			pInitExpression->EvaluateAsInt(r, enumConstantDecl->getASTContext(), clang::Expr::SideEffectsKind::SE_NoSideEffects, true);
+			iVal = r.Val.getInt().getExtValue();
+		}
+		else
+		{
+			// Usually this enough
+			iVal = enumConstantDecl->getInitVal().getExtValue();
+		}
+
+		// Save
+		cpp::EnumEntry& entry = pAsEnum->getEntries().emplace_back();
+		entry.iValue = iVal;
+		entry.sName = enumConstantDecl->getNameAsString();
+
 		return true;
 	}
 
@@ -131,6 +162,11 @@ namespace rg3::llvm::visitors
 					cppVisitor.parentClasses
 				)
 			);
+
+			if (cppVisitor.bIsDeclaredInsideAnotherType)
+			{
+				m_collectedTypes.back()->setDeclaredInAnotherType();
+			}
 		}
 
 		// Save all extra types

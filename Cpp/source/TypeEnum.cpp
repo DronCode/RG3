@@ -36,6 +36,11 @@ namespace rg3::cpp
 		return m_entries;
 	}
 
+	EnumEntryVector& TypeEnum::getEntries()
+	{
+		return m_entries;
+	}
+
 	bool TypeEnum::containsValue(EnumEntry::ValueType value) const
 	{
 		auto it = std::find_if(m_entries.begin(), m_entries.end(), [&expected = value](const EnumEntry& entry) -> bool {

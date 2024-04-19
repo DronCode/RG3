@@ -673,3 +673,115 @@ RegisterType<CoolPtr<bool>> {
 	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getName(), "IntPtr");
 	ASSERT_EQ(analyzeResult.vFoundTypes[1]->getName(), "CoolPtr<bool>");
 }
+
+TEST_F(Tests_AnonymousRegistration, CheckMarkAsTrivial)
+{
+	g_Analyzer->setSourceCode(R"(
+namespace engine::math {
+	template <typename T>
+	struct Vector2D
+	{
+		const T* x;
+		const T y;
+
+		T SetAndReturnMul(T _x, T _y);
+	};
+}
+
+namespace game {
+	using V2F = engine::math::Vector2D<float>;
+	using V2I = engine::math::Vector2D<int>;
+}
+
+namespace other {
+	struct PlayerBaseInfo
+	{};
+}
+
+// Registrator
+template <typename T> struct RegisterType {};
+
+// Alias registration
+template <> struct
+	__attribute__((annotate("RG3_RegisterRuntime")))
+	__attribute__((annotate("RG3_MakeTypeTrivial")))
+RegisterType<game::V2F> {
+	using Type = game::V2F;
+};
+
+template <> struct
+	__attribute__((annotate("RG3_RegisterRuntime")))
+	__attribute__((annotate("RG3_MakeTypeTrivial")))
+RegisterType<game::V2I> {
+	using Type = game::V2I;
+};
+
+template <> struct
+	__attribute__((annotate("RG3_RegisterRuntime")))
+	__attribute__((annotate("RG3_MakeTypeTrivial")))
+RegisterType<engine::math::Vector2D<short>> {
+	using Type = engine::math::Vector2D<short>;
+};
+
+template <> struct
+	__attribute__((annotate("RG3_RegisterRuntime")))
+	__attribute__((annotate("RG3_MakeTypeTrivial")))
+RegisterType<other::PlayerBaseInfo> {
+	using Type = other::PlayerBaseInfo;
+};
+)");
+
+	auto& compilerConfig = g_Analyzer->getCompilerConfig();
+	compilerConfig.cppStandard = rg3::llvm::CxxStandard::CC_17;
+
+	const auto analyzeResult = g_Analyzer->analyze();
+
+	ASSERT_TRUE(analyzeResult.vIssues.empty()) << "Got errors!";
+	ASSERT_EQ(analyzeResult.vFoundTypes.size(), 4) << "Expected to have 4 types here";
+
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getName(), "V2F");
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getPrettyName(), "game::V2F");
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getKind(), rg3::cpp::TypeKind::TK_TRIVIAL);
+
+	ASSERT_EQ(analyzeResult.vFoundTypes[1]->getName(), "V2I");
+	ASSERT_EQ(analyzeResult.vFoundTypes[1]->getPrettyName(), "game::V2I");
+	ASSERT_EQ(analyzeResult.vFoundTypes[1]->getKind(), rg3::cpp::TypeKind::TK_TRIVIAL);
+
+	ASSERT_EQ(analyzeResult.vFoundTypes[2]->getName(), "Vector2D<short>");
+	ASSERT_EQ(analyzeResult.vFoundTypes[2]->getPrettyName(), "engine::math::Vector2D<short>");
+	ASSERT_EQ(analyzeResult.vFoundTypes[2]->getKind(), rg3::cpp::TypeKind::TK_TRIVIAL);
+
+	ASSERT_EQ(analyzeResult.vFoundTypes[3]->getName(), "PlayerBaseInfo");
+	ASSERT_EQ(analyzeResult.vFoundTypes[3]->getPrettyName(), "other::PlayerBaseInfo");
+	ASSERT_EQ(analyzeResult.vFoundTypes[3]->getKind(), rg3::cpp::TypeKind::TK_TRIVIAL);
+}
+
+TEST_F(Tests_AnonymousRegistration, CheckStdTypeRegistration)
+{
+	g_Analyzer->setSourceCode(R"(
+#include <string>
+// Registrator
+template <typename T> struct RegisterType {};
+
+// Alias registration
+template <> struct
+	__attribute__((annotate("RG3_RegisterRuntime")))
+	__attribute__((annotate("RG3_MakeTypeTrivial")))
+	__attribute__((annotate("RG3_OverrideLocation[string]")))
+RegisterType<std::string> {
+	using Type = std::string;
+};
+)");
+
+	auto& compilerConfig = g_Analyzer->getCompilerConfig();
+	compilerConfig.cppStandard = rg3::llvm::CxxStandard::CC_17;
+
+	const auto analyzeResult = g_Analyzer->analyze();
+
+	ASSERT_TRUE(analyzeResult.vIssues.empty()) << "Got errors!";
+	ASSERT_EQ(analyzeResult.vFoundTypes.size(), 1) << "Expected to have 1 types here";
+
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getName(), "string");
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getPrettyName(), "std::string");
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getKind(), rg3::cpp::TypeKind::TK_TRIVIAL);
+}

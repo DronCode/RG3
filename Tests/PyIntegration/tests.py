@@ -463,8 +463,9 @@ namespace generic { namespace extended {
     assert analyzer.types[0].name == "MyStruct"
     assert analyzer.types[0].pretty_name == "generic::extended::MyStruct"
 
-    assert analyzer.types[1].name == "MyCoolEnum"
+    assert analyzer.types[1].name == "MyStruct::MyCoolEnum"  # Since 0.0.10 parent type is a part of inner type, not namespace
     assert analyzer.types[1].pretty_name == "generic::extended::MyStruct::MyCoolEnum"
+    assert analyzer.types[1].is_forward_declarable == False
 
 
 def test_check_type_annotations():

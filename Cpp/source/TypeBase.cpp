@@ -6,7 +6,8 @@ namespace rg3::cpp
 	enum TypeFlags : uint32_t
 	{
 		TF_PRODUCED_FROM_TEMPLATE = (1 << 0),
-		TF_PRODUCED_FROM_ALIAS = (1 << 1)
+		TF_PRODUCED_FROM_ALIAS = (1 << 1),
+		TF_DECLARED_IN_ANOTHER_TYPE = (1 << 2)
 	};
 
 	namespace utils
@@ -81,6 +82,9 @@ namespace rg3::cpp
 		if (isProducedFromTemplate())
 			return false;
 
+		if (isDeclaredInAnotherType())
+			return false;
+
 		return getKind() == TypeKind::TK_STRUCT_OR_CLASS || getKind() == TypeKind::TK_ENUM;
 	}
 
@@ -124,6 +128,11 @@ namespace rg3::cpp
 		m_flags |= TypeFlags::TF_PRODUCED_FROM_ALIAS;
 	}
 
+	void TypeBase::setDeclaredInAnotherType()
+	{
+		m_flags |= TypeFlags::TF_DECLARED_IN_ANOTHER_TYPE;
+	}
+
 	bool TypeBase::isProducedFromTemplate() const
 	{
 		return m_flags & TypeFlags::TF_PRODUCED_FROM_TEMPLATE;
@@ -132,6 +141,11 @@ namespace rg3::cpp
 	bool TypeBase::isProducedFromAlias() const
 	{
 		return m_flags & TypeFlags::TF_PRODUCED_FROM_ALIAS;
+	}
+
+	bool TypeBase::isDeclaredInAnotherType() const
+	{
+		return m_flags & TypeFlags::TF_DECLARED_IN_ANOTHER_TYPE;
 	}
 
 	void TypeBase::addTags(const Tags& vTags)
