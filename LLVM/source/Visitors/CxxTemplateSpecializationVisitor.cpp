@@ -171,6 +171,13 @@ namespace rg3::llvm::visitors
 			newProperty.vTags = cpp::Tag::parseFromCommentString(rawCommentStr);
 		}
 
+		// Restore @property tag if not defined
+		const std::string ksPropTagName { cpp::BuiltinTags::kProperty };
+		if (!newProperty.vTags.hasTag(ksPropTagName))
+		{
+			newProperty.vTags.getTags()[ksPropTagName] = cpp::Tag(ksPropTagName);
+		}
+
 		// 'property' alias override not allowed here
 		newProperty.eVisibility = Utils::getDeclVisibilityLevel(cxxFieldDecl);
 

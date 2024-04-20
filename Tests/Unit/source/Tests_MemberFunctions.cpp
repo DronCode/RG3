@@ -243,18 +243,21 @@ RegisterType<engine::core::Vec3<int>> {
 	ASSERT_EQ(asClass0->getProperties()[0].sTypeInfo.sBaseInfo.sName, "float");
 	ASSERT_EQ(asClass0->getProperties()[0].sTypeInfo.sBaseInfo.sPrettyName, "float");
 	ASSERT_EQ(asClass0->getProperties()[0].sTypeInfo.sBaseInfo.eKind, rg3::cpp::TypeKind::TK_TRIVIAL);
+	ASSERT_EQ(asClass0->getProperties()[0].vTags.hasTag("property"), true);
 	ASSERT_EQ(asClass0->getProperties()[1].sName, "y");
 	ASSERT_EQ(asClass0->getProperties()[1].sAlias, "y");
 	ASSERT_EQ(asClass0->getProperties()[1].sTypeInfo.sBaseInfo.sName, "float");
 	ASSERT_EQ(asClass0->getProperties()[1].sTypeInfo.sBaseInfo.sPrettyName, "float");
 	ASSERT_EQ(asClass0->getProperties()[1].sTypeInfo.sBaseInfo.eKind, rg3::cpp::TypeKind::TK_TRIVIAL);
 	ASSERT_EQ(asClass0->getProperties()[1].sTypeInfo.sTypeRef.getRefName(), "float");
+	ASSERT_EQ(asClass0->getProperties()[1].vTags.hasTag("property"), true);
 	ASSERT_EQ(asClass0->getProperties()[2].sName, "z");
 	ASSERT_EQ(asClass0->getProperties()[2].sAlias, "z");
 	ASSERT_EQ(asClass0->getProperties()[2].sTypeInfo.sBaseInfo.sName, "float");
 	ASSERT_EQ(asClass0->getProperties()[2].sTypeInfo.sBaseInfo.sPrettyName, "float");
 	ASSERT_EQ(asClass0->getProperties()[2].sTypeInfo.sBaseInfo.eKind, rg3::cpp::TypeKind::TK_TRIVIAL);
 	ASSERT_EQ(asClass0->getProperties()[2].sTypeInfo.sTypeRef.getRefName(), "float");
+	ASSERT_EQ(asClass0->getProperties()[2].vTags.hasTag("property"), true);
 
 	ASSERT_EQ(asClass0->getFunctions().size(), 1);
 	ASSERT_EQ(asClass0->getFunctions()[0].sOwnerClassName, "engine::core::Vec3<float>");
@@ -288,6 +291,7 @@ RegisterType<engine::core::Vec3<int>> {
 	ASSERT_EQ(asClass1->getProperties()[0].sTypeInfo.sBaseInfo.sPrettyName, "int");
 	ASSERT_EQ(asClass1->getProperties()[0].sTypeInfo.sBaseInfo.eKind, rg3::cpp::TypeKind::TK_TRIVIAL);
 	ASSERT_EQ(asClass1->getProperties()[0].sTypeInfo.sTypeRef.getRefName(), "int");
+	ASSERT_EQ(asClass0->getProperties()[0].vTags.hasTag("property"), true);
 	ASSERT_EQ(asClass1->getProperties()[1].sName, "y");
 	ASSERT_EQ(asClass1->getProperties()[1].sAlias, "y");
 	ASSERT_EQ(asClass1->getProperties()[1].sTypeInfo.sTypeRef.getRefName(), "int");
@@ -295,6 +299,7 @@ RegisterType<engine::core::Vec3<int>> {
 	ASSERT_EQ(asClass1->getProperties()[1].sTypeInfo.sBaseInfo.sPrettyName, "int");
 	ASSERT_EQ(asClass1->getProperties()[1].sTypeInfo.sBaseInfo.eKind, rg3::cpp::TypeKind::TK_TRIVIAL);
 	ASSERT_EQ(asClass1->getProperties()[1].sTypeInfo.sTypeRef.getRefName(), "int");
+	ASSERT_EQ(asClass0->getProperties()[1].vTags.hasTag("property"), true);
 	ASSERT_EQ(asClass1->getProperties()[2].sName, "z");
 	ASSERT_EQ(asClass1->getProperties()[2].sAlias, "z");
 	ASSERT_EQ(asClass1->getProperties()[2].sTypeInfo.sTypeRef.getRefName(), "int");
@@ -302,6 +307,7 @@ RegisterType<engine::core::Vec3<int>> {
 	ASSERT_EQ(asClass1->getProperties()[2].sTypeInfo.sBaseInfo.sPrettyName, "int");
 	ASSERT_EQ(asClass1->getProperties()[2].sTypeInfo.sBaseInfo.eKind, rg3::cpp::TypeKind::TK_TRIVIAL);
 	ASSERT_EQ(asClass1->getProperties()[2].sTypeInfo.sTypeRef.getRefName(), "int");
+	ASSERT_EQ(asClass0->getProperties()[2].vTags.hasTag("property"), true);
 
 	ASSERT_EQ(asClass1->getFunctions().size(), 1);
 	ASSERT_EQ(asClass1->getFunctions()[0].sOwnerClassName, "engine::core::Vec3<int>");
