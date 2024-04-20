@@ -37,6 +37,9 @@ namespace rg3::llvm::visitors
 
 	bool CxxClassTypeVisitor::VisitCXXRecordDecl(clang::CXXRecordDecl* cxxRecordDecl)
 	{
+		if (!sClassName.empty())
+			return false; // stop this visitor!
+
 		if (!cxxRecordDecl->isCompleteDefinition())
 			return true; // skip uncompleted types
 

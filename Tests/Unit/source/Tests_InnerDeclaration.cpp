@@ -206,3 +206,62 @@ RegisterType<some::cool::space::TContainer<bool>::EScope> {
 	ASSERT_EQ(asEnum2->getEntries()[1].iValue, 72);
 	ASSERT_EQ(asEnum2->isScoped(), false);
 }
+
+TEST_F(Tests_InnerDeclaration, CheckNotRuntimeTypeInsideRuntmie)
+{
+	g_Analyzer->setSourceCode(R"(
+namespace engine::core::ecs {
+	/**
+	 * @runtime
+	 * @serializer(@engine::core::ecs::Entity)
+	 */
+	class Entity
+	{
+	public:
+		Entity();
+
+		// Components
+
+		// Systems
+
+	private: // Own data types
+		struct SystemDef
+		{
+			int rType { 0u };
+			bool bIsActive { false };
+		};
+
+		struct ComponentDef
+		{
+			int rType { 0u };
+			int iPoolIdx { 0u };
+		};
+	};
+}
+)");
+
+	auto& compilerConfig = g_Analyzer->getCompilerConfig();
+	compilerConfig.cppStandard = rg3::llvm::CxxStandard::CC_17;
+
+	const auto analyzeResult = g_Analyzer->analyze();
+
+	ASSERT_TRUE(analyzeResult.vIssues.empty()) << "Got errors!";
+	ASSERT_EQ(analyzeResult.vFoundTypes.size(), 1) << "Expected to have 1 type here";
+
+	// NOTE: Type FloatContainer::EKind will be unrolled to some::cool::space::TContainer<float> because of LLVM. Maybe will be fixed later.
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getName(), "Entity");
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getPrettyName(), "engine::core::ecs::Entity");
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getNamespace().asString(), "engine::core::ecs");
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getKind(), rg3::cpp::TypeKind::TK_STRUCT_OR_CLASS);
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getDefinition().isAngledPath(), false);
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getDefinition().getPath(), "id0.hpp");
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->isForwardDeclarable(), true);
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getTags().hasTag("runtime"), true);
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getTags().getTag("runtime").getArgumentsCount(), 0);
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getTags().hasTag("serializer"), true);
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getTags().getTag("serializer").getArgumentsCount(), 1);
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getTags().getTag("serializer").getArguments()[0].getHoldedType(), rg3::cpp::TagArgumentType::AT_TYPEREF);
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getTags().getTag("serializer").getArguments()[0].asTypeRefMutable()->getRefName(), "engine::core::ecs::Entity");
+}
+
+
