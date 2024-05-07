@@ -36,6 +36,9 @@ namespace rg3::llvm::visitors
 		// Extra types
 		std::vector<rg3::cpp::TypeBasePtr> vFoundExtraTypes {};
 
+		bool hasField(const std::string& name) const;
+		bool hasMethod(const std::string& name) const;
+
 	 private:
 		const CompilerConfig& compilerConfig;
 	};

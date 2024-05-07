@@ -103,11 +103,29 @@ namespace rg3::llvm::visitors
 			}
 		}
 
+		// Visit all inner fields
+		for (auto* pField : cxxRecordDecl->fields())
+		{
+			VisitFieldDecl(pField);
+		}
+
+		// Visit all inner methods
+		for (auto* pMethod : cxxRecordDecl->methods())
+		{
+			VisitCXXMethodDecl(pMethod);
+		}
+
 		return true;
 	}
 
 	bool CxxClassTypeVisitor::VisitFieldDecl(clang::FieldDecl* cxxFieldDecl)
 	{
+		if (!cxxFieldDecl || sClassName.empty() || !cxxFieldDecl->getParent() || cxxFieldDecl->getParent()->getNameAsString() != sClassName || hasField(cxxFieldDecl->getNameAsString()))
+		{
+			// Ignore this field, it's not our
+			return true;
+		}
+
 		// Save field info
 		cpp::ClassProperty& newProperty = foundProperties.emplace_back();
 		newProperty.sAlias = newProperty.sName = cxxFieldDecl->getNameAsString();
@@ -144,6 +162,23 @@ namespace rg3::llvm::visitors
 
 	bool CxxClassTypeVisitor::VisitCXXMethodDecl(clang::CXXMethodDecl* cxxMethodDecl)
 	{
+		if (!cxxMethodDecl || sClassName.empty() || !cxxMethodDecl->getParent() || cxxMethodDecl->getParent()->getNameAsString() != sClassName || hasMethod(cxxMethodDecl->getNameAsString()))
+		{
+			// Ignore this field, it's not our
+			return true;
+		}
+
+		if (!cxxMethodDecl->isUserProvided() || cxxMethodDecl->getSourceRange().isInvalid())
+		{
+			/**
+			 * @brief For v0.0.13 I'd like to ignore non-implicit declarations.
+			 *        It's matter for me because most tests expect to have only implicit methods.
+			 *        Another case when we need to have constructors and destructors list.
+			 *        This case we will handle later (v0.0.14 or later).
+			 */
+			return true;
+		}
+
 		// Save method info
 		cpp::ClassFunction& newFunction = foundFunctions.emplace_back();
 		newFunction.sName = cxxMethodDecl->getNameAsString();
@@ -183,5 +218,26 @@ namespace rg3::llvm::visitors
 		}
 
 		return true;
+	}
+
+	bool CxxClassTypeVisitor::hasField(const std::string& name) const
+	{
+		return std::find_if(
+			foundProperties.begin(), 
+			foundProperties.end(), 
+			[&name](const cpp::ClassProperty& prop) -> bool 
+			{ 
+				return prop.sName == name; 
+			}) != foundProperties.end();
+	}
+
+	bool CxxClassTypeVisitor::hasMethod(const std::string& name) const
+	{
+		return std::find_if(
+				   foundFunctions.begin(),
+				   foundFunctions.end(),
+				   [&name](const cpp::ClassFunction& func) -> bool {
+					   return func.sName == name;
+				   }) != foundFunctions.end();
 	}
 }
