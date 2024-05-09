@@ -560,6 +560,8 @@ namespace rg3::pybind
 #if 0  // This stage marked as 'deprecated' and will be removed later.
 				// Everything is fine
 				bResult = resolveTypeReferences();
+#else
+				bResult = true;
 #endif
 			}
 		}
