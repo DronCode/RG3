@@ -557,9 +557,10 @@ namespace rg3::pybind
 			if (m_pContext->runWorkers(m_iWorkersAmount))
 			{
 				m_pContext->waitAll();
-
+#if 0  // This stage marked as 'deprecated' and will be removed later.
 				// Everything is fine
 				bResult = resolveTypeReferences();
+#endif
 			}
 		}
 
