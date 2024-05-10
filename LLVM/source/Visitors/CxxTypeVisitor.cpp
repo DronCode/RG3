@@ -119,7 +119,7 @@ namespace rg3::llvm::visitors
 		// Calculate final value
 		int64_t iVal = 0;
 
-		if (const auto* pInitExpression = enumConstantDecl->getInitExpr())
+		if (const auto* pInitExpression = enumConstantDecl->getInitExpr(); pInitExpression && !pInitExpression->isValueDependent())
 		{
 			// Sometimes values are presented with expressions. So here we need to evaluate it
 			clang::Expr::EvalResult r;
