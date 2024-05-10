@@ -61,6 +61,7 @@ namespace rg3::cpp
 
 		bool bIsStatic { false }; /// Is static entry
 		bool bIsConst { false }; /// Is const method (for static method doesn't matter)
+		bool bIsNoExcept { false }; // If method marked as noexcept
 
 		bool operator==(const ClassFunction& other) const;
 		bool operator!=(const ClassFunction& other) const;
@@ -79,7 +80,10 @@ namespace rg3::cpp
 	{
 	 public:
 		TypeClass();
-		TypeClass(const std::string& name, const std::string& prettyName, const CppNamespace& aNamespace, const DefinitionLocation& aLocation, const Tags& tags, const ClassPropertyVector& aProperties, const ClassFunctionVector& aFunctions, bool bIsStruct, bool bTrivialConstructible, const std::vector<ClassParent>& parentTypes);
+		TypeClass(const std::string& name, const std::string& prettyName, const CppNamespace& aNamespace, const DefinitionLocation& aLocation, const Tags& tags,
+				  const ClassPropertyVector& aProperties, const ClassFunctionVector& aFunctions,
+				  bool bIsStruct, bool bTrivialConstructible, bool bHasCopyConstructor, bool bHasCopyAssignOperator, bool bHasMoveConstructor, bool bHasMoveAssignOperator,
+				  const std::vector<ClassParent>& parentTypes);
 
 		[[nodiscard]] const ClassPropertyVector& getProperties() const;
 		[[nodiscard]] ClassPropertyVector& getProperties();
@@ -89,6 +93,10 @@ namespace rg3::cpp
 		[[nodiscard]] bool isTrivialConstructible() const;
 		[[nodiscard]] const std::vector<ClassParent>& getParentTypes() const;
 		[[nodiscard]] std::vector<ClassParent>& getParentTypes();
+		[[nodiscard]] bool hasCopyConstructor() const;
+		[[nodiscard]] bool hasMoveConstructor() const;
+		[[nodiscard]] bool hasCopyAssignOperator() const;
+		[[nodiscard]] bool hasMoveAssignOperator() const;
 
 	 protected:
 		bool doAreSame(const TypeBase* pOther) const override;
@@ -98,6 +106,10 @@ namespace rg3::cpp
 		ClassFunctionVector m_functions {};
 		bool m_bIsStruct { false };
 		bool m_bIsTrivialConstructible { false };
+		bool m_bHasCopyConstructor { false };
+		bool m_bHasCopyAssignOperator { false };
+		bool m_bHasMoveConstructor { false };
+		bool m_bHasMoveAssignOperator { false };
 		std::vector<ClassParent> m_parentTypes {};
 	};
 }

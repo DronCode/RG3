@@ -693,3 +693,45 @@ def test_check_function_arg_property_type_ref():
     assert len(as_class.functions[1].arguments) == 1
     assert as_class.functions[1].arguments[0].name == "v2I"
     assert as_class.functions[1].arguments[0].type_info.get_name() == "engine::render::Vec2I"
+
+
+def test_check_move_and_copy_ctors_and_assign_operators():
+    analyzer: rg3py.CodeAnalyzer = rg3py.CodeAnalyzer.make()
+
+    analyzer.set_code("""
+struct NonCopyable
+{
+	NonCopyable() = default;
+	NonCopyable(const NonCopyable&) = delete;
+	NonCopyable& operator=(const NonCopyable&) = delete;
+};
+
+/**
+ * @runtime
+ **/
+struct Entity final : public NonCopyable
+{
+	Entity(Entity&& move) noexcept;
+	Entity& operator=(Entity&& moveInst) noexcept;
+};
+""")
+
+    analyzer.set_cpp_standard(rg3py.CppStandard.CXX_17)
+    analyzer.analyze()
+
+    assert len(analyzer.issues) == 0
+    assert len(analyzer.types) == 1
+
+    assert analyzer.types[0].has_copy_constructor is False
+    assert analyzer.types[0].has_copy_assign_operator is False
+    assert analyzer.types[0].has_move_constructor is True
+    assert analyzer.types[0].has_move_assign_operator is True
+    assert len(analyzer.types[0].functions) == 2
+    assert analyzer.types[0].functions[0].name == "Entity"
+    assert analyzer.types[0].functions[0].owner == "Entity"
+    assert analyzer.types[0].functions[0].is_noexcept is True
+    assert analyzer.types[0].functions[0].is_static is False
+    assert analyzer.types[0].functions[1].name == "operator="
+    assert analyzer.types[0].functions[1].owner == "Entity"
+    assert analyzer.types[0].functions[1].is_noexcept is True
+    assert analyzer.types[0].functions[1].is_static is False

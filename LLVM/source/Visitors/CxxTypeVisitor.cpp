@@ -159,6 +159,10 @@ namespace rg3::llvm::visitors
 					cppVisitor.foundFunctions,
 					cppVisitor.bIsStruct,
 					cppVisitor.bTriviallyConstructible,
+					cppVisitor.bHasCopyConstructor,
+					cppVisitor.bHasCopyAssignOperator,
+					cppVisitor.bHasMoveConstructor,
+					cppVisitor.bHasMoveAssignOperator,
 					cppVisitor.parentClasses
 				)
 			);

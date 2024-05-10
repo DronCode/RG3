@@ -20,6 +20,10 @@ namespace rg3::llvm::visitors
 	{
 		bool bIsStruct{ false };
 		bool bTriviallyConstructible{ false };
+		bool bHasCopyConstructor { false };
+		bool bHasCopyAssignOperator { false };
+		bool bHasMoveConstructor { false };
+		bool bHasMoveAssignOperator { false };
 		bool bHasResolverErrors { false };
 		std::string sClassName{};
 		std::string sPrettyClassName{};

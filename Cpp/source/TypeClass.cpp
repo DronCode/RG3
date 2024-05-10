@@ -45,12 +45,16 @@ namespace rg3::cpp
 
 	TypeClass::TypeClass() = default;
 
-	TypeClass::TypeClass(const std::string& name, const std::string& prettyName, const rg3::cpp::CppNamespace& aNamespace, const rg3::cpp::DefinitionLocation& aLocation, const Tags& tags, const rg3::cpp::ClassPropertyVector& aProperties, const rg3::cpp::ClassFunctionVector& aFunctions, bool bIsStruct, bool bTrivialConstructible, const std::vector<ClassParent>& parentTypes)
+	TypeClass::TypeClass(const std::string& name, const std::string& prettyName, const rg3::cpp::CppNamespace& aNamespace, const rg3::cpp::DefinitionLocation& aLocation, const Tags& tags, const rg3::cpp::ClassPropertyVector& aProperties, const rg3::cpp::ClassFunctionVector& aFunctions, bool bIsStruct, bool bTrivialConstructible, bool bHasCopyConstructor, bool bHasCopyAssignOperator, bool bHasMoveConstructor, bool bHasMoveAssignOperator, const std::vector<ClassParent>& parentTypes)
 		: TypeBase(TypeKind::TK_STRUCT_OR_CLASS, name, prettyName, aNamespace, aLocation, tags)
 		, m_properties(aProperties)
 		, m_functions(aFunctions)
 		, m_bIsStruct(bIsStruct)
 		, m_bIsTrivialConstructible(bTrivialConstructible)
+		, m_bHasCopyConstructor(bHasCopyConstructor)
+		, m_bHasCopyAssignOperator(bHasCopyAssignOperator)
+		, m_bHasMoveConstructor(bHasMoveConstructor)
+		, m_bHasMoveAssignOperator(bHasMoveAssignOperator)
 		, m_parentTypes(parentTypes)
 	{
 	}
@@ -93,6 +97,26 @@ namespace rg3::cpp
 	std::vector<ClassParent>& TypeClass::getParentTypes()
 	{
 		return m_parentTypes;
+	}
+
+	bool TypeClass::hasCopyConstructor() const
+	{
+		return m_bHasCopyConstructor;
+	}
+
+	bool TypeClass::hasCopyAssignOperator() const
+	{
+		return m_bHasCopyAssignOperator;
+	}
+
+	bool TypeClass::hasMoveConstructor() const
+	{
+		return m_bHasMoveConstructor;
+	}
+
+	bool TypeClass::hasMoveAssignOperator() const
+	{
+		return m_bHasMoveAssignOperator;
 	}
 
 	bool TypeClass::doAreSame(const TypeBase* pOther) const

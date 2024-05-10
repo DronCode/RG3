@@ -30,6 +30,10 @@ namespace rg3::llvm::visitors
 		cpp::ClassFunctionVector foundFunctions {};
 		bool bIsStruct { false };
 		bool bTriviallyConstructible { false };
+		bool bHasCopyConstructor { false };
+		bool bHasCopyAssignOperator { false };
+		bool bHasMoveConstructor { false };
+		bool bHasMoveAssignOperator { false };
 		bool bIsDeclaredInsideAnotherType { false };
 		std::vector<cpp::ClassParent> parentClasses {};
 

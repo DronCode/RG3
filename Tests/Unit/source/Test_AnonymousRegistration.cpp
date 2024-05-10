@@ -196,6 +196,10 @@ RegisterType<game::Vec2> {
 	// Check class
 	auto* pClass = reinterpret_cast<rg3::cpp::TypeClass*>(pType);
 	ASSERT_EQ(pClass->isStruct(), true);
+	ASSERT_TRUE(pClass->hasCopyConstructor());
+	ASSERT_TRUE(pClass->hasCopyAssignOperator());
+	ASSERT_TRUE(pClass->hasMoveConstructor());
+	ASSERT_TRUE(pClass->hasMoveAssignOperator());
 	ASSERT_EQ(pClass->getFunctions().size(), 1) << "Expected to have only 1 function";
 	ASSERT_EQ(pClass->getProperties().size(), 2) << "Expected to have 2 properties";
 

@@ -82,6 +82,11 @@ namespace rg3::llvm::visitors
 		sDef.bIsStruct = cxxRecordDecl->isStruct();
 		sDef.bTriviallyConstructible = cxxRecordDecl->hasDefaultConstructor();
 
+		sDef.bHasCopyConstructor = cxxRecordDecl->hasSimpleCopyConstructor() || cxxRecordDecl->hasUserDeclaredCopyConstructor();
+		sDef.bHasCopyAssignOperator = cxxRecordDecl->hasSimpleCopyAssignment() || cxxRecordDecl->hasUserDeclaredCopyAssignment();
+		sDef.bHasMoveConstructor = cxxRecordDecl->hasSimpleMoveConstructor() || cxxRecordDecl->hasUserDeclaredMoveConstructor();
+		sDef.bHasMoveAssignOperator = cxxRecordDecl->hasSimpleMoveAssignment() || cxxRecordDecl->hasUserDeclaredMoveAssignment() || cxxRecordDecl->hasUserDeclaredMoveOperation();
+
 		// Collect parent class list
 		for (const clang::CXXBaseSpecifier& baseSpecifier : cxxRecordDecl->bases()) {
 			cpp::ClassParent& parent = sDef.vParents.emplace_back();
@@ -215,6 +220,7 @@ namespace rg3::llvm::visitors
 		newFunction.bIsStatic = cxxMethodDecl->isStatic();
 		newFunction.sOwnerClassName = sDef.sPrettyClassName;
 		newFunction.bIsConst = cxxMethodDecl->isConst();
+		newFunction.bIsNoExcept =  cxxMethodDecl->getExceptionSpecType() == clang::EST_NoexceptTrue || cxxMethodDecl->getExceptionSpecType() == clang::EST_BasicNoexcept;
 
 		if (!m_functionFilterFunc(cxxMethodDecl->getNameAsString()))
 			return true; // Ignored

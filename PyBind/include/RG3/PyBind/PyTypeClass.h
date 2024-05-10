@@ -24,6 +24,10 @@ namespace rg3::pybind
 		[[nodiscard]] const boost::python::list& pyGetClassParentTypeRefs() const;
 		[[nodiscard]] bool pyIsStruct() const;
 		[[nodiscard]] bool pyIsTriviallyConstructible() const;
+		[[nodiscard]] bool pyHasCopyConstructor() const;
+		[[nodiscard]] bool pyHasCopyAssignOperator() const;
+		[[nodiscard]] bool pyHasMoveConstructor() const;
+		[[nodiscard]] bool pyHasMoveAssignOperator() const;
 
 	 private:
 		[[nodiscard]] cpp::TypeClass* getBase();

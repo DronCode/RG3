@@ -47,6 +47,10 @@ namespace rg3::llvm::visitors
 							visitor.foundFunctions,
 							visitor.bIsStruct,
 							visitor.bTriviallyConstructible,
+							visitor.bHasCopyConstructor,
+							visitor.bHasCopyAssignOperator,
+							visitor.bHasMoveConstructor,
+							visitor.bHasMoveAssignOperator,
 							visitor.parentClasses
 						)
 					);
@@ -220,6 +224,10 @@ namespace rg3::llvm::visitors
 												 sClassDefInfo.vFunctions,
 												 sClassDefInfo.bIsStruct,
 												 sClassDefInfo.bTriviallyConstructible,
+												 sClassDefInfo.bHasCopyConstructor,
+												 sClassDefInfo.bHasCopyAssignOperator,
+												 sClassDefInfo.bHasMoveConstructor,
+												 sClassDefInfo.bHasMoveAssignOperator,
 												 sClassDefInfo.vParents);
 
 								pType->setProducedFromTemplate();
@@ -252,8 +260,11 @@ namespace rg3::llvm::visitors
 									 visitor.foundFunctions,
 									 visitor.bIsStruct,
 									 visitor.bTriviallyConstructible,
-									 visitor.parentClasses
-									 );
+									 visitor.bHasCopyConstructor,
+									 visitor.bHasCopyAssignOperator,
+									 visitor.bHasMoveConstructor,
+									 visitor.bHasMoveAssignOperator,
+									 visitor.parentClasses);
 
 					// produced from alias
 					pType->setProducedFromAlias();
@@ -625,6 +636,10 @@ namespace rg3::llvm::visitors
 										sClassDef.vFunctions,
 										sClassDef.bIsStruct,
 										sClassDef.bTriviallyConstructible,
+										sClassDef.bHasCopyConstructor,
+										sClassDef.bHasCopyAssignOperator,
+										sClassDef.bHasMoveConstructor,
+										sClassDef.bHasMoveAssignOperator,
 										sClassDef.vParents);
 
 									pNewType->setProducedFromTemplate();
@@ -682,6 +697,10 @@ namespace rg3::llvm::visitors
 										  sTypeVisitor.foundFunctions,
 										  sTypeVisitor.bIsStruct,
 										  sTypeVisitor.bTriviallyConstructible,
+										  sTypeVisitor.bHasCopyConstructor,
+										  sTypeVisitor.bHasCopyAssignOperator,
+										  sTypeVisitor.bHasMoveConstructor,
+										  sTypeVisitor.bHasMoveAssignOperator,
 										  sTypeVisitor.parentClasses);
 
 					if (sTypeVisitor.bIsDeclaredInsideAnotherType)

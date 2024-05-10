@@ -71,4 +71,36 @@ namespace rg3::pybind
 
 		return false;
 	}
+
+	bool PyTypeClass::pyHasCopyConstructor() const
+	{
+		if (auto self = getBase())
+			return self->hasCopyConstructor();
+
+		return false;
+	}
+
+	bool PyTypeClass::pyHasCopyAssignOperator() const
+	{
+		if (auto self = getBase())
+			return self->hasCopyAssignOperator();
+
+		return false;
+	}
+
+	bool PyTypeClass::pyHasMoveConstructor() const
+	{
+		if (auto self = getBase())
+			return self->hasMoveConstructor();
+
+		return false;
+	}
+
+	bool PyTypeClass::pyHasMoveAssignOperator() const
+	{
+		if (auto self = getBase())
+			return self->hasMoveAssignOperator();
+
+		return false;
+	}
 }

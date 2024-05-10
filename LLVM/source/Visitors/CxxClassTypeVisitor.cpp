@@ -74,6 +74,11 @@ namespace rg3::llvm::visitors
 		bIsStruct = cxxRecordDecl->isStruct();
 		bTriviallyConstructible = cxxRecordDecl->hasDefaultConstructor();
 
+		bHasCopyConstructor = cxxRecordDecl->hasSimpleCopyConstructor() || cxxRecordDecl->hasUserDeclaredCopyConstructor();
+		bHasCopyAssignOperator = cxxRecordDecl->hasSimpleCopyAssignment() || cxxRecordDecl->hasUserDeclaredCopyAssignment();
+		bHasMoveConstructor = cxxRecordDecl->hasSimpleMoveConstructor() || cxxRecordDecl->hasUserDeclaredMoveConstructor();
+		bHasMoveAssignOperator = cxxRecordDecl->hasSimpleMoveAssignment() || cxxRecordDecl->hasUserDeclaredMoveAssignment() || cxxRecordDecl->hasUserDeclaredMoveOperation();
+
 		// Collect parent class list
 		for (const clang::CXXBaseSpecifier& baseSpecifier : cxxRecordDecl->bases()) {
 			cpp::ClassParent& parent = parentClasses.emplace_back();
@@ -185,6 +190,7 @@ namespace rg3::llvm::visitors
 		newFunction.bIsStatic = cxxMethodDecl->isStatic();
 		newFunction.sOwnerClassName = sClassPrettyName;
 		newFunction.bIsConst = cxxMethodDecl->isConst();
+		newFunction.bIsNoExcept = cxxMethodDecl->getExceptionSpecType() == clang::EST_NoexceptTrue || cxxMethodDecl->getExceptionSpecType() == clang::EST_BasicNoexcept;
 
 		clang::ASTContext& ctx = cxxMethodDecl->getASTContext();
 		clang::SourceManager& sm = ctx.getSourceManager();
