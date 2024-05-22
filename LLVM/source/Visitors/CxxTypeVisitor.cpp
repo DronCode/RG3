@@ -110,11 +110,10 @@ namespace rg3::llvm::visitors
 
 	bool CxxTypeVisitor::VisitEnumConstantDecl(clang::EnumConstantDecl* enumConstantDecl)
 	{
-		// Safe us against shit usage
-		if (m_collectedTypes.size() != 1) return true;
-		if (m_collectedTypes[0]->getKind() != rg3::cpp::TypeKind::TK_ENUM) return true;
+		if (m_collectedTypes.empty()) return true; // wtf?
+		if (m_collectedTypes.back()->getKind() != rg3::cpp::TypeKind::TK_ENUM) return true;
 
-		auto* pAsEnum = reinterpret_cast<cpp::TypeEnum*>(m_collectedTypes[0].get());
+		auto* pAsEnum = reinterpret_cast<cpp::TypeEnum*>(m_collectedTypes.back().get());
 
 		// Calculate final value
 		int64_t iVal = 0;
