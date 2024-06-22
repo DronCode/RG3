@@ -274,6 +274,14 @@ namespace rg3::llvm
 		compilerInstance.getPreprocessorOpts().addMacroDef("_MSC_VER=1932");
 		compilerInstance.getPreprocessorOpts().addMacroDef("_MSC_FULL_VER=193231329");
 		compilerInstance.getPreprocessorOpts().addMacroDef("_MSC_EXTENSIONS");
+
+		/**
+		 * Workaround: it's workaround for MSVC 2022 with yvals_core.h which send static assert when Clang version less than 17.x.x
+		 * Example : static assertion failed: error STL1000: Unexpected compiler version, expected Clang 17.0.0 or newer. at C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC\14.40.33807\include\yvals_core.h:898
+		 *
+		 * This macro block static assertion and should help us, but this part of code MUST be removed after RG3 migrates to latest LLVM & Clang
+		 */
+		compilerInstance.getPreprocessorOpts().addMacroDef("_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH=1");
 #endif
 
 #ifdef __APPLE__
