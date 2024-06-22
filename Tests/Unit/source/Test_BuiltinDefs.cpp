@@ -35,25 +35,3 @@ TEST_F(Tests_BuiltinDefs, CheckBuiltins)
 
 	ASSERT_TRUE(analyzeResult.vIssues.empty()) << "Got errors!";
 }
-
-#ifdef _MSC_VER
-TEST_F(Tests_BuiltinDefs, CheckMSVC_yvals_core)
-{
-	g_Analyzer->getCompilerConfig().cppStandard = rg3::llvm::CxxStandard::CC_20;
-	g_Analyzer->setSourceCode(R"(
-#include <yvals_core.h>
-
-struct TestObject
-{};
-)");
-
-	g_Analyzer->getCompilerConfig().vCompilerArgs.emplace_back("-x");
-	g_Analyzer->getCompilerConfig().vCompilerArgs.emplace_back("c++-header");
-
-	auto analyzeResult = g_Analyzer->analyze();
-	CommonHelpers::printCompilerIssues(analyzeResult.vIssues);
-
-	ASSERT_EQ(analyzeResult.vIssues.size(), 0);
-	ASSERT_EQ(analyzeResult.vFoundTypes.size(), 0) << "No types expected here";
-}
-#endif

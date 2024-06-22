@@ -3,6 +3,18 @@
 #include <RG3/LLVM/CodeAnalyzer.h>
 #include <iostream>
 
+// Just a workaround to avoid of bad behaviour with microsoft shit
+#ifdef _MSC_VER
+#	define MS_WORKAROUND_FOR_LEGACY_CLANG R"(
+#if __clang_major__ < 17
+#	undef __clang_major__
+#	define __clang_major__ 17
+#endif
+)"
+#else
+#	define MS_WORKAROUND_FOR_LEGACY_CLANG ""
+#endif
+
 
 struct CommonHelpers
 {

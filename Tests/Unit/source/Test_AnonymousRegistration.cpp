@@ -26,7 +26,7 @@ class Tests_AnonymousRegistration : public ::testing::Test
 
 TEST_F(Tests_AnonymousRegistration, TrivialAndSTLTypesRegistration)
 {
-	g_Analyzer->setSourceCode(R"(
+	g_Analyzer->setSourceCode(MS_WORKAROUND_FOR_LEGACY_CLANG R"(
 #include <string>
 #include <cstdint>
 
@@ -766,7 +766,7 @@ RegisterType<other::PlayerBaseInfo> {
 
 TEST_F(Tests_AnonymousRegistration, CheckStdTypeRegistration)
 {
-	g_Analyzer->setSourceCode(R"(
+	g_Analyzer->setSourceCode(MS_WORKAROUND_FOR_LEGACY_CLANG R"(
 #include <string>
 // Registrator
 template <typename T> struct RegisterType {};

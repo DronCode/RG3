@@ -40,7 +40,7 @@ TEST_F(Tests_CompilerIncludeDirs, CheckIncludeDirs)
 TEST_F(Tests_CompilerIncludeDirs, CheckCStdDefUsage)
 {
 	g_Analyzer->getCompilerConfig().cppStandard = rg3::llvm::CxxStandard::CC_11; // that should be enough
-	g_Analyzer->setSourceCode(R"(
+	g_Analyzer->setSourceCode(MS_WORKAROUND_FOR_LEGACY_CLANG R"(
 #include <cstddef>
 
 /// @runtime
@@ -95,7 +95,7 @@ TEST_F(Tests_CompilerIncludeDirs, CheckStdIncludes)
 TEST_F(Tests_CompilerIncludeDirs, CheckStdIntegralTypes)
 {
 	g_Analyzer->getCompilerConfig().cppStandard = rg3::llvm::CxxStandard::CC_20;
-	g_Analyzer->setSourceCode(R"(
+	g_Analyzer->setSourceCode(MS_WORKAROUND_FOR_LEGACY_CLANG R"(
 #include <cstdint>
 #include <cstddef>
 
