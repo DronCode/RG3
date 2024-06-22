@@ -210,3 +210,76 @@ namespace engine::render
 	ASSERT_EQ(asEnum1->getEntries()[ 4].sName, "BLEND_MIN");
 	ASSERT_EQ(asEnum1->getEntries()[ 5].sName, "BLEND_MAX");
 }
+
+TEST_F(Tests_Enum, CheckEnumValueListAffectFromOtherIncludes)
+{
+	g_Analyzer->setSourceCode(R"(
+namespace engine::render
+{
+	/**
+	 * @runtime
+	 */
+	enum class ESample
+	{
+		ES_FIRST = 1,
+		ES_SECOND = 2
+	};
+}
+
+enum ESomeLegacy
+{
+	__LDO_NO_INIT_OR_SMTH_I_DONT_KNOW__ = 0x1337,
+	_SOME_WEIRD_ENTRY = 0x201,
+	LOL_IT_MUST_BE_SOMEWHERE_ELSE = 0x500
+};
+
+namespace core
+{
+	/**
+	 * @runtime
+	 **/
+	enum class EProfileType
+	{
+		PT_ADMIN,
+		PT_USER
+	};
+
+	enum EProfilePhotoType { PPT_JPEG, PPT_PNG, PPT_NO_PHOTO };
+	enum class ESomeElse { SE_1, SE_2 };
+}
+)");
+
+	auto& compilerConfig = g_Analyzer->getCompilerConfig();
+	compilerConfig.cppStandard = rg3::llvm::CxxStandard::CC_20;
+
+	const auto analyzeResult = g_Analyzer->analyze();
+
+	ASSERT_TRUE(static_cast<bool>(analyzeResult)) << "Looks like we have an issues with analyzer";
+	ASSERT_EQ(analyzeResult.vFoundTypes.size(), 2) << "Expected to have 2 types";
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getKind(), rg3::cpp::TypeKind::TK_ENUM) << "Expected to have enum";
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getName(), "ESample") << "Bad name";
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getPrettyName(), "engine::render::ESample") << "Bad pretty name";
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getNamespace().asString(), "engine::render") << "Invalid namespace detected";
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->isForwardDeclarable(), true) << "This enum must be forward declarable!";
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getTags().hasTag("runtime"), true);
+
+	ASSERT_EQ(analyzeResult.vFoundTypes[1]->getKind(), rg3::cpp::TypeKind::TK_ENUM) << "Expected to have enum";
+	ASSERT_EQ(analyzeResult.vFoundTypes[1]->getName(), "EProfileType") << "Bad name";
+	ASSERT_EQ(analyzeResult.vFoundTypes[1]->getPrettyName(), "core::EProfileType") << "Bad pretty name";
+	ASSERT_EQ(analyzeResult.vFoundTypes[1]->getNamespace().asString(), "core") << "Invalid namespace detected";
+	ASSERT_EQ(analyzeResult.vFoundTypes[1]->isForwardDeclarable(), true) << "This enum must be forward declarable!";
+	ASSERT_EQ(analyzeResult.vFoundTypes[1]->getTags().hasTag("runtime"), true);
+
+	auto asEnum0 = static_cast<rg3::cpp::TypeEnum*>(analyzeResult.vFoundTypes[0].get()); // NOLINT(*-pro-type-static-cast-downcast)
+	auto asEnum1 = static_cast<rg3::cpp::TypeEnum*>(analyzeResult.vFoundTypes[1].get()); // NOLINT(*-pro-type-static-cast-downcast)
+
+	// enum #0 - ESample
+	ASSERT_EQ(asEnum0->getEntries().size(), 2);
+	ASSERT_EQ(asEnum0->getEntries()[0].sName, "ES_FIRST");
+	ASSERT_EQ(asEnum0->getEntries()[1].sName, "ES_SECOND");
+
+	// enum #1 - EProfileType
+	ASSERT_EQ(asEnum1->getEntries().size(), 2);
+	ASSERT_EQ(asEnum1->getEntries()[0].sName, "PT_ADMIN");
+	ASSERT_EQ(asEnum1->getEntries()[1].sName, "PT_USER");
+}

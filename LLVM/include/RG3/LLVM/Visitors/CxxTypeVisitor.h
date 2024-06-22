@@ -8,6 +8,7 @@
 #include <RG3/LLVM/CompilerConfig.h>
 #include <RG3/Cpp/TypeBase.h>
 
+#include <cstdint>
 #include <vector>
 #include <set>
 
@@ -45,6 +46,7 @@ namespace rg3::llvm::visitors
 
 	 private:
 		std::vector<rg3::cpp::TypeBasePtr>& m_collectedTypes;
+		std::vector<std::int64_t> m_collectedTypeIDs;
 		const CompilerConfig& compilerConfig;
 	};
 }

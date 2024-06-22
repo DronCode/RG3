@@ -102,6 +102,8 @@ namespace rg3::llvm::visitors
 			)
 		);
 
+		m_collectedTypeIDs.emplace_back(enumDecl->getID()); // or use global id?
+
 		if (typeName.find("::") != std::string::npos)
 			m_collectedTypes.back()->setDeclaredInAnotherType(); // type name never contains :: when it's not declared inside another type
 
@@ -110,8 +112,22 @@ namespace rg3::llvm::visitors
 
 	bool CxxTypeVisitor::VisitEnumConstantDecl(clang::EnumConstantDecl* enumConstantDecl)
 	{
-		if (m_collectedTypes.empty()) return true; // wtf?
+		if (m_collectedTypes.empty() || m_collectedTypeIDs.empty()) return true; // wtf?
 		if (m_collectedTypes.back()->getKind() != rg3::cpp::TypeKind::TK_ENUM) return true;
+
+		if (const auto* parentEnumDecl = ::llvm::dyn_cast<clang::EnumDecl>(enumConstantDecl->getDeclContext()))
+		{
+			if (parentEnumDecl->getID() != m_collectedTypeIDs.back())
+			{
+				// Parent type is not same to our type. Skip entry
+				return true;
+			}
+		}
+		else
+		{
+			// Unable to identify parent type
+			return true;
+		}
 
 		auto* pAsEnum = reinterpret_cast<cpp::TypeEnum*>(m_collectedTypes.back().get());
 
@@ -165,6 +181,8 @@ namespace rg3::llvm::visitors
 					cppVisitor.parentClasses
 				)
 			);
+
+			m_collectedTypeIDs.emplace_back(cxxRecordDecl->getID());
 
 			if (cppVisitor.bIsDeclaredInsideAnotherType)
 			{
