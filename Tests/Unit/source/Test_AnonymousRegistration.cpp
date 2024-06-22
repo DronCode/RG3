@@ -4,7 +4,7 @@
 #include <RG3/Cpp/TypeEnum.h>
 #include <RG3/Cpp/TypeClass.h>
 #include <RG3/LLVM/CodeAnalyzer.h>
-
+#include "CommonHelpers.h"
 
 
 class Tests_AnonymousRegistration : public ::testing::Test
@@ -71,6 +71,8 @@ RegisterType<std::string> {
 	compilerConfig.cppStandard = rg3::llvm::CxxStandard::CC_17;
 
 	const auto analyzeResult = g_Analyzer->analyze();
+
+	CommonHelpers::printCompilerIssues(analyzeResult.vIssues);
 
 	ASSERT_TRUE(analyzeResult.vIssues.empty()) << "Got errors!";
 	ASSERT_EQ(analyzeResult.vFoundTypes.size(), 5) << "Expected to have 5 type here, got " << analyzeResult.vFoundTypes.size();
@@ -783,6 +785,8 @@ RegisterType<std::string> {
 	compilerConfig.cppStandard = rg3::llvm::CxxStandard::CC_17;
 
 	const auto analyzeResult = g_Analyzer->analyze();
+
+	CommonHelpers::printCompilerIssues(analyzeResult.vIssues);
 
 	ASSERT_TRUE(analyzeResult.vIssues.empty()) << "Got errors!";
 	ASSERT_EQ(analyzeResult.vFoundTypes.size(), 1) << "Expected to have 1 types here";

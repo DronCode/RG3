@@ -4,7 +4,7 @@
 #include <RG3/Cpp/TypeClass.h>
 #include <RG3/LLVM/Compiler.h>
 #include <RG3/LLVM/CodeAnalyzer.h>
-
+#include "CommonHelpers.h"
 
 class Tests_CompilerIncludeDirs : public ::testing::Test
 {
@@ -55,6 +55,7 @@ struct MyFooStruct
 )");
 
 	auto analyzerResult = g_Analyzer->analyze();
+	CommonHelpers::printCompilerIssues(analyzerResult.vIssues);
 
 	ASSERT_TRUE(analyzerResult.vIssues.empty()) << "no issues expected to be here";
 }
@@ -84,6 +85,7 @@ TEST_F(Tests_CompilerIncludeDirs, CheckStdIncludes)
 	// ------------------------------------------------------------------------------------------------------
 	g_Analyzer->getCompilerConfig().vCompilerDefs.emplace_back("ENABLE_STD_TEST_ARGS=1");
 	auto analyzeResult = g_Analyzer->analyze();
+	CommonHelpers::printCompilerIssues(analyzeResult.vIssues);
 
 	ASSERT_TRUE(analyzeResult.vIssues.empty()) << "No issues should be here, but found " + std::to_string(analyzeResult.vIssues.size());
 	ASSERT_EQ(analyzeResult.vFoundTypes.size(), 1) << "Only 1 type should be here, but found " + std::to_string(analyzeResult.vFoundTypes.size());
@@ -105,12 +107,12 @@ struct Sample
 	bool b8;
 	size_t sz;
 };
-
 )");
 	g_Analyzer->getCompilerConfig().vCompilerArgs.emplace_back("-x");
 	g_Analyzer->getCompilerConfig().vCompilerArgs.emplace_back("c++-header");
 
 	auto analyzeResult = g_Analyzer->analyze();
+	CommonHelpers::printCompilerIssues(analyzeResult.vIssues);
 
 	ASSERT_TRUE(analyzeResult.vIssues.empty()) << "No issues should be here, but found " + std::to_string(analyzeResult.vIssues.size());
 	ASSERT_EQ(analyzeResult.vFoundTypes.size(), 1) << "Only 1 type should be here" + std::to_string(analyzeResult.vFoundTypes.size());
