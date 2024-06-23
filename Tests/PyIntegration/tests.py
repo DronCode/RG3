@@ -188,6 +188,11 @@ def test_check_base_types():
     analyzer: rg3py.CodeAnalyzer = rg3py.CodeAnalyzer.make()
 
     analyzer.set_code("""
+           #if __clang_major__ < 17
+           #	undef __clang_major__
+           #	define __clang_major__ 17
+           #endif
+    
            #include <cstdint>
            #include <cstddef>
             
@@ -472,6 +477,11 @@ def test_check_type_annotations():
     analyzer: rg3py.CodeAnalyzer = rg3py.CodeAnalyzer.make()
 
     analyzer.set_code("""
+#if __clang_major__ < 17
+#	undef __clang_major__
+#	define __clang_major__ 17
+#endif
+
 #include <string>
 
 // Registrator

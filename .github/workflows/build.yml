@@ -170,6 +170,22 @@ jobs:
           cd build
           cmake --build . --config MinSizeRel
 
+      # Save LLVM cache
+      - name: Save LLVM Cache
+        if: steps.cache-llvm-binaries.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v3
+        with:
+          key: "${{ runner.os }}-build-${{ matrix.config.llvm_tag }}"
+          path: |
+            llvm_repo/cmake
+            llvm_repo/build/cmake
+            llvm_repo/build/MinSizeRel
+            llvm_repo/build/include
+            llvm_repo/build/lib
+            llvm_repo/build/tools/clang/include
+            llvm_repo/llvm
+            llvm_repo/clang
+
       # Build our project
       - name: Build RG3
         env:
