@@ -12,7 +12,7 @@ Requirements
 Windows
 -------
 
- * Compiled LLVM (>= 16.0.0) on local machine and environment variables `CLANG_DIR` and `LLVM_DIR`
+ * Compiled LLVM (>= 18.1.8) on local machine and environment variables `CLANG_DIR` and `LLVM_DIR`
    * My `Clang_DIR` is `B:/Projects/llvm/build/lib/cmake/clang`
    * My `LLVM_DIR` is `B:/Projects/llvm/build/lib/cmake/llvm`
  * Statically compiled Boost (>=1.81.0) with boost python and environment variable `BOOST_ROOT`

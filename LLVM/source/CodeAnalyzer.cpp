@@ -223,52 +223,43 @@ namespace rg3::llvm
 
 		// Use C++20
 		clang::LangStandard::Kind langKind;
-		auto* langOptions = invocation->getLangOpts();
+		auto& langOptions = invocation->getLangOpts();
 
-		langOptions->CPlusPlus = 1;
+		langOptions.CPlusPlus = 1;
 
 		switch (m_compilerConfig.cppStandard)
 		{
 			case CxxStandard::CC_11:
-				langOptions->CPlusPlus11 = 1;
+				langOptions.CPlusPlus11 = 1;
 				langKind = clang::LangStandard::Kind::lang_cxx11;
 				break;
 			case CxxStandard::CC_14:
-				langOptions->CPlusPlus14 = 1;
+				langOptions.CPlusPlus14 = 1;
 				langKind = clang::LangStandard::Kind::lang_cxx14;
 				break;
 			case CxxStandard::CC_17:
-				langOptions->CPlusPlus17 = 1;
+				langOptions.CPlusPlus17 = 1;
 				langKind = clang::LangStandard::Kind::lang_cxx17;
 				break;
 			case CxxStandard::CC_20:
-				langOptions->CPlusPlus20 = 1;
+				langOptions.CPlusPlus20 = 1;
 				langKind = clang::LangStandard::Kind::lang_cxx20;
 				break;
-#if LLVM_VERSION_MAJOR >= 17
 			case CxxStandard::CC_23:
-				langOptions->CPlusPlus23 = 1;
+				langOptions.CPlusPlus23 = 1;
 				langKind = clang::LangStandard::Kind::lang_cxx23;
 				break;
 			case CxxStandard::CC_26:
-				langOptions->CPlusPlus26 = 1;
+				langOptions.CPlusPlus26 = 1;
 				langKind = clang::LangStandard::Kind::lang_cxx26;
 				break;
-#else
-			case CxxStandard::CC_23:
-			case CxxStandard::CC_26:
-				assert(false && "Unsupported Cxx standard! Used C++20 instead!");
-				langOptions->CPlusPlus20 = 1;
-				langKind = clang::LangStandard::Kind::lang_cxx20;
-				break;
-#endif
 			default:
-				langOptions->CPlusPlus11 = 1;
+				langOptions.CPlusPlus11 = 1;
 				langKind = clang::LangStandard::Kind::lang_cxx11;
 				break;
 		}
 
-		langOptions->LangStd = langKind;
+		langOptions.LangStd = langKind;
 
 #ifdef _WIN32
 		compilerInstance.getPreprocessorOpts().addMacroDef("_MSC_VER=1932");
@@ -304,7 +295,7 @@ namespace rg3::llvm
 			auto triple = targetInfo->getTriple();
 
 			std::vector<std::string> vIncs;
-			clang::LangOptions::setLangDefaults(*langOptions, clang::Language::CXX, triple, vIncs, langKind);
+			clang::LangOptions::setLangDefaults(langOptions, clang::Language::CXX, triple, vIncs, langKind);
 		}
 		else
 		{
@@ -316,7 +307,7 @@ namespace rg3::llvm
 			auto triple = targetInfo->getTriple();
 
 			std::vector<std::string> vIncs;
-			clang::LangOptions::setLangDefaults(*langOptions, clang::Language::CXX, triple, vIncs, langKind);
+			clang::LangOptions::setLangDefaults(langOptions, clang::Language::CXX, triple, vIncs, langKind);
 		}
 #else
 		// On Apple we should use default triple instead of detect it at runtime
