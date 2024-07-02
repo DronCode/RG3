@@ -172,6 +172,7 @@ namespace rg3::llvm::visitors
 					cppVisitor.vTags,
 					cppVisitor.foundProperties,
 					cppVisitor.foundFunctions,
+					cppVisitor.foundFriends,
 					cppVisitor.bIsStruct,
 					cppVisitor.bTriviallyConstructible,
 					cppVisitor.bHasCopyConstructor,

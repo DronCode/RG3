@@ -76,12 +76,21 @@ namespace rg3::cpp
 	using ClassPropertyVector = std::vector<ClassProperty>;
 	using ClassFunctionVector = std::vector<ClassFunction>;
 
+	struct ClassFriend
+	{
+		// In C++ allowed to be friend of function, class, T (c++0x) and... Idk, it's really weird shit
+		// I will support only class & struct friends (at least now)
+		TypeBaseInfo sFriendTypeInfo;
+	};
+
+	using ClassFriendVector = std::vector<ClassFriend>;
+
 	class TypeClass : public TypeBase
 	{
 	 public:
 		TypeClass();
 		TypeClass(const std::string& name, const std::string& prettyName, const CppNamespace& aNamespace, const DefinitionLocation& aLocation, const Tags& tags,
-				  const ClassPropertyVector& aProperties, const ClassFunctionVector& aFunctions,
+				  const ClassPropertyVector& aProperties, const ClassFunctionVector& aFunctions, const ClassFriendVector& aFriends,
 				  bool bIsStruct, bool bTrivialConstructible, bool bHasCopyConstructor, bool bHasCopyAssignOperator, bool bHasMoveConstructor, bool bHasMoveAssignOperator,
 				  const std::vector<ClassParent>& parentTypes);
 
@@ -97,6 +106,8 @@ namespace rg3::cpp
 		[[nodiscard]] bool hasMoveConstructor() const;
 		[[nodiscard]] bool hasCopyAssignOperator() const;
 		[[nodiscard]] bool hasMoveAssignOperator() const;
+		[[nodiscard]] const ClassFriendVector& getClassFriends() const;
+		[[nodiscard]] ClassFriendVector& getClassFriends();
 
 	 protected:
 		bool doAreSame(const TypeBase* pOther) const override;
@@ -104,6 +115,7 @@ namespace rg3::cpp
 	 private:
 		ClassPropertyVector m_properties {};
 		ClassFunctionVector m_functions {};
+		ClassFriendVector m_friends {};
 		bool m_bIsStruct { false };
 		bool m_bIsTrivialConstructible { false };
 		bool m_bHasCopyConstructor { false };

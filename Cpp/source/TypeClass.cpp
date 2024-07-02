@@ -45,10 +45,11 @@ namespace rg3::cpp
 
 	TypeClass::TypeClass() = default;
 
-	TypeClass::TypeClass(const std::string& name, const std::string& prettyName, const rg3::cpp::CppNamespace& aNamespace, const rg3::cpp::DefinitionLocation& aLocation, const Tags& tags, const rg3::cpp::ClassPropertyVector& aProperties, const rg3::cpp::ClassFunctionVector& aFunctions, bool bIsStruct, bool bTrivialConstructible, bool bHasCopyConstructor, bool bHasCopyAssignOperator, bool bHasMoveConstructor, bool bHasMoveAssignOperator, const std::vector<ClassParent>& parentTypes)
+	TypeClass::TypeClass(const std::string& name, const std::string& prettyName, const rg3::cpp::CppNamespace& aNamespace, const rg3::cpp::DefinitionLocation& aLocation, const Tags& tags, const rg3::cpp::ClassPropertyVector& aProperties, const rg3::cpp::ClassFunctionVector& aFunctions, const ClassFriendVector& aFriends, bool bIsStruct, bool bTrivialConstructible, bool bHasCopyConstructor, bool bHasCopyAssignOperator, bool bHasMoveConstructor, bool bHasMoveAssignOperator, const std::vector<ClassParent>& parentTypes)
 		: TypeBase(TypeKind::TK_STRUCT_OR_CLASS, name, prettyName, aNamespace, aLocation, tags)
 		, m_properties(aProperties)
 		, m_functions(aFunctions)
+		, m_friends(aFriends)
 		, m_bIsStruct(bIsStruct)
 		, m_bIsTrivialConstructible(bTrivialConstructible)
 		, m_bHasCopyConstructor(bHasCopyConstructor)
@@ -117,6 +118,16 @@ namespace rg3::cpp
 	bool TypeClass::hasMoveAssignOperator() const
 	{
 		return m_bHasMoveAssignOperator;
+	}
+
+	const ClassFriendVector& TypeClass::getClassFriends() const
+	{
+		return m_friends;
+	}
+
+	ClassFriendVector& TypeClass::getClassFriends()
+	{
+		return m_friends;
 	}
 
 	bool TypeClass::doAreSame(const TypeBase* pOther) const

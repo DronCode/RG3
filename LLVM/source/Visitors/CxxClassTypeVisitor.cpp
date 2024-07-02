@@ -10,6 +10,7 @@
 
 #include <clang/Basic/SourceLocation.h>
 #include <clang/Basic/SourceManager.h>
+#include <clang/AST/DeclFriend.h>
 #include <clang/AST/Decl.h>
 
 #include <boost/algorithm/string.hpp>
@@ -104,6 +105,19 @@ namespace rg3::llvm::visitors
 					case clang::AS_none:
 						parent.eModifier = bIsStruct ? cpp::InheritanceVisibility::IV_PUBLIC : cpp::InheritanceVisibility::IV_PRIVATE;
 						break;
+				}
+			}
+		}
+
+		// Collect class friends list
+		for (const clang::FriendDecl* pFriend : cxxRecordDecl->friends())
+		{
+			if (const clang::TypeSourceInfo* pFriendType = pFriend->getFriendType())
+			{
+				cpp::TypeBaseInfo sBaseInfo {};
+				if (Utils::getQualTypeBaseInfo(pFriendType->getType(), sBaseInfo, cxxRecordDecl->getASTContext()))
+				{
+					foundFriends.emplace_back(std::move(sBaseInfo));
 				}
 			}
 		}

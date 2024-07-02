@@ -32,6 +32,7 @@ namespace rg3::llvm::visitors
 		rg3::cpp::Tags sTags{};
 		rg3::cpp::ClassPropertyVector vProperties{};
 		rg3::cpp::ClassFunctionVector vFunctions{};
+		rg3::cpp::ClassFriendVector vFriends{};
 		std::vector<rg3::cpp::ClassParent> vParents{}; // NOTE: Should be replaced for short descriptions of that types (later; legacy)
 	};
 

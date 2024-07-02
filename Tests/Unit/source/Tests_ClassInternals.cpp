@@ -96,3 +96,114 @@ struct Entity final : public NonCopyable
 	ASSERT_EQ(pClass->getFunctions()[1].vArguments[0].sType.sBaseInfo.eKind, rg3::cpp::TypeKind::TK_STRUCT_OR_CLASS);
 	ASSERT_EQ(pClass->getFunctions()[1].bIsNoExcept, true);
 }
+
+
+TEST_F(Tests_ClassInternals, SimpleFriend)
+{
+	g_Analyzer->setSourceCode(R"(
+#define ENGINE_SERIALIZER_ACCESS(cls) friend class cls;
+
+struct SomeSerializerLogic
+{
+};
+
+/**
+ * @runtime
+ **/
+struct Entity
+{
+	ENGINE_SERIALIZER_ACCESS(SomeSerializerLogic);
+};
+)");
+
+	auto& compilerConfig = g_Analyzer->getCompilerConfig();
+	compilerConfig.cppStandard = rg3::llvm::CxxStandard::CC_17;
+
+	const auto analyzeResult = g_Analyzer->analyze();
+
+	ASSERT_TRUE(analyzeResult.vIssues.empty()) << "Got errors!";
+	ASSERT_EQ(analyzeResult.vFoundTypes.size(), 1) << "Expected to have 1 type here, got " << analyzeResult.vFoundTypes.size();
+
+	// Check type
+	auto* pType = analyzeResult.vFoundTypes[0].get();
+	ASSERT_EQ(pType->getName(), "Entity");
+	ASSERT_EQ(pType->getPrettyName(), "Entity");
+	ASSERT_EQ(pType->getNamespace().asString(), "");
+	ASSERT_EQ(pType->getKind(), rg3::cpp::TypeKind::TK_STRUCT_OR_CLASS) << "Expected to have class or struct";
+	ASSERT_EQ(pType->getTags().getTags().size(), 1) << "Expected to have at least 1 tag";
+	ASSERT_EQ(pType->getTags().hasTag("runtime"), true);
+	ASSERT_TRUE(pType->isForwardDeclarable()) << "Entity must be fwd declarable";
+
+	auto* pClass = reinterpret_cast<rg3::cpp::TypeClass*>(pType);
+	ASSERT_EQ(pClass->isStruct(), true);
+	ASSERT_EQ(pClass->getClassFriends().size(), 1) << "Must be 1 friend";
+	ASSERT_EQ(pClass->getClassFriends()[0].sFriendTypeInfo.sPrettyName, "SomeSerializerLogic");
+	ASSERT_EQ(pClass->getClassFriends()[0].sFriendTypeInfo.sName, "SomeSerializerLogic");
+	ASSERT_EQ(pClass->getClassFriends()[0].sFriendTypeInfo.eKind, rg3::cpp::TypeKind::TK_STRUCT_OR_CLASS);
+}
+
+TEST_F(Tests_ClassInternals, TemplatedFriend)
+{
+	g_Analyzer->setSourceCode(R"(
+namespace engine::runtime {
+	template <typename T> struct TScriptedType;
+}
+
+#define ENGINE_SERIALIZER_ACCESS(cls) friend class engine::runtime::TScriptedType<cls>;
+
+struct SomeSerializerLogic
+{
+};
+
+namespace engine::runtime {
+	template <>
+	struct TScriptedType<SomeSerializerLogic>
+	{
+		static void DoSomething();
+	};
+}
+
+struct SomeAnotherLib {};
+
+/**
+ * @runtime
+ **/
+struct Entity
+{
+	// DronCode: weird order...
+	friend class SomeAnotherLib;
+	ENGINE_SERIALIZER_ACCESS(SomeSerializerLogic);
+};
+)");
+
+	auto& compilerConfig = g_Analyzer->getCompilerConfig();
+	compilerConfig.cppStandard = rg3::llvm::CxxStandard::CC_17;
+
+	const auto analyzeResult = g_Analyzer->analyze();
+
+	ASSERT_TRUE(analyzeResult.vIssues.empty()) << "Got errors!";
+	ASSERT_EQ(analyzeResult.vFoundTypes.size(), 1) << "Expected to have 1 type here, got " << analyzeResult.vFoundTypes.size();
+
+	// Check type
+	auto* pType = analyzeResult.vFoundTypes[0].get();
+	ASSERT_EQ(pType->getName(), "Entity");
+	ASSERT_EQ(pType->getPrettyName(), "Entity");
+	ASSERT_EQ(pType->getNamespace().asString(), "");
+	ASSERT_EQ(pType->getKind(), rg3::cpp::TypeKind::TK_STRUCT_OR_CLASS) << "Expected to have class or struct";
+	ASSERT_EQ(pType->getTags().getTags().size(), 1) << "Expected to have at least 1 tag";
+	ASSERT_EQ(pType->getTags().hasTag("runtime"), true);
+	ASSERT_TRUE(pType->isForwardDeclarable()) << "Entity must be fwd declarable";
+
+	auto* pClass = reinterpret_cast<rg3::cpp::TypeClass*>(pType);
+	ASSERT_EQ(pClass->isStruct(), true);
+	ASSERT_EQ(pClass->getClassFriends().size(), 2) << "Must be 2 friends";
+
+	ASSERT_EQ(pClass->getClassFriends()[0].sFriendTypeInfo.sPrettyName, "engine::runtime::TScriptedType<SomeSerializerLogic>");
+	ASSERT_EQ(pClass->getClassFriends()[0].sFriendTypeInfo.sName, "TScriptedType<SomeSerializerLogic>");
+	ASSERT_EQ(pClass->getClassFriends()[0].sFriendTypeInfo.eKind, rg3::cpp::TypeKind::TK_STRUCT_OR_CLASS);
+	ASSERT_EQ(pClass->getClassFriends()[0].sFriendTypeInfo.sNameSpace.asString(), "engine::runtime");
+
+	ASSERT_EQ(pClass->getClassFriends()[1].sFriendTypeInfo.sPrettyName, "SomeAnotherLib");
+	ASSERT_EQ(pClass->getClassFriends()[1].sFriendTypeInfo.sName, "SomeAnotherLib");
+	ASSERT_EQ(pClass->getClassFriends()[1].sFriendTypeInfo.eKind, rg3::cpp::TypeKind::TK_STRUCT_OR_CLASS);
+}

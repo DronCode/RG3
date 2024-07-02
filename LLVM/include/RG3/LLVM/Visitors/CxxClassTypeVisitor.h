@@ -28,6 +28,7 @@ namespace rg3::llvm::visitors
 		cpp::DefinitionLocation sDefinitionLocation;
 		cpp::ClassPropertyVector foundProperties {};
 		cpp::ClassFunctionVector foundFunctions {};
+		cpp::ClassFriendVector foundFriends {};
 		bool bIsStruct { false };
 		bool bTriviallyConstructible { false };
 		bool bHasCopyConstructor { false };

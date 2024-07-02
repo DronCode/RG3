@@ -116,6 +116,19 @@ namespace rg3::llvm::visitors
 			}
 		}
 
+		// Collect class friends list
+		for (const clang::FriendDecl* pFriend : cxxRecordDecl->friends())
+		{
+			if (const clang::TypeSourceInfo* pFriendType = pFriend->getFriendType())
+			{
+				cpp::TypeBaseInfo sBaseInfo {};
+				if (Utils::getQualTypeBaseInfo(pFriendType->getType(), sBaseInfo, cxxRecordDecl->getASTContext()))
+				{
+					sDef.vFriends.emplace_back(std::move(sBaseInfo));
+				}
+			}
+		}
+
 		return true;
 	}
 
