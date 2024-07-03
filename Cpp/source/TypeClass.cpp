@@ -43,6 +43,15 @@ namespace rg3::cpp
 		return !operator==(other);
 	}
 
+	ClassFriend::ClassFriend()
+	{
+	}
+
+	ClassFriend::ClassFriend(rg3::cpp::TypeBaseInfo&& sInfo)
+		: sFriendTypeInfo(std::move(sInfo))
+	{
+	}
+
 	TypeClass::TypeClass() = default;
 
 	TypeClass::TypeClass(const std::string& name, const std::string& prettyName, const rg3::cpp::CppNamespace& aNamespace, const rg3::cpp::DefinitionLocation& aLocation, const Tags& tags, const rg3::cpp::ClassPropertyVector& aProperties, const rg3::cpp::ClassFunctionVector& aFunctions, const ClassFriendVector& aFriends, bool bIsStruct, bool bTrivialConstructible, bool bHasCopyConstructor, bool bHasCopyAssignOperator, bool bHasMoveConstructor, bool bHasMoveAssignOperator, const std::vector<ClassParent>& parentTypes)
