@@ -81,8 +81,6 @@ namespace rg3::cpp
 		// In C++ allowed to be friend of function, class, T (c++0x) and... Idk, it's really weird shit
 		// I will support only class & struct friends (at least now)
 		TypeBaseInfo sFriendTypeInfo {};
-
-		ClassFriend() = default;
 	};
 
 	using ClassFriendVector = std::vector<ClassFriend>;
