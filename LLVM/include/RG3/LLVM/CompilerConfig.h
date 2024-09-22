@@ -16,5 +16,6 @@ namespace rg3::llvm
 		std::vector<std::string> vCompilerArgs;
 		std::vector<std::string> vCompilerDefs;
 		bool bAllowCollectNonRuntimeTypes { false };
+		bool bSkipFunctionBodies { true };
 	};
 }

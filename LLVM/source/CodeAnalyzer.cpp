@@ -260,6 +260,7 @@ namespace rg3::llvm
 		}
 
 		langOptions.LangStd = langKind;
+		langOptions.IsHeaderFile = true; // NOTE: Maybe we should use flag here?
 
 #ifdef _WIN32
 		compilerInstance.getPreprocessorOpts().addMacroDef("_MSC_VER=1932");
@@ -321,6 +322,7 @@ namespace rg3::llvm
 		// Set up FrontendOptions
 		clang::FrontendOptions &opts = compilerInstance.getFrontendOpts();
 		opts.ProgramAction = clang::frontend::ParseSyntaxOnly;
+		opts.SkipFunctionBodies = static_cast<unsigned int>(m_compilerConfig.bSkipFunctionBodies);
 
 		opts.Inputs.clear();
 
