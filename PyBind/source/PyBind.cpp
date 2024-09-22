@@ -173,14 +173,14 @@ BOOST_PYTHON_MODULE(rg3py)
 	 * Please, don't forget to add your public available types into PyBind/rg3py.pyi file!!!
 	 */
 	/// ----------- ENUMS -----------
-	enum_<rg3::cpp::TypeKind>("CppTypeKind")
+	enum_<rg3::cpp::TypeKind>("CppTypeKind", "A kind of C++ type (trivial, enum, class or struct)")
 	    .value("TK_NONE", rg3::cpp::TypeKind::TK_NONE)
 	    .value("TK_TRIVIAL", rg3::cpp::TypeKind::TK_TRIVIAL)
 	    .value("TK_ENUM", rg3::cpp::TypeKind::TK_ENUM)
 	    .value("TK_STRUCT_OR_CLASS", rg3::cpp::TypeKind::TK_STRUCT_OR_CLASS)
 	;
 
-	enum_<rg3::cpp::TagArgumentType>("TagArgumentType")
+	enum_<rg3::cpp::TagArgumentType>("TagArgumentType", "Type of tag argument")
 	    .value("AT_UNDEFINED", rg3::cpp::TagArgumentType::AT_UNDEFINED)
 	    .value("AT_BOOL", rg3::cpp::TagArgumentType::AT_BOOL)
 	    .value("AT_FLOAT", rg3::cpp::TagArgumentType::AT_FLOAT)
@@ -189,14 +189,14 @@ BOOST_PYTHON_MODULE(rg3py)
 	    .value("AT_TYPEREF", rg3::cpp::TagArgumentType::AT_TYPEREF)
 	;
 
-	enum_<rg3::cpp::ClassEntryVisibility>("CppClassEntryVisibillity")
+	enum_<rg3::cpp::ClassEntryVisibility>("CppClassEntryVisibillity", "Visibility level of C++ entry (inheritance, declaration, etc...)")
 	    .value("CEV_PRIVATE", rg3::cpp::ClassEntryVisibility::CEV_PRIVATE)
 	    .value("CEV_PROTECTED", rg3::cpp::ClassEntryVisibility::CEV_PROTECTED)
 	    .value("CEV_PUBLIC", rg3::cpp::ClassEntryVisibility::CEV_PUBLIC)
 	;
 
 	/// ----------- CLASSES -----------
-	class_<rg3::cpp::CppNamespace>("CppNamespace")
+	class_<rg3::cpp::CppNamespace>("CppNamespace", "Represent generic namespace in C++")
 	    .def(init<std::string>(args("namespace")))
 		.def("__eq__", &rg3::cpp::CppNamespace::operator==)
 		.def("__ne__", &rg3::cpp::CppNamespace::operator!=)
@@ -204,15 +204,15 @@ BOOST_PYTHON_MODULE(rg3py)
 		.def("__repr__", make_function(&rg3::cpp::CppNamespace::asString, return_value_policy<copy_const_reference>()))
 	;
 
-	class_<rg3::cpp::DefinitionLocation>("Location")
+	class_<rg3::cpp::DefinitionLocation>("Location", "Location of declaration (file, line, column, is angled, etc...)")
 	    .def(init<std::string, int, int>(args("path", "line", "offset")))
-		.add_property("path", make_function(&rg3::cpp::DefinitionLocation::getPath, return_value_policy<return_by_value>()))
-		.add_property("line", &rg3::cpp::DefinitionLocation::getLine)
-		.add_property("column", &rg3::cpp::DefinitionLocation::getInLineOffset)
-		.add_property("angled", &rg3::cpp::DefinitionLocation::isAngledPath)
+		.add_property("path", make_function(&rg3::cpp::DefinitionLocation::getPath, return_value_policy<return_by_value>()), "A path to file with decl")
+		.add_property("line", &rg3::cpp::DefinitionLocation::getLine, "Line in file where declaration starts")
+		.add_property("column", &rg3::cpp::DefinitionLocation::getInLineOffset, "Column in file where declaration starts")
+		.add_property("angled", &rg3::cpp::DefinitionLocation::isAngledPath, "Is path angled (should be included via <>)")
 	;
 
-	class_<rg3::cpp::TagArgument>("TagArgument")
+	class_<rg3::cpp::TagArgument>("TagArgument", "Argument of tag")
 	    .def(init<bool>(arg("barg")))
 	    .def(init<float>(arg("farg")))
 	    .def(init<std::int64_t>(arg("i64")))
@@ -226,42 +226,42 @@ BOOST_PYTHON_MODULE(rg3py)
 		.def("as_type_ref", &rg3::pybind::wrappers::TagArgument_getAsTypeReference)
 	;
 
-	class_<rg3::cpp::Tag>("Tag")
-	    .add_property("name", make_function(&rg3::cpp::Tag::getName, return_value_policy<copy_const_reference>()))
-		.add_property("arguments", make_function(&rg3::pybind::wrappers::Tag_getArguments, return_value_policy<return_by_value>()))
+	class_<rg3::cpp::Tag>("Tag", "Represent codegen tag data")
+	    .add_property("name", make_function(&rg3::cpp::Tag::getName, return_value_policy<copy_const_reference>()), "Name of tag")
+		.add_property("arguments", make_function(&rg3::pybind::wrappers::Tag_getArguments, return_value_policy<return_by_value>()), "Arguments list")
 		.def("__eq__", make_function(&rg3::cpp::Tag::operator==, return_value_policy<return_by_value>()))
 		.def("__ne__", make_function(&rg3::cpp::Tag::operator!=, return_value_policy<return_by_value>()))
 	;
 
-	class_<rg3::cpp::Tags>("Tags")
+	class_<rg3::cpp::Tags>("Tags", "Container of the tags")
 	    .add_property("items", &rg3::pybind::wrappers::Tags_getTagItemsList, "List of tags inside this registry")
 		.def("__contains__", &rg3::cpp::Tags::hasTag)
 		.def("has_tag", &rg3::cpp::Tags::hasTag)
 		.def("get_tag", make_function(&rg3::cpp::Tags::getTag, return_value_policy<return_by_value>()))
 	;
 
-	class_<rg3::cpp::TypeReference>("CppTypeReference")
+	class_<rg3::cpp::TypeReference>("CppTypeReference", "A reference to type (legacy)")
 		.add_property("name", &rg3::pybind::wrappers::CppTypeReference_getTypeName)
 	;
 
-	enum_<rg3::cpp::InheritanceVisibility>("InheritanceVisibility")
+	enum_<rg3::cpp::InheritanceVisibility>("InheritanceVisibility", "Inheritance visibility level")
 		.value("IV_PRIVATE", rg3::cpp::InheritanceVisibility::IV_PRIVATE)
 		.value("IV_PUBLIC", rg3::cpp::InheritanceVisibility::IV_PUBLIC)
 		.value("IV_PROTECTED", rg3::cpp::InheritanceVisibility::IV_PROTECTED)
 		.value("IV_VIRTUAL", rg3::cpp::InheritanceVisibility::IV_VIRTUAL)
 	;
 
-	class_<rg3::cpp::ClassParent>("ClassParent")
+	class_<rg3::cpp::ClassParent>("ClassParent", "Basic information about parent type")
 	    .add_property("info", make_getter(&rg3::cpp::ClassParent::rParentType), "Parent type type reference")
 		.add_property("inheritance", make_getter(&rg3::cpp::ClassParent::eModifier), "Inheritance type")
 	;
 
-	class_<rg3::cpp::EnumEntry>("CppEnumEntry")
+	class_<rg3::cpp::EnumEntry>("CppEnumEntry", "A single element of enum")
 		.add_property("name", make_getter(&rg3::cpp::EnumEntry::sName), "Name of entry")
 		.add_property("value", make_getter(&rg3::cpp::EnumEntry::iValue), "Value of entry")
 	;
 
-	class_<rg3::cpp::TypeBaseInfo>("TypeBaseInfo")
+	class_<rg3::cpp::TypeBaseInfo>("TypeBaseInfo", "Base information about type instantiation")
 	    .add_property("kind", make_getter(&rg3::cpp::TypeBaseInfo::eKind), "Kind of type")
 		.add_property("namespace", make_getter(&rg3::cpp::TypeBaseInfo::sNameSpace), "Namespace where type declared")
 		.add_property("location", make_getter(&rg3::cpp::TypeBaseInfo::sDefLocation), "Place where type declared")
@@ -269,7 +269,7 @@ BOOST_PYTHON_MODULE(rg3py)
 		.add_property("pretty_name", &rg3::pybind::wrappers::TypeBaseInfo_getPrettyName, "Prettified name of type (included namespace and full form of name)")
 	;
 
-	class_<rg3::cpp::TypeStatement>("TypeStatement")
+	class_<rg3::cpp::TypeStatement>("TypeStatement", "Base information about type instantiation usage (ie function decl)")
 	    .add_property("type_ref", make_getter(&rg3::cpp::TypeStatement::sTypeRef), "Reference to type info")
 		.add_property("type_info", make_getter(&rg3::cpp::TypeStatement::sBaseInfo), "Base information about type")
 		.add_property("location", &rg3::pybind::wrappers::TypeStatement_getDefinitionLocation, "(optional) Where type statement info defined (not a type!)")
@@ -283,37 +283,37 @@ BOOST_PYTHON_MODULE(rg3py)
 		.def("get_name", &rg3::pybind::wrappers::TypeStatement_getTypeName, "Return name of the type")
 	;
 
-	class_<rg3::cpp::FunctionArgument>("FunctionArgument")
+	class_<rg3::cpp::FunctionArgument>("FunctionArgument", "Single argument of the function")
 		.add_property("type_info", make_getter(&rg3::cpp::FunctionArgument::sType), "Argument type info")
 		.add_property("name", make_getter(&rg3::cpp::FunctionArgument::sArgumentName), "Name of argument")
 		.add_property("has_default_value", make_getter(&rg3::cpp::FunctionArgument::bHasDefaultValue))
 	    ;
 
-	class_<rg3::cpp::ClassProperty>("CppClassProperty")
-		.add_property("name", make_getter(&rg3::cpp::ClassProperty::sName))
-		.add_property("alias", make_getter(&rg3::cpp::ClassProperty::sAlias))
-		.add_property("visibility", make_getter(&rg3::cpp::ClassProperty::eVisibility))
-		.add_property("tags", make_getter(&rg3::cpp::ClassProperty::vTags))
-		.add_property("type_info", make_getter(&rg3::cpp::ClassProperty::sTypeInfo))
+	class_<rg3::cpp::ClassProperty>("CppClassProperty", "Class property")
+		.add_property("name", make_getter(&rg3::cpp::ClassProperty::sName), "Name of property (original name from code)")
+		.add_property("alias", make_getter(&rg3::cpp::ClassProperty::sAlias), "Alias name of property declared via 'property' tag")
+		.add_property("visibility", make_getter(&rg3::cpp::ClassProperty::eVisibility), "Property visibility level")
+		.add_property("tags", make_getter(&rg3::cpp::ClassProperty::vTags), "Tags of property")
+		.add_property("type_info", make_getter(&rg3::cpp::ClassProperty::sTypeInfo), "Base type info")
 		.def("__eq__", make_function(&rg3::cpp::ClassProperty::operator==, return_value_policy<return_by_value>()))
 		.def("__ne__", make_function(&rg3::cpp::ClassProperty::operator!=, return_value_policy<return_by_value>()))
 	;
 
-	class_<rg3::cpp::ClassFunction>("CppClassFunction")
-		.add_property("name", make_getter(&rg3::cpp::ClassFunction::sName))
-		.add_property("owner", make_getter(&rg3::cpp::ClassFunction::sOwnerClassName))
-		.add_property("visibility", make_getter(&rg3::cpp::ClassFunction::eVisibility))
-		.add_property("tags", make_getter(&rg3::cpp::ClassFunction::vTags))
-		.add_property("is_static", make_getter(&rg3::cpp::ClassFunction::bIsStatic))
-		.add_property("is_const", make_getter(&rg3::cpp::ClassFunction::bIsConst))
-		.add_property("is_noexcept", make_getter(&rg3::cpp::ClassFunction::bIsNoExcept))
-		.add_property("return_type", make_getter(&rg3::cpp::ClassFunction::sReturnType))
-		.add_property("arguments", &rg3::pybind::wrappers::ClassFunction_getArgumentsList)
+	class_<rg3::cpp::ClassFunction>("CppClassFunction", "Class function")
+		.add_property("name", make_getter(&rg3::cpp::ClassFunction::sName), "Name of function")
+		.add_property("owner", make_getter(&rg3::cpp::ClassFunction::sOwnerClassName), "Owner class name")
+		.add_property("visibility", make_getter(&rg3::cpp::ClassFunction::eVisibility), "Visibility")
+		.add_property("tags", make_getter(&rg3::cpp::ClassFunction::vTags), "Tags list")
+		.add_property("is_static", make_getter(&rg3::cpp::ClassFunction::bIsStatic), "Is static method")
+		.add_property("is_const", make_getter(&rg3::cpp::ClassFunction::bIsConst), "Is const method")
+		.add_property("is_noexcept", make_getter(&rg3::cpp::ClassFunction::bIsNoExcept), "Is noexcept method")
+		.add_property("return_type", make_getter(&rg3::cpp::ClassFunction::sReturnType), "Type of return type")
+		.add_property("arguments", &rg3::pybind::wrappers::ClassFunction_getArgumentsList, "Arguments list")
 		.def("__eq__", make_function(&rg3::cpp::ClassFunction::operator==))
 		.def("__ne__", make_function(&rg3::cpp::ClassFunction::operator!=))
 	;
 
-	enum_<rg3::llvm::CxxStandard>("CppStandard")
+	enum_<rg3::llvm::CxxStandard>("CppStandard", "A standard of C++ for internal compiler")
 		.value("CXX_11", rg3::llvm::CxxStandard::CC_11)
 		.value("CXX_14", rg3::llvm::CxxStandard::CC_14)
 		.value("CXX_17", rg3::llvm::CxxStandard::CC_17)
@@ -322,7 +322,7 @@ BOOST_PYTHON_MODULE(rg3py)
 		.value("CXX_DEFAULT", rg3::llvm::CxxStandard::CC_DEFAULT)
 	;
 
-	enum_<rg3::llvm::IncludeKind>("CppIncludeKind")
+	enum_<rg3::llvm::IncludeKind>("CppIncludeKind", "Kind of include. Only for internal compiler")
 		.value("IK_PROJECT", rg3::llvm::IncludeKind::IK_PROJECT)
 		.value("IK_SYSTEM", rg3::llvm::IncludeKind::IK_SYSTEM)
 		.value("IK_SYSROOT", rg3::llvm::IncludeKind::IK_SYSROOT)
@@ -330,26 +330,26 @@ BOOST_PYTHON_MODULE(rg3py)
 		.value("IK_DEFAULT", rg3::llvm::IncludeKind::IK_DEFAULT)
 	;
 
-	class_<rg3::llvm::IncludeInfo>("CppIncludeInfo")
+	class_<rg3::llvm::IncludeInfo>("CppIncludeInfo", "Information about include (location and kind)")
 		.def(init<std::string, rg3::llvm::IncludeKind>(args("path", "kind")))
 		.add_property("path", &rg3::pybind::wrappers::CppIncludeInfo_getPath, "Path to C/C++ source header")
 		.add_property("kind", make_getter(&rg3::llvm::IncludeInfo::eKind), "Kind of header")
 	;
 
-	enum_<rg3::llvm::AnalyzerResult::CompilerIssue::IssueKind>("CppCompilerIssueKind")
+	enum_<rg3::llvm::AnalyzerResult::CompilerIssue::IssueKind>("CppCompilerIssueKind", "Kind and level of compiler issue")
 		.value("IK_NONE", rg3::llvm::AnalyzerResult::CompilerIssue::IssueKind::IK_NONE)
 		.value("IK_WARNING", rg3::llvm::AnalyzerResult::CompilerIssue::IssueKind::IK_WARNING)
 		.value("IK_INFO", rg3::llvm::AnalyzerResult::CompilerIssue::IssueKind::IK_INFO)
 		.value("IK_ERROR", rg3::llvm::AnalyzerResult::CompilerIssue::IssueKind::IK_ERROR)
 	;
 
-	class_<rg3::llvm::AnalyzerResult::CompilerIssue>("CppCompilerIssue", no_init)
+	class_<rg3::llvm::AnalyzerResult::CompilerIssue>("CppCompilerIssue", "Information about compiler issue", no_init)
 		.add_property("kind", make_getter(&rg3::llvm::AnalyzerResult::CompilerIssue::kind))
 		.add_property("source_file", make_getter(&rg3::llvm::AnalyzerResult::CompilerIssue::sSourceFile))
 		.add_property("message", make_getter(&rg3::llvm::AnalyzerResult::CompilerIssue::sMessage))
 	;
 
-	class_<rg3::pybind::PyTypeBase, boost::noncopyable, boost::shared_ptr<rg3::pybind::PyTypeBase>>("CppBaseType", no_init)
+	class_<rg3::pybind::PyTypeBase, boost::noncopyable, boost::shared_ptr<rg3::pybind::PyTypeBase>>("CppBaseType", "A base type type info of C++ type", no_init)
 	    .add_property("name", make_function(&rg3::pybind::PyTypeBase::pyGetName, return_value_policy<return_by_value>()), "Name of C++ type (without namespace and qualifiers)")
 		.add_property("hash", &rg3::pybind::PyTypeBase::__hash__, "Return unique hash of type")
 		.add_property("kind", make_function(&rg3::pybind::PyTypeBase::pyGetTypeKind, return_value_policy<return_by_value>()), "Kind of type")
@@ -366,16 +366,16 @@ BOOST_PYTHON_MODULE(rg3py)
 		.def("__ne__", &rg3::pybind::PyTypeBase::__ne__)
 	;
 
-	class_<rg3::pybind::PyTypeEnum, boost::noncopyable, boost::shared_ptr<rg3::pybind::PyTypeEnum>, boost::python::bases<rg3::pybind::PyTypeBase>>("CppEnum", no_init)
+	class_<rg3::pybind::PyTypeEnum, boost::noncopyable, boost::shared_ptr<rg3::pybind::PyTypeEnum>, boost::python::bases<rg3::pybind::PyTypeBase>>("CppEnum", "C++ enum information", no_init)
 		.add_property("entries", make_function(&rg3::pybind::PyTypeEnum::pyGetEnumEntries, return_value_policy<copy_const_reference>()), "Entries of enum")
 		.add_property("is_scoped", &rg3::pybind::PyTypeEnum::pyIsScoped, "Is enum scoped or not")
-		.add_property("underlying_type", make_function(&rg3::pybind::PyTypeEnum::pyGetUnderlyingTypeStr, return_value_policy<copy_const_reference>()))
+		.add_property("underlying_type", make_function(&rg3::pybind::PyTypeEnum::pyGetUnderlyingTypeStr, return_value_policy<copy_const_reference>()), "Internal enum type")
 	;
 
-	class_<rg3::pybind::PyTypeClass, boost::noncopyable, boost::shared_ptr<rg3::pybind::PyTypeClass>, boost::python::bases<rg3::pybind::PyTypeBase>>("CppClass", no_init)
+	class_<rg3::pybind::PyTypeClass, boost::noncopyable, boost::shared_ptr<rg3::pybind::PyTypeClass>, boost::python::bases<rg3::pybind::PyTypeBase>>("CppClass", "C++ class or struct information", no_init)
 		.add_property("properties", make_function(&rg3::pybind::PyTypeClass::pyGetClassProperties, return_value_policy<copy_const_reference>()), "Class properties")
 		.add_property("functions", make_function(&rg3::pybind::PyTypeClass::pyGetClassFunctions, return_value_policy<copy_const_reference>()), "Class functions")
-		.add_property("is_struct", &rg3::pybind::PyTypeClass::pyIsStruct)
+		.add_property("is_struct", &rg3::pybind::PyTypeClass::pyIsStruct, "Is struct or class")
 		.add_property("is_trivial_constructible", &rg3::pybind::PyTypeClass::pyIsTriviallyConstructible)
 		.add_property("has_copy_constructor", &rg3::pybind::PyTypeClass::pyHasCopyConstructor)
 		.add_property("has_copy_assign_operator", &rg3::pybind::PyTypeClass::pyHasCopyAssignOperator)
@@ -384,12 +384,12 @@ BOOST_PYTHON_MODULE(rg3py)
 		.add_property("parent_types", make_function(&rg3::pybind::PyTypeClass::pyGetClassParentTypeRefs, return_value_policy<copy_const_reference>()))
 	;
 
-	class_<rg3::pybind::PyCodeAnalyzerBuilder, boost::noncopyable, boost::shared_ptr<rg3::pybind::PyCodeAnalyzerBuilder>>("CodeAnalyzer", no_init)
+	class_<rg3::pybind::PyCodeAnalyzerBuilder, boost::noncopyable, boost::shared_ptr<rg3::pybind::PyCodeAnalyzerBuilder>>("CodeAnalyzer", "A simple code analyzer. Possible to analyze file or code string", no_init)
 		.def("make", &rg3::pybind::PyCodeAnalyzerBuilder::makeInstance)
 		.staticmethod("make")
 
-		.add_property("types", make_function(&rg3::pybind::PyCodeAnalyzerBuilder::getFoundTypes, return_value_policy<copy_const_reference>()))
-		.add_property("issues", make_function(&rg3::pybind::PyCodeAnalyzerBuilder::getFoundIssues, return_value_policy<copy_const_reference>()))
+		.add_property("types", make_function(&rg3::pybind::PyCodeAnalyzerBuilder::getFoundTypes, return_value_policy<copy_const_reference>()), "A list of found types")
+		.add_property("issues", make_function(&rg3::pybind::PyCodeAnalyzerBuilder::getFoundIssues, return_value_policy<copy_const_reference>()), "A list of found issues")
 		.add_property("ignore_runtime",
 					  &rg3::pybind::PyCodeAnalyzerBuilder::isNonRuntimeTypesAllowedToBeCollected,
 					  &rg3::pybind::PyCodeAnalyzerBuilder::setAllowToCollectNonRuntimeTypes,
@@ -397,7 +397,7 @@ BOOST_PYTHON_MODULE(rg3py)
 		.add_property("definitions",
 					  &rg3::pybind::PyCodeAnalyzerBuilder::getCompilerDefinitions,
 					  &rg3::pybind::PyCodeAnalyzerBuilder::setCompilerDefinitions,
-					  "")
+					  "A list of compiler definitions like -D option in cmake")
 
 		.def("set_ignore_non_runtime_types", &rg3::pybind::PyCodeAnalyzerBuilder::setAllowToCollectNonRuntimeTypes)
 		.def("is_non_runtime_types_ignored", &rg3::pybind::PyCodeAnalyzerBuilder::isNonRuntimeTypesAllowedToBeCollected)
@@ -414,14 +414,14 @@ BOOST_PYTHON_MODULE(rg3py)
 		.def("analyze", &rg3::pybind::PyCodeAnalyzerBuilder::analyze)
 	;
 
-	class_<rg3::pybind::PyAnalyzerContext, boost::noncopyable , boost::shared_ptr<rg3::pybind::PyAnalyzerContext>>("AnalyzerContext", no_init)
+	class_<rg3::pybind::PyAnalyzerContext, boost::noncopyable , boost::shared_ptr<rg3::pybind::PyAnalyzerContext>>("AnalyzerContext", "A multithreaded analyzer and scheduled which made to analyze a bunch of files at once. If you have more than few files you should use this class.", no_init)
 		.def("make", &rg3::pybind::PyAnalyzerContext::makeInstance)
 		.staticmethod("make")
 
 		// Properties
 		.add_property("workers_count", &rg3::pybind::PyAnalyzerContext::getWorkersCount, "Count of workers which will prepare incoming sources")
-		.add_property("types", make_function(&rg3::pybind::PyAnalyzerContext::getFoundTypes, return_value_policy<copy_const_reference>()))
-		.add_property("issues", make_function(&rg3::pybind::PyAnalyzerContext::getFoundIssues, return_value_policy<copy_const_reference>()))
+		.add_property("types", make_function(&rg3::pybind::PyAnalyzerContext::getFoundTypes, return_value_policy<copy_const_reference>()), "A list of found types")
+		.add_property("issues", make_function(&rg3::pybind::PyAnalyzerContext::getFoundIssues, return_value_policy<copy_const_reference>()), "A list of found issues")
 		.add_property("headers", &rg3::pybind::PyAnalyzerContext::getHeaders, "List of headers")
 		.add_property("include_directories", &rg3::pybind::PyAnalyzerContext::getCompilerIncludeDirs, "Include directories for compiler instance")
 		.add_property("cpp_standard", &rg3::pybind::PyAnalyzerContext::getCppStandard, &rg3::pybind::PyAnalyzerContext::setCppStandard, "Set C++ standard")
@@ -441,7 +441,7 @@ BOOST_PYTHON_MODULE(rg3py)
 		.def("get_type_by_reference", &rg3::pybind::PyAnalyzerContext::pyGetTypeOfTypeReference)
 	;
 
-	class_<rg3::pybind::PyClangRuntime, boost::noncopyable>("ClangRuntime")
+	class_<rg3::pybind::PyClangRuntime, boost::noncopyable>("ClangRuntime", "Technical information about bundled Clang, LLVM and detected system paths")
 	    .def("get_version", &rg3::pybind::PyClangRuntime::getRuntimeInfo)
 		.staticmethod("get_version")
 
