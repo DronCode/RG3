@@ -105,7 +105,6 @@ TEST_F(Tests_ClassInternals, SimpleFriend)
 
 struct SomeSerializerLogic
 {
-	virtual bool IsMakesMeHappy() = 0;
 };
 
 /**
@@ -114,6 +113,9 @@ struct SomeSerializerLogic
 struct Entity
 {
 	ENGINE_SERIALIZER_ACCESS(SomeSerializerLogic);
+
+public:
+	virtual bool IsMakesMeHappy() = 0;
 };
 )");
 
