@@ -323,4 +323,19 @@ namespace rg3::llvm
 		// Fill pretty name
 		sPrettyName = sNameSpace.isEmpty() ? sName : fmt::format("{}::{}", sNameSpace.asString(), sName);
 	}
+
+	bool Utils::isRecordPresentTriviallyConstructibleType(const clang::CXXRecordDecl* pDecl)
+	{
+		if (!pDecl || pDecl->isAbstract()) return false;
+		if (!pDecl->hasTrivialDefaultConstructor()) return false;
+
+		for (const auto& sBase : pDecl->bases())
+		{
+			const clang::CXXRecordDecl* pBaseDecl = sBase.getType()->getAsCXXRecordDecl();
+			if (!isRecordPresentTriviallyConstructibleType(pBaseDecl))
+				return false;
+		}
+
+		return true;
+	}
 }

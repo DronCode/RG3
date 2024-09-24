@@ -105,6 +105,7 @@ TEST_F(Tests_ClassInternals, SimpleFriend)
 
 struct SomeSerializerLogic
 {
+	virtual bool IsMakesMeHappy() = 0;
 };
 
 /**
@@ -140,6 +141,7 @@ struct Entity
 	ASSERT_EQ(pClass->getClassFriends()[0].sFriendTypeInfo.sPrettyName, "SomeSerializerLogic");
 	ASSERT_EQ(pClass->getClassFriends()[0].sFriendTypeInfo.sName, "SomeSerializerLogic");
 	ASSERT_EQ(pClass->getClassFriends()[0].sFriendTypeInfo.eKind, rg3::cpp::TypeKind::TK_STRUCT_OR_CLASS);
+	ASSERT_EQ(pClass->isTrivialConstructible(), false) << "Expected to be non trivial constructible because it has pure virtual method!";
 }
 
 TEST_F(Tests_ClassInternals, TemplatedFriend)

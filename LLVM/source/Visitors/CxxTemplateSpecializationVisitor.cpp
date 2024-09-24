@@ -80,7 +80,7 @@ namespace rg3::llvm::visitors
 
 		// Is struct or class?
 		sDef.bIsStruct = cxxRecordDecl->isStruct();
-		sDef.bTriviallyConstructible = cxxRecordDecl->hasDefaultConstructor();
+		sDef.bTriviallyConstructible = Utils::isRecordPresentTriviallyConstructibleType(cxxRecordDecl);
 
 		sDef.bHasCopyConstructor = cxxRecordDecl->hasSimpleCopyConstructor() || cxxRecordDecl->hasUserDeclaredCopyConstructor();
 		sDef.bHasCopyAssignOperator = cxxRecordDecl->hasSimpleCopyAssignment() || cxxRecordDecl->hasUserDeclaredCopyAssignment();
