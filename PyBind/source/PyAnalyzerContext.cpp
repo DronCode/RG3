@@ -646,23 +646,6 @@ namespace rg3::pybind
 					}
 				}
 
-				// Resolve parent type refs
-				for (auto& parentType : pClassNative->getParentTypes())
-				{
-					resolverContext.eSpace = ResolverContext::ContextSpace::CS_TYPE;
-
-					if (auto it = m_pySubjects.vFoundTypeInstances.find(parentType.rParentType.getRefName()); it != m_pySubjects.vFoundTypeInstances.end())
-					{
-						// parent type found
-						parentType.rParentType.setResolvedType(it->second->getNative().get());
-					}
-					else
-					{
-						pushResolverIssue(resolverContext, fmt::format("Failed to find parent type '{}'", parentType.rParentType.getRefName()));
-						return false;
-					}
-				}
-
 				// Push context back
 				resolverContext.eSpace = ResolverContext::ContextSpace::CS_TYPE;
 			}

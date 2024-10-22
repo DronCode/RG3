@@ -90,8 +90,8 @@ namespace rg3::llvm::visitors
 		// Collect parent class list
 		for (const clang::CXXBaseSpecifier& baseSpecifier : cxxRecordDecl->bases()) {
 			cpp::ClassParent& parent = sDef.vParents.emplace_back();
-			parent.rParentType = cpp::TypeReference(baseSpecifier.getType().getAsString());
-
+			Utils::getQualTypeBaseInfo(baseSpecifier.getType(), parent.sTypeBaseInfo, cxxRecordDecl->getASTContext());
+			
 			if (baseSpecifier.isVirtual())
 			{
 				parent.eModifier = cpp::InheritanceVisibility::IV_VIRTUAL;

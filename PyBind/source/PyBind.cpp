@@ -240,7 +240,7 @@ BOOST_PYTHON_MODULE(rg3py)
 		.def("get_tag", make_function(&rg3::cpp::Tags::getTag, return_value_policy<return_by_value>()))
 	;
 
-	class_<rg3::cpp::TypeReference>("CppTypeReference", "A reference to type (legacy)")
+	class_<rg3::cpp::TypeReference>("CppTypeReference", "A reference to type (DEPRECATED)")
 		.add_property("name", &rg3::pybind::wrappers::CppTypeReference_getTypeName)
 	;
 
@@ -252,7 +252,7 @@ BOOST_PYTHON_MODULE(rg3py)
 	;
 
 	class_<rg3::cpp::ClassParent>("ClassParent", "Basic information about parent type")
-	    .add_property("info", make_getter(&rg3::cpp::ClassParent::rParentType), "Parent type type reference")
+	    .add_property("info", make_getter(&rg3::cpp::ClassParent::sTypeBaseInfo), "Information about parent type")
 		.add_property("inheritance", make_getter(&rg3::cpp::ClassParent::eModifier), "Inheritance type")
 	;
 

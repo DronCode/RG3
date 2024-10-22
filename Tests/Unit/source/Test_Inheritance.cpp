@@ -49,12 +49,12 @@ class C : A {};
 
 	ASSERT_EQ(analyzeResult.vFoundTypes[1]->getPrettyName(), "B");
 	ASSERT_EQ(static_cast<const rg3::cpp::TypeClass*>(analyzeResult.vFoundTypes[1].get())->getParentTypes().size(), 1);
-	ASSERT_EQ(static_cast<const rg3::cpp::TypeClass*>(analyzeResult.vFoundTypes[1].get())->getParentTypes()[0].rParentType.getRefName(), "A");
+	ASSERT_EQ(static_cast<const rg3::cpp::TypeClass*>(analyzeResult.vFoundTypes[1].get())->getParentTypes()[0].sTypeBaseInfo.sName, "A");
 	ASSERT_EQ(static_cast<const rg3::cpp::TypeClass*>(analyzeResult.vFoundTypes[1].get())->getParentTypes()[0].eModifier, rg3::cpp::InheritanceVisibility::IV_PUBLIC);
 
 	ASSERT_EQ(analyzeResult.vFoundTypes[2]->getPrettyName(), "C");
 	ASSERT_EQ(static_cast<const rg3::cpp::TypeClass*>(analyzeResult.vFoundTypes[2].get())->getParentTypes().size(), 1);
-	ASSERT_EQ(static_cast<const rg3::cpp::TypeClass*>(analyzeResult.vFoundTypes[2].get())->getParentTypes()[0].rParentType.getRefName(), "A");
+	ASSERT_EQ(static_cast<const rg3::cpp::TypeClass*>(analyzeResult.vFoundTypes[2].get())->getParentTypes()[0].sTypeBaseInfo.sName, "A");
 	ASSERT_EQ(static_cast<const rg3::cpp::TypeClass*>(analyzeResult.vFoundTypes[2].get())->getParentTypes()[0].eModifier, rg3::cpp::InheritanceVisibility::IV_PRIVATE);
 }
 
@@ -82,6 +82,6 @@ struct B : virtual A {};
 
 	ASSERT_EQ(analyzeResult.vFoundTypes[1]->getPrettyName(), "B");
 	ASSERT_EQ(static_cast<const rg3::cpp::TypeClass*>(analyzeResult.vFoundTypes[1].get())->getParentTypes().size(), 1);
-	ASSERT_EQ(static_cast<const rg3::cpp::TypeClass*>(analyzeResult.vFoundTypes[1].get())->getParentTypes()[0].rParentType.getRefName(), "A");
+	ASSERT_EQ(static_cast<const rg3::cpp::TypeClass*>(analyzeResult.vFoundTypes[1].get())->getParentTypes()[0].sTypeBaseInfo.sName, "A");
 	ASSERT_EQ(static_cast<const rg3::cpp::TypeClass*>(analyzeResult.vFoundTypes[1].get())->getParentTypes()[0].eModifier, rg3::cpp::InheritanceVisibility::IV_VIRTUAL);
 }

@@ -69,7 +69,7 @@ namespace rg3::cpp
 
 	struct ClassParent
 	{
-		TypeReference rParentType {};  /// inherited of what
+		TypeBaseInfo sTypeBaseInfo {}; /// Base information about type
 		InheritanceVisibility eModifier { InheritanceVisibility::IV_PRIVATE }; /// modifier mode
 	};
 
