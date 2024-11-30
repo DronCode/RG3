@@ -76,6 +76,7 @@ namespace rg3::pybind
 
 		[[nodiscard]] const boost::python::list& getFoundIssues() const;
 		[[nodiscard]] const boost::python::list& getFoundTypes() const;
+		[[nodiscard]] const rg3::llvm::CompilerConfig& getCompilerConfig() const { return m_compilerConfig; }
 
 	 public:
 		/**

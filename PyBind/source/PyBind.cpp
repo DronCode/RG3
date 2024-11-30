@@ -12,13 +12,14 @@
 #include <RG3/Cpp/TypeEnum.h>
 #include <RG3/Cpp/TypeBaseInfo.h>
 
+#include <RG3/LLVM/CodeEvaluator.h>
+
 #include <RG3/PyBind/PyCodeAnalyzerBuilder.h>
 #include <RG3/PyBind/PyTypeBase.h>
 #include <RG3/PyBind/PyTypeEnum.h>
 #include <RG3/PyBind/PyTypeClass.h>
 #include <RG3/PyBind/PyAnalyzerContext.h>
 #include <RG3/PyBind/PyClangRuntime.h>
-
 
 
 using namespace boost::python;
@@ -162,6 +163,49 @@ namespace rg3::pybind::wrappers
 	static boost::python::str TypeBaseInfo_getPrettyName(const rg3::cpp::TypeBaseInfo& sInfo)
 	{
 		return boost::python::str(sInfo.sPrettyName);
+	}
+
+	static boost::python::object CodeEvaluator_eval(rg3::llvm::CodeEvaluator& sEval, const std::string& sCode, const boost::python::list& aCapture)
+	{
+		std::vector<std::string> aCaptureList {};
+		aCaptureList.reserve(len(aCapture));
+
+		for (int i = 0; i < len(aCapture); ++i)
+		{
+			aCaptureList.push_back(boost::python::extract<std::string>(aCapture[i]));
+		}
+
+		// Invoke originals
+		auto sEvalResult = sEval.evaluateCode(sCode, aCaptureList);
+		if (!sEvalResult)
+		{
+			// Error!
+			boost::python::list aIssues {};
+
+			for (const auto& sIssue : sEvalResult.vIssues)
+			{
+				aIssues.append(sIssue);
+			}
+
+			return aIssues;
+		}
+
+		// Make dict
+		boost::python::dict result {};
+
+		for (const auto& [sKey, sValue] : sEvalResult.mOutputs)
+		{
+			std::visit([&result, &sKey](auto&& v) {
+				result[sKey] = v;
+			}, sValue);
+		}
+
+		return result;
+	}
+
+	static boost::shared_ptr<rg3::llvm::CodeEvaluator> PyAnalyzerContext_makeEvaluator(const rg3::pybind::PyAnalyzerContext& sContext)
+	{
+		return boost::shared_ptr<rg3::llvm::CodeEvaluator>(new rg3::llvm::CodeEvaluator(sContext.getCompilerConfig()));
 	}
 }
 
@@ -436,6 +480,7 @@ BOOST_PYTHON_MODULE(rg3py)
 		.def("set_compiler_args", &rg3::pybind::PyAnalyzerContext::setCompilerArgs)
 		.def("set_compiler_defs", &rg3::pybind::PyAnalyzerContext::setCompilerDefs)
 		.def("analyze", &rg3::pybind::PyAnalyzerContext::analyze)
+		.def("make_evaluator", &rg3::pybind::wrappers::PyAnalyzerContext_makeEvaluator)
 
 		// Resolvers
 		.def("get_type_by_reference", &rg3::pybind::PyAnalyzerContext::pyGetTypeOfTypeReference)
@@ -447,5 +492,9 @@ BOOST_PYTHON_MODULE(rg3py)
 
 		.def("detect_system_include_sources", &rg3::pybind::PyClangRuntime::detectSystemIncludeSources)
 		.staticmethod("detect_system_include_sources")
+	;
+
+	class_<rg3::llvm::CodeEvaluator, boost::noncopyable, boost::shared_ptr<rg3::llvm::CodeEvaluator>>("CodeEvaluator", "Eval constexpr C++ code and provide access to result values", boost::python::init<>())
+	    .def("eval", &rg3::pybind::wrappers::CodeEvaluator_eval)
 	;
 }

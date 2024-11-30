@@ -3,6 +3,9 @@
 #include <RG3/LLVM/CompilerConfigDetector.h>
 #include <RG3/LLVM/CompilerConfig.h>
 #include <RG3/LLVM/CodeAnalyzer.h>
+
+#include <boost/noncopyable.hpp>
+
 #include <unordered_map>
 #include <optional>
 #include <variant>
@@ -23,7 +26,7 @@ namespace rg3::llvm
 		explicit operator bool() const noexcept;
 	};
 
-	class CodeEvaluator
+	class CodeEvaluator : public boost::noncopyable
 	{
 	 public:
 		CodeEvaluator();

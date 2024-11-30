@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional, List, Union, Dict
 import pytest
 import rg3py
 import os
@@ -745,3 +745,28 @@ struct Entity final : public NonCopyable
     assert analyzer.types[0].functions[1].owner == "Entity"
     assert analyzer.types[0].functions[1].is_noexcept is True
     assert analyzer.types[0].functions[1].is_static is False
+
+def test_code_eval_simple():
+    evaluator: rg3py.CodeEvaluator = rg3py.CodeEvaluator()
+    result: Union[Dict[str, any], List[rg3py.CppCompilerIssue]] = evaluator.eval("""
+    constexpr bool bIsOk = true;
+    constexpr float fIsOk = 1.337f;
+    constexpr const char* psOK = "OkayDude123";
+    """, ["bIsOk", "fIsOk", "psOK"])
+
+    assert isinstance(result, dict)
+    assert "bIsOk" in result
+    assert "fIsOk" in result
+    assert "psOK" in result
+
+    # With error
+    result = evaluator.eval("#error IDK", [])
+    assert isinstance(result, list)
+    assert len(result) == 1
+
+    issue: rg3py.CppCompilerIssue = result[0]
+    assert issue.message == 'IDK'
+    assert issue.kind == rg3py.CppCompilerIssueKind.IK_ERROR
+    assert issue.source_file == 'id0.hpp'
+
+
