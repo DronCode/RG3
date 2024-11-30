@@ -145,4 +145,9 @@ namespace rg3::pybind
 	{
 		return m_foundIssues;
 	}
+
+	const rg3::llvm::CompilerConfig& PyCodeAnalyzerBuilder::getCompilerConfig() const
+	{
+		return m_pAnalyzerInstance->getCompilerConfig();
+	}
 }

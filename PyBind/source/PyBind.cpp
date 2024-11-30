@@ -207,6 +207,11 @@ namespace rg3::pybind::wrappers
 	{
 		return boost::shared_ptr<rg3::llvm::CodeEvaluator>(new rg3::llvm::CodeEvaluator(sContext.getCompilerConfig()));
 	}
+
+	static boost::shared_ptr<rg3::llvm::CodeEvaluator> PyCodeAnalyzerBuilder_makeEvaluator(const rg3::pybind::PyCodeAnalyzerBuilder& sContext)
+	{
+		return boost::shared_ptr<rg3::llvm::CodeEvaluator>(new rg3::llvm::CodeEvaluator(sContext.getCompilerConfig()));
+	}
 }
 
 
@@ -456,6 +461,7 @@ BOOST_PYTHON_MODULE(rg3py)
 		.def("get_definitions", &rg3::pybind::PyCodeAnalyzerBuilder::getCompilerDefinitions)
 		.def("set_definitions", &rg3::pybind::PyCodeAnalyzerBuilder::setCompilerDefinitions)
 		.def("analyze", &rg3::pybind::PyCodeAnalyzerBuilder::analyze)
+		.def("make_evaluator", &rg3::pybind::wrappers::PyCodeAnalyzerBuilder_makeEvaluator)
 	;
 
 	class_<rg3::pybind::PyAnalyzerContext, boost::noncopyable , boost::shared_ptr<rg3::pybind::PyAnalyzerContext>>("AnalyzerContext", "A multithreaded analyzer and scheduled which made to analyze a bunch of files at once. If you have more than few files you should use this class.", no_init)

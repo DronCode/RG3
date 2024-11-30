@@ -771,7 +771,12 @@ def test_code_eval_simple():
 
 
 def test_code_eval_check_class_inheritance():
-    evaluator: rg3py.CodeEvaluator = rg3py.CodeEvaluator()
+    analyzer: rg3py.CodeAnalyzer = rg3py.CodeAnalyzer.make()
+    analyzer.set_code("void do_foo() {}")
+    analyzer.set_cpp_standard(rg3py.CppStandard.CXX_20)
+    analyzer.analyze()
+
+    evaluator: rg3py.CodeEvaluator = analyzer.make_evaluator()
     result: Union[Dict[str, any], List[rg3py.CppCompilerIssue]] = evaluator.eval("""
     #include <type_traits>
     
@@ -783,6 +788,7 @@ def test_code_eval_check_class_inheritance():
     constexpr bool r1 = std::is_base_of_v<Base, Simple>;
     """, ["r0", "r1"])
 
+    assert isinstance(result, dict)
     assert result['r0'] is True
     assert result['r1'] is False
 

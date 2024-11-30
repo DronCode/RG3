@@ -38,6 +38,8 @@ namespace rg3::pybind
 		const boost::python::list& getFoundTypes() const;
 		const boost::python::list& getFoundIssues() const;
 
+		[[nodiscard]] const rg3::llvm::CompilerConfig& getCompilerConfig() const;
+
 	 private:
 		std::unique_ptr<llvm::CodeAnalyzer> m_pAnalyzerInstance { nullptr };
 		boost::python::list m_foundTypes {};

@@ -358,6 +358,8 @@ class CodeAnalyzer:
 
     def analyze(self): ...
 
+    def make_evaluator(self) -> CodeEvaluator: ...
+
 
 class AnalyzerContext:
     @staticmethod
