@@ -49,9 +49,12 @@ namespace rg3::llvm::consumers
 					}
 					else if (pVarDecl->getType()->isPointerType() && pVarDecl->getType()->getPointeeType()->isCharType())
 					{
-						if (auto pStrValue = ::llvm::dyn_cast<clang::StringLiteral>(pEvaluated->getLValueBase().get<const clang::Expr*>()))
+						if (pEvaluated->isLValue())
 						{
-							(*m_pEvaluatedVariables)[sName] = pStrValue->getString().str();
+							if (auto pStrValue = ::llvm::dyn_cast<clang::StringLiteral>(pEvaluated->getLValueBase().get<const clang::Expr*>()))
+							{
+								(*m_pEvaluatedVariables)[sName] = pStrValue->getString().str();
+							}
 						}
 					}
 				}

@@ -4,7 +4,7 @@
 #include <RG3/LLVM/Actions/CollectConstexprVariableEvalResultAction.h>
 #include <RG3/LLVM/Consumers/CompilerDiagnosticsConsumer.h>
 
-#include <clang/Parse/ParseAST.h>
+#include <clang/Lex/PreprocessorOptions.h>
 
 #include <RG3/LLVM/CompilerInstanceFactory.h>
 #include <RG3/LLVM/CompilerConfigDetector.h>
@@ -69,6 +69,9 @@ namespace rg3::llvm
 		pCompilerEnv = &m_env.value();
 		clang::CompilerInstance compilerInstance {};
 		CompilerInstanceFactory::makeInstance(&compilerInstance, m_sSourceCode, m_compilerConfig, pCompilerEnv);
+
+		// Add extra definition in our case
+		compilerInstance.getPreprocessorOpts().addMacroDef("__RG3_CODE_EVAL__=1");
 
 		// Add diagnostics consumer
 		{
