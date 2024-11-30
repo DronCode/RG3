@@ -770,3 +770,45 @@ def test_code_eval_simple():
     assert issue.source_file == 'id0.hpp'
 
 
+def test_code_eval_check_class_inheritance():
+    evaluator: rg3py.CodeEvaluator = rg3py.CodeEvaluator()
+    result: Union[Dict[str, any], List[rg3py.CppCompilerIssue]] = evaluator.eval("""
+    #include <type_traits>
+    
+    class Simple {};
+    class Base {};
+    class Inherited : public Base {};
+    
+    constexpr bool r0 = std::is_base_of_v<Base, Inherited>;
+    constexpr bool r1 = std::is_base_of_v<Base, Simple>;
+    """, ["r0", "r1"])
+
+    assert result['r0'] is True
+    assert result['r1'] is False
+
+
+def fib(x):
+    if x == 0:
+        return 0
+
+    if x == 1:
+        return 1
+
+    return fib(x - 1) + fib(x - 2)
+
+
+def test_code_eval_check_fibonacci_in_constexpr():
+    evaluator: rg3py.CodeEvaluator = rg3py.CodeEvaluator()
+    result: Union[Dict[str, any], List[rg3py.CppCompilerIssue]] = evaluator.eval("""
+    constexpr int fibonacci(int  n)
+    {
+        return n < 1 ? -1 :
+            (n == 1 || n == 2 ? 1 : fibonacci(n - 1) + fibonacci(n - 2));
+    }
+    
+    constexpr auto f5 = fibonacci(5);
+    constexpr auto f10 = fibonacci(10);
+    """, ["f5", "f10"])
+
+    assert result['f5']  == fib(5)
+    assert result['f10'] == fib(10)
