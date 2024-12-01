@@ -12,7 +12,7 @@ Requirements
 Windows
 -------
 
- * Compiled LLVM (>= 18.1.8) on local machine and environment variables `CLANG_DIR` and `LLVM_DIR`
+ * Compiled LLVM (>= 19.1.4) on local machine and environment variables `CLANG_DIR` and `LLVM_DIR`
    * My `Clang_DIR` is `B:/Projects/llvm/build/lib/cmake/clang`
    * My `LLVM_DIR` is `B:/Projects/llvm/build/lib/cmake/llvm`
  * Statically compiled Boost (>=1.81.0) with boost python and environment variable `BOOST_ROOT`
@@ -97,6 +97,42 @@ and output will be
 ```text
 We have a type my::cool::name_space::ECoolEnum (TK_ENUM)
 ```
+
+
+Another good use case is `constexpr` evaluation feature:
+```python
+import rg3py
+from typing import Union, List, Dict
+
+evaluator: rg3py.CodeEvaluator = rg3py.CodeEvaluator.make_from_system_env()
+
+evaluator.set_compiler_config({
+    "cpp_standard" : rg3py.CppStandard.CXX_20
+})
+
+result: Union[Dict[str, any], List[rg3py.CppCompilerIssue]] = evaluator.eval("""
+        #include <type_traits>
+        
+        class Simple {};
+        class Base {};
+        class Inherited : public Base {};
+        
+        constexpr bool r0 = std::is_base_of_v<Base, Inherited>;
+        constexpr bool r1 = std::is_base_of_v<Base, Simple>;
+        """, ["r0", "r1"]) # 1'st argument: code, 2'nd argument: constexpr captures (list of variables which will be exported from AST)
+
+print(result)  # Result maybe a `dict` or `list`. When dict - result is good, when list - list of errors/issues presented
+```
+
+output will be
+
+```text
+{'r1': False, 'r0': True}
+```
+
+and that's great feature to make some checks like `type should be inherited from A, have some methods and etc...`
+
+And this is independent of your current environment, only C++ STL library should be found!
 
 Project state
 -------------

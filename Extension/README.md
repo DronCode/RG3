@@ -12,7 +12,7 @@ Install
 Make sure that your system has clang (any version):
  * **macOS**: you need to install XCode (tested on 15.x but should work everywhere)
  * **Window**: you need to install clang 17.x or later and add it into PATH 
- * **Linux**: gcc & g++ at least 13 version (temporary limitation, planned to fix at 0.0.4)
+ * **Linux**: gcc & g++ at least 13 version
  * **Other platforms & archs**: Contact us in [our GitHub](https://github.com/DronCode/RG3).
 
 It's a better way to use RG3 inside virtualenv:
@@ -99,16 +99,53 @@ We have a type my::cool::name_space::SomeThirdPartyStruct (TK_STRUCT_OR_CLASS)
 	Function static bool IsGeniusDesc(bool bCanReplace)
 ```
 
+Another good use case is `constexpr` evaluation feature:
+```python
+import rg3py
+from typing import Union, List, Dict
+
+evaluator: rg3py.CodeEvaluator = rg3py.CodeEvaluator.make_from_system_env()
+
+evaluator.set_compiler_config({
+    "cpp_standard" : rg3py.CppStandard.CXX_20
+})
+
+result: Union[Dict[str, any], List[rg3py.CppCompilerIssue]] = evaluator.eval("""
+        #include <type_traits>
+        
+        class Simple {};
+        class Base {};
+        class Inherited : public Base {};
+        
+        constexpr bool r0 = std::is_base_of_v<Base, Inherited>;
+        constexpr bool r1 = std::is_base_of_v<Base, Simple>;
+        """, ["r0", "r1"])
+
+print(result)
+```
+
+output will be
+
+```text
+{'r1': False, 'r0': True}
+```
+
+and that's great feature to make some checks like `type should be inherited from A, have some methods and etc...`
+
+And this is independent of your current environment, only C++ STL library should be found!
+
+
 Features
 ---------
 
  * Supported Windows (x86_64), Linux (x86_64) and macOS (x86_64 and ARM64)
- * Supported C++03, 11, 14, 17, 20, 23 (26 in theory, need to migrate to next LLVM)
+ * Supported C++03, 11, 14, 17, 20, 23, 26
  * Supported threads in analysis on native side (see Tests/PyIntegration/test.py test: **test_analyzer_context_sample** for example)
  * Statically linked, no external dependencies (except Clang instance on machine)
  * Special macro definitions to hide unnecessary code
  * Template specializations reporting
  * Anonymous registration without changes in third party code
+ * Runtime constexpr C++ code evaluation with results extraction
 
 Current limitations
 -------------------
@@ -118,8 +155,8 @@ Project focused on work around C/C++ headers (C++ especially). Feel free to fork
 Third Party libraries
 ----------------------
 
- * LLVM 16.0.4 - our main backend of C++ analysis
- * Boost 1.81.0 - python support & process launcher
- * FMT - string formatter
+ * LLVM - our main backend of C++ analysis
+ * Boost.Python - python support & process launcher
+ * fmt - string formatter
  * googletest - for internal unit testing
  * pytest - for python side unit testing
