@@ -12,13 +12,14 @@
 #include <RG3/Cpp/TypeEnum.h>
 #include <RG3/Cpp/TypeBaseInfo.h>
 
+#include <RG3/LLVM/CodeEvaluator.h>
+
 #include <RG3/PyBind/PyCodeAnalyzerBuilder.h>
 #include <RG3/PyBind/PyTypeBase.h>
 #include <RG3/PyBind/PyTypeEnum.h>
 #include <RG3/PyBind/PyTypeClass.h>
 #include <RG3/PyBind/PyAnalyzerContext.h>
 #include <RG3/PyBind/PyClangRuntime.h>
-
 
 
 using namespace boost::python;
@@ -162,6 +163,166 @@ namespace rg3::pybind::wrappers
 	static boost::python::str TypeBaseInfo_getPrettyName(const rg3::cpp::TypeBaseInfo& sInfo)
 	{
 		return boost::python::str(sInfo.sPrettyName);
+	}
+
+	static boost::python::object CodeEvaluator_eval(rg3::llvm::CodeEvaluator& sEval, const std::string& sCode, const boost::python::list& aCapture)
+	{
+		std::vector<std::string> aCaptureList {};
+		aCaptureList.reserve(len(aCapture));
+
+		for (int i = 0; i < len(aCapture); ++i)
+		{
+			aCaptureList.push_back(boost::python::extract<std::string>(aCapture[i]));
+		}
+
+		// Invoke originals
+		auto sEvalResult = sEval.evaluateCode(sCode, aCaptureList);
+		if (!sEvalResult)
+		{
+			// Error!
+			boost::python::list aIssues {};
+
+			for (const auto& sIssue : sEvalResult.vIssues)
+			{
+				aIssues.append(sIssue);
+			}
+
+			return aIssues;
+		}
+
+		// Make dict
+		boost::python::dict result {};
+
+		for (const auto& [sKey, sValue] : sEvalResult.mOutputs)
+		{
+			std::visit([&result, &sKey](auto&& v) {
+				result[sKey] = v;
+			}, sValue);
+		}
+
+		return result;
+	}
+
+	static void CodeEvaluator_setCppStandard(rg3::llvm::CodeEvaluator& sEval, rg3::llvm::CxxStandard eStandard)
+	{
+		sEval.getCompilerConfig().cppStandard = eStandard;
+	}
+
+	static void CodeEvaluator_setCompilerConfigFromDict(rg3::llvm::CodeEvaluator& sEval, const boost::python::object& sDescription)
+	{
+		/**
+		 * Allowed fields:
+		 *
+		 * cpp_standard
+		 * definitions
+		 * allow_collect_non_runtime
+		 * skip_function_bodies
+		 *
+		 * If description presented as dict - use directly, otherwise try cast to dict via __dict__
+		 */
+		if (sDescription.is_none())
+		{
+			PyErr_SetString(PyExc_MemoryError, "Expected to have a valid description instead of None");
+			boost::python::throw_error_already_set();
+			return;
+		}
+
+		if (PyDict_Check(sDescription.ptr()))
+		{
+			// Use directly as dict
+			boost::python::dict pyDict = boost::python::extract<boost::python::dict>(sDescription);
+			boost::python::list aKeys = pyDict.keys();
+
+			for (int i = 0; i < boost::python::len(aKeys); ++i) {
+				const std::string sKey = boost::python::extract<std::string>(aKeys[i]);
+
+				if (sKey == "cpp_standard")
+				{
+					sEval.getCompilerConfig().cppStandard = boost::python::extract<rg3::llvm::CxxStandard>(pyDict[sKey]);
+				}
+
+				if (sKey == "definitions")
+				{
+					boost::python::list pyList = boost::python::extract<boost::python::list>(pyDict[sKey]);
+
+					auto& definitions = sEval.getCompilerConfig().vCompilerDefs;
+					definitions.clear();
+					definitions.reserve(boost::python::len(pyList));
+
+					for (auto j = 0; j < boost::python::len(pyList); ++j) {
+						definitions.push_back(boost::python::extract<std::string>(pyList[j]));
+					}
+				}
+
+				if (sKey == "allow_collect_non_runtime")
+				{
+					sEval.getCompilerConfig().bAllowCollectNonRuntimeTypes = boost::python::extract<bool>(pyDict[sKey]);
+				}
+
+				if (sKey == "skip_function_bodies")
+				{
+					sEval.getCompilerConfig().bSkipFunctionBodies = boost::python::extract<bool>(pyDict[sKey]);
+				}
+			}
+		}
+		else
+		{
+			// Maybe subject able to cast with __dict__ ?
+			boost::python::object dictAttr = sDescription.attr("__dict__");
+			if (PyDict_Check(dictAttr.ptr()))
+			{
+				// Use as dict
+				boost::python::dict pyDict = boost::python::extract<boost::python::dict>(dictAttr);
+
+				// Run self. NOTE: Maybe we've should check this for recursion? Idk)
+				CodeEvaluator_setCompilerConfigFromDict(sEval, pyDict);
+			}
+			else
+			{
+				// Omg, dict is not a dict. Raise our own error
+				PyErr_SetString(PyExc_TypeError, "Meta method __dict__ returned not a dict!");
+				boost::python::throw_error_already_set();
+			}
+		}
+	}
+
+	static rg3::llvm::CxxStandard CodeEvaluator_getCppStandard(const rg3::llvm::CodeEvaluator& sEval)
+	{
+		return sEval.getCompilerConfig().cppStandard;
+	}
+
+	static boost::shared_ptr<rg3::llvm::CodeEvaluator> CodeEvaluator_makeFromSystemEnv()
+	{
+		auto environmentExtractResult = rg3::llvm::CompilerConfigDetector::detectSystemCompilerEnvironment();
+		if (rg3::llvm::CompilerEnvError* pError = std::get_if<rg3::llvm::CompilerEnvError>(&environmentExtractResult))
+		{
+			std::string sErrorMessage = fmt::format("Failed to detect compiler environment: {}", pError->message);
+
+			PyErr_SetString(PyExc_RuntimeError, sErrorMessage.c_str());
+			boost::python::throw_error_already_set();
+			return nullptr;
+		}
+
+		auto pInstance = boost::shared_ptr<rg3::llvm::CodeEvaluator>(new rg3::llvm::CodeEvaluator());
+		if (!pInstance)
+		{
+			PyErr_SetString(PyExc_MemoryError, "Out of memory (unable to allocate CodeEvaluator)");
+			boost::python::throw_error_already_set();
+			return nullptr;
+		}
+
+		pInstance->setCompilerEnvironment(std::get<rg3::llvm::CompilerEnvironment>(environmentExtractResult));
+		return pInstance;
+	}
+
+	static boost::shared_ptr<rg3::llvm::CodeEvaluator> PyAnalyzerContext_makeEvaluator(const rg3::pybind::PyAnalyzerContext& sContext)
+	{
+		return boost::shared_ptr<rg3::llvm::CodeEvaluator>(new rg3::llvm::CodeEvaluator(sContext.getCompilerConfig()));
+	}
+
+	static boost::shared_ptr<rg3::llvm::CodeEvaluator> PyCodeAnalyzerBuilder_makeEvaluator(const rg3::pybind::PyCodeAnalyzerBuilder& sContext)
+	{
+		return boost::shared_ptr<rg3::llvm::CodeEvaluator>(new rg3::llvm::CodeEvaluator(sContext.getCompilerConfig()));
 	}
 }
 
@@ -412,6 +573,7 @@ BOOST_PYTHON_MODULE(rg3py)
 		.def("get_definitions", &rg3::pybind::PyCodeAnalyzerBuilder::getCompilerDefinitions)
 		.def("set_definitions", &rg3::pybind::PyCodeAnalyzerBuilder::setCompilerDefinitions)
 		.def("analyze", &rg3::pybind::PyCodeAnalyzerBuilder::analyze)
+		.def("make_evaluator", &rg3::pybind::wrappers::PyCodeAnalyzerBuilder_makeEvaluator)
 	;
 
 	class_<rg3::pybind::PyAnalyzerContext, boost::noncopyable , boost::shared_ptr<rg3::pybind::PyAnalyzerContext>>("AnalyzerContext", "A multithreaded analyzer and scheduled which made to analyze a bunch of files at once. If you have more than few files you should use this class.", no_init)
@@ -436,6 +598,7 @@ BOOST_PYTHON_MODULE(rg3py)
 		.def("set_compiler_args", &rg3::pybind::PyAnalyzerContext::setCompilerArgs)
 		.def("set_compiler_defs", &rg3::pybind::PyAnalyzerContext::setCompilerDefs)
 		.def("analyze", &rg3::pybind::PyAnalyzerContext::analyze)
+		.def("make_evaluator", &rg3::pybind::wrappers::PyAnalyzerContext_makeEvaluator)
 
 		// Resolvers
 		.def("get_type_by_reference", &rg3::pybind::PyAnalyzerContext::pyGetTypeOfTypeReference)
@@ -447,5 +610,15 @@ BOOST_PYTHON_MODULE(rg3py)
 
 		.def("detect_system_include_sources", &rg3::pybind::PyClangRuntime::detectSystemIncludeSources)
 		.staticmethod("detect_system_include_sources")
+	;
+
+	class_<rg3::llvm::CodeEvaluator, boost::noncopyable, boost::shared_ptr<rg3::llvm::CodeEvaluator>>("CodeEvaluator", "Eval constexpr C++ code and provide access to result values", boost::python::init<>())
+	    .def("eval", &rg3::pybind::wrappers::CodeEvaluator_eval)
+		.def("set_cpp_standard", &rg3::pybind::wrappers::CodeEvaluator_setCppStandard)
+		.def("set_compiler_config", &rg3::pybind::wrappers::CodeEvaluator_setCompilerConfigFromDict)
+		.def("get_cpp_standard", &rg3::pybind::wrappers::CodeEvaluator_getCppStandard)
+
+		.def("make_from_system_env", &rg3::pybind::wrappers::CodeEvaluator_makeFromSystemEnv)
+		.staticmethod("make_from_system_env")
 	;
 }

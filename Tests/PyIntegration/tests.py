@@ -1,7 +1,19 @@
-from typing import Optional, List
+from typing import Optional, List, Union, Dict
+from dataclasses import dataclass
 import pytest
 import rg3py
 import os
+
+
+@dataclass
+class CompilerConfigDescription:
+    """
+    Simple example of config
+    """
+    cpp_standard: rg3py.CppStandard
+    definitions: List[str]
+    allow_collect_non_runtime: bool
+    skip_function_bodies: bool
 
 
 def test_code_analyzer_base():
@@ -746,3 +758,150 @@ struct Entity final : public NonCopyable
     assert analyzer.types[0].functions[1].owner == "Entity"
     assert analyzer.types[0].functions[1].is_noexcept is True
     assert analyzer.types[0].functions[1].is_static is False
+
+def test_code_eval_simple():
+    evaluator: rg3py.CodeEvaluator = rg3py.CodeEvaluator()
+    result: Union[Dict[str, any], List[rg3py.CppCompilerIssue]] = evaluator.eval("""
+    constexpr bool bIsOk = true;
+    constexpr float fIsOk = 1.337f;
+    constexpr const char* psOK = "OkayDude123";
+    """, ["bIsOk", "fIsOk", "psOK"])
+
+    assert isinstance(result, dict)
+    assert "bIsOk" in result
+    assert "fIsOk" in result
+    assert "psOK" in result
+
+    # With error
+    result = evaluator.eval("#error IDK", [])
+    assert isinstance(result, list)
+    assert len(result) == 1
+
+    issue: rg3py.CppCompilerIssue = result[0]
+    assert issue.message == 'IDK'
+    assert issue.kind == rg3py.CppCompilerIssueKind.IK_ERROR
+    assert issue.source_file == 'id0.hpp'
+
+
+def test_code_eval_check_class_inheritance():
+    analyzer: rg3py.CodeAnalyzer = rg3py.CodeAnalyzer.make()
+    analyzer.set_code("void do_foo() {}")
+    analyzer.set_cpp_standard(rg3py.CppStandard.CXX_20)
+    analyzer.analyze()
+
+    evaluator: rg3py.CodeEvaluator = analyzer.make_evaluator()
+    result: Union[Dict[str, any], List[rg3py.CppCompilerIssue]] = evaluator.eval("""
+    #include <type_traits>
+    
+    class Simple {};
+    class Base {};
+    class Inherited : public Base {};
+    
+    constexpr bool r0 = std::is_base_of_v<Base, Inherited>;
+    constexpr bool r1 = std::is_base_of_v<Base, Simple>;
+    """, ["r0", "r1"])
+
+    assert isinstance(result, dict)
+    assert result['r0'] is True
+    assert result['r1'] is False
+
+
+def fib(x):
+    if x == 0:
+        return 0
+
+    if x == 1:
+        return 1
+
+    return fib(x - 1) + fib(x - 2)
+
+
+def test_code_eval_check_fibonacci_in_constexpr():
+    evaluator: rg3py.CodeEvaluator = rg3py.CodeEvaluator()
+    result: Union[Dict[str, any], List[rg3py.CppCompilerIssue]] = evaluator.eval("""
+    constexpr int fibonacci(int  n)
+    {
+        return n < 1 ? -1 :
+            (n == 1 || n == 2 ? 1 : fibonacci(n - 1) + fibonacci(n - 2));
+    }
+    
+    constexpr auto f5 = fibonacci(5);
+    constexpr auto f10 = fibonacci(10);
+    """, ["f5", "f10"])
+
+    assert result['f5']  == fib(5)
+    assert result['f10'] == fib(10)
+
+def test_code_eval_check_build_instance_from_sys_env():
+    evaluator: rg3py.CodeEvaluator = rg3py.CodeEvaluator.make_from_system_env()
+    assert evaluator is not None
+
+    evaluator.set_compiler_config({
+        "cpp_standard" : rg3py.CppStandard.CXX_20
+    })
+
+    result: Union[Dict[str, any], List[rg3py.CppCompilerIssue]] = evaluator.eval("""
+        #include <type_traits>
+        
+        class Simple {};
+        class Base {};
+        class Inherited : public Base {};
+        
+        constexpr bool r0 = std::is_base_of_v<Base, Inherited>;
+        constexpr bool r1 = std::is_base_of_v<Base, Simple>;
+        """, ["r0", "r1"])
+
+    assert isinstance(result, dict)
+    assert result['r0'] is True
+    assert result['r1'] is False
+
+
+def test_code_check_batching_hardcore():
+    evaluator: rg3py.CodeEvaluator = rg3py.CodeEvaluator.make_from_system_env()
+    assert evaluator is not None
+
+    evaluator.set_cpp_standard(rg3py.CppStandard.CXX_20)
+
+    code: str = """
+        #include <type_traits>
+        
+        class Base {};
+    """
+
+    for i in range(0, 100):
+        code = f"{code}\nclass Inherited{i} : Base {{}};\n"
+
+    for i in range(0, 100):
+        code = f"{code}\nconstexpr bool bIsInherited{i} = std::is_base_of_v<Base, Inherited{i}>;\n"
+
+    result: Union[Dict[str, any], List[rg3py.CppCompilerIssue]] = evaluator.eval(code, [f"bIsInherited{x}" for x in range(0, 100)])
+    assert isinstance(result, dict)
+    assert all([result[f"bIsInherited{x}"] for x in range(0, 100)])
+
+def test_code_eval_check_init_from_cfg():
+    cfg: CompilerConfigDescription = CompilerConfigDescription(cpp_standard=rg3py.CppStandard.CXX_20,
+                                                               definitions=[],
+                                                               allow_collect_non_runtime=False,
+                                                               skip_function_bodies=True)
+
+    evaluator: rg3py.CodeEvaluator = rg3py.CodeEvaluator.make_from_system_env()
+    assert evaluator is not None
+
+    assert evaluator.get_cpp_standard() != rg3py.CppStandard.CXX_20
+    evaluator.set_compiler_config(cfg)
+    assert evaluator.get_cpp_standard() == rg3py.CppStandard.CXX_20
+
+    result: Union[Dict[str, any], List[rg3py.CppCompilerIssue]] = evaluator.eval("""
+            #include <type_traits>
+            
+            class Simple {};
+            class Base {};
+            class Inherited : public Base {};
+            
+            constexpr bool r0 = std::is_base_of_v<Base, Inherited>;
+            constexpr bool r1 = std::is_base_of_v<Base, Simple>;
+            """, ["r0", "r1"])
+
+    assert isinstance(result, dict)
+    assert result['r0'] is True
+    assert result['r1'] is False

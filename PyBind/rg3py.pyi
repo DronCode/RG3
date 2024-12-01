@@ -2,7 +2,7 @@
 This file contains all public available symbols & definitions for PyBind (rg3py.pyd)
 Follow PyBind/source/PyBind.cpp for details
 """
-from typing import List, Union, Optional
+from typing import List, Union, Optional, Dict
 
 
 class CppStandard:
@@ -358,6 +358,8 @@ class CodeAnalyzer:
 
     def analyze(self): ...
 
+    def make_evaluator(self) -> CodeEvaluator: ...
+
 
 class AnalyzerContext:
     @staticmethod
@@ -400,6 +402,23 @@ class AnalyzerContext:
     def get_type_by_reference(self, ref: CppTypeReference) -> Optional[CppBaseType]: ...
 
     def analyze(self) -> bool: ...
+
+    def make_evaluator(self) -> CodeEvaluator: ...
+
+
+class CodeEvaluator:
+    def __init__(self): ...
+
+    def eval(self, code: str, capture: List[str]) -> Union[List[CppCompilerIssue], Dict[str, any]]: ...
+
+    def set_cpp_standard(self, standard: CppStandard): ...
+
+    def get_cpp_standard(self) -> CppStandard: ...
+
+    def set_compiler_config(self, config: dict): ...
+
+    @staticmethod
+    def make_from_system_env() -> CodeEvaluator|None: ...
 
 
 class CppCompilerIssueKind:
