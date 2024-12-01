@@ -34,6 +34,7 @@ namespace rg3::llvm
 
 		void setCompilerEnvironment(const CompilerEnvironment& env);
 		CompilerConfig& getCompilerConfig();
+		const CompilerConfig& getCompilerConfig() const;
 
 		CodeEvaluateResult evaluateCode(const std::string& sCode, const std::vector<std::string>& aCaptureOutputVariables);
 

@@ -43,6 +43,11 @@ namespace rg3::llvm
 		return m_compilerConfig;
 	}
 
+	const CompilerConfig& CodeEvaluator::getCompilerConfig() const
+	{
+		return m_compilerConfig;
+	}
+
 	CodeEvaluateResult CodeEvaluator::evaluateCode(const std::string& sCode, const std::vector<std::string>& aCaptureOutputVariables)
 	{
 		CodeEvaluateResult sResult {};

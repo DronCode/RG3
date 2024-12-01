@@ -1,7 +1,19 @@
 from typing import Optional, List, Union, Dict
+from dataclasses import dataclass
 import pytest
 import rg3py
 import os
+
+
+@dataclass
+class CompilerConfigDescription:
+    """
+    Simple example of config
+    """
+    cpp_standard: rg3py.CppStandard
+    definitions: List[str]
+    allow_collect_non_runtime: bool
+    skip_function_bodies: bool
 
 
 def test_code_analyzer_base():
@@ -823,6 +835,10 @@ def test_code_eval_check_build_instance_from_sys_env():
     evaluator: rg3py.CodeEvaluator = rg3py.CodeEvaluator.make_from_system_env()
     assert evaluator is not None
 
+    evaluator.set_compiler_config({
+        "cpp_standard" : rg3py.CppStandard.CXX_20
+    })
+
     result: Union[Dict[str, any], List[rg3py.CppCompilerIssue]] = evaluator.eval("""
         #include <type_traits>
         
@@ -843,6 +859,8 @@ def test_code_check_batching_hardcore():
     evaluator: rg3py.CodeEvaluator = rg3py.CodeEvaluator.make_from_system_env()
     assert evaluator is not None
 
+    evaluator.set_cpp_standard(rg3py.CppStandard.CXX_20)
+
     code: str = """
         #include <type_traits>
         
@@ -858,3 +876,31 @@ def test_code_check_batching_hardcore():
     result: Union[Dict[str, any], List[rg3py.CppCompilerIssue]] = evaluator.eval(code, [f"bIsInherited{x}" for x in range(0, 100)])
     assert isinstance(result, dict)
     assert all([result[f"bIsInherited{x}"] for x in range(0, 100)])
+
+def test_code_eval_check_init_from_cfg():
+    cfg: CompilerConfigDescription = CompilerConfigDescription(cpp_standard=rg3py.CppStandard.CXX_20,
+                                                               definitions=[],
+                                                               allow_collect_non_runtime=False,
+                                                               skip_function_bodies=True)
+
+    evaluator: rg3py.CodeEvaluator = rg3py.CodeEvaluator.make_from_system_env()
+    assert evaluator is not None
+
+    assert evaluator.get_cpp_standard() != rg3py.CppStandard.CXX_20
+    evaluator.set_compiler_config(cfg)
+    assert evaluator.get_cpp_standard() == rg3py.CppStandard.CXX_20
+
+    result: Union[Dict[str, any], List[rg3py.CppCompilerIssue]] = evaluator.eval("""
+            #include <type_traits>
+            
+            class Simple {};
+            class Base {};
+            class Inherited : public Base {};
+            
+            constexpr bool r0 = std::is_base_of_v<Base, Inherited>;
+            constexpr bool r1 = std::is_base_of_v<Base, Simple>;
+            """, ["r0", "r1"])
+
+    assert isinstance(result, dict)
+    assert result['r0'] is True
+    assert result['r1'] is False
