@@ -411,6 +411,9 @@ class CodeEvaluator:
 
     def eval(self, code: str, capture: List[str]) -> Union[List[CppCompilerIssue], Dict[str, any]]: ...
 
+    @staticmethod
+    def make_from_system_env() -> CodeEvaluator|None: ...
+
 
 class CppCompilerIssueKind:
     IK_NONE = 0

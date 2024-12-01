@@ -818,3 +818,43 @@ def test_code_eval_check_fibonacci_in_constexpr():
 
     assert result['f5']  == fib(5)
     assert result['f10'] == fib(10)
+
+def test_code_eval_check_build_instance_from_sys_env():
+    evaluator: rg3py.CodeEvaluator = rg3py.CodeEvaluator.make_from_system_env()
+    assert evaluator is not None
+
+    result: Union[Dict[str, any], List[rg3py.CppCompilerIssue]] = evaluator.eval("""
+        #include <type_traits>
+        
+        class Simple {};
+        class Base {};
+        class Inherited : public Base {};
+        
+        constexpr bool r0 = std::is_base_of_v<Base, Inherited>;
+        constexpr bool r1 = std::is_base_of_v<Base, Simple>;
+        """, ["r0", "r1"])
+
+    assert isinstance(result, dict)
+    assert result['r0'] is True
+    assert result['r1'] is False
+
+
+def test_code_check_batching_hardcore():
+    evaluator: rg3py.CodeEvaluator = rg3py.CodeEvaluator.make_from_system_env()
+    assert evaluator is not None
+
+    code: str = """
+        #include <type_traits>
+        
+        class Base {};
+    """
+
+    for i in range(0, 100):
+        code = f"{code}\nclass Inherited{i} : Base {{}};\n"
+
+    for i in range(0, 100):
+        code = f"{code}\nconstexpr bool bIsInherited{i} = std::is_base_of_v<Base, Inherited{i}>;\n"
+
+    result: Union[Dict[str, any], List[rg3py.CppCompilerIssue]] = evaluator.eval(code, [f"bIsInherited{x}" for x in range(0, 100)])
+    assert isinstance(result, dict)
+    assert all([result[f"bIsInherited{x}"] for x in range(0, 100)])

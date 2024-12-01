@@ -203,6 +203,30 @@ namespace rg3::pybind::wrappers
 		return result;
 	}
 
+	static boost::shared_ptr<rg3::llvm::CodeEvaluator> CodeEvaluator_makeFromSystemEnv()
+	{
+		auto environmentExtractResult = rg3::llvm::CompilerConfigDetector::detectSystemCompilerEnvironment();
+		if (rg3::llvm::CompilerEnvError* pError = std::get_if<rg3::llvm::CompilerEnvError>(&environmentExtractResult))
+		{
+			std::string sErrorMessage = fmt::format("Failed to detect compiler environment: {}", pError->message);
+
+			PyErr_SetString(PyExc_RuntimeError, sErrorMessage.c_str());
+			boost::python::throw_error_already_set();
+			return nullptr;
+		}
+
+		auto pInstance = boost::shared_ptr<rg3::llvm::CodeEvaluator>(new rg3::llvm::CodeEvaluator());
+		if (!pInstance)
+		{
+			PyErr_SetString(PyExc_MemoryError, "Out of memory (unable to allocate CodeEvaluator)");
+			boost::python::throw_error_already_set();
+			return nullptr;
+		}
+
+		pInstance->setCompilerEnvironment(std::get<rg3::llvm::CompilerEnvironment>(environmentExtractResult));
+		return pInstance;
+	}
+
 	static boost::shared_ptr<rg3::llvm::CodeEvaluator> PyAnalyzerContext_makeEvaluator(const rg3::pybind::PyAnalyzerContext& sContext)
 	{
 		return boost::shared_ptr<rg3::llvm::CodeEvaluator>(new rg3::llvm::CodeEvaluator(sContext.getCompilerConfig()));
@@ -502,5 +526,8 @@ BOOST_PYTHON_MODULE(rg3py)
 
 	class_<rg3::llvm::CodeEvaluator, boost::noncopyable, boost::shared_ptr<rg3::llvm::CodeEvaluator>>("CodeEvaluator", "Eval constexpr C++ code and provide access to result values", boost::python::init<>())
 	    .def("eval", &rg3::pybind::wrappers::CodeEvaluator_eval)
+
+		.def("make_from_system_env", &rg3::pybind::wrappers::CodeEvaluator_makeFromSystemEnv)
+		.staticmethod("make_from_system_env")
 	;
 }
