@@ -13,7 +13,7 @@ file(GLOB_RECURSE RG3_PYBIND_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/source/*.cpp")
 add_library(RG3_PyBind SHARED ${RG3_PYBIND_SOURCES})
 add_library(RG3::PyBind ALIAS RG3_PyBind)
 target_include_directories(RG3_PyBind PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
-target_link_libraries(RG3_PyBind PUBLIC RG3::Cpp RG3::LLVM)
+target_link_libraries(RG3_PyBind PUBLIC RG3::Cpp RG3::LLVM RG3::Protobuf)
 
 target_link_libraries(RG3_PyBind PUBLIC ${Boost_LIBRARIES} ${Python3_LIBRARIES} Python3::Module)
 target_link_libraries(RG3_PyBind PRIVATE fmt::fmt)
