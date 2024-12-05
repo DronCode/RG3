@@ -206,8 +206,8 @@ jobs:
         run: |
           mkdir build
           mkdir build/install
-          cmake -DCMAKE_BUILD_TYPE=MinSizeRel -DBUILD_SHARED_LIBS=OFF -DABSL_PROPAGATE_CXX_STD=ON -DCMAKE_CXX_STANDARD=17 -Dprotobuf_BUILD_TESTS=OFF -DCMAKE_INSTALL_PREFIX=build/install -B build -S . -G "${{ matrix.config.cmake_generator }}"
-          cmake --build build --config MinSizeRel
+          cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DABSL_PROPAGATE_CXX_STD=ON -DCMAKE_CXX_STANDARD=17 -Dprotobuf_BUILD_TESTS=OFF -DCMAKE_INSTALL_PREFIX=build/install -B build -S . -G "${{ matrix.config.cmake_generator }}"
+          cmake --build build --config Release
           cmake --install build
 
       # Build our project
