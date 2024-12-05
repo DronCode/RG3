@@ -206,7 +206,7 @@ jobs:
         run: |
           mkdir build
           mkdir build/install
-          cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DABSL_PROPAGATE_CXX_STD=ON -DCMAKE_CXX_STANDARD=17 -Dprotobuf_BUILD_TESTS=OFF -DCMAKE_INSTALL_PREFIX=build/install -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" -B build -S . -G "${{ matrix.config.cmake_generator }}"
+          cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded -DBUILD_SHARED_LIBS=OFF -DABSL_PROPAGATE_CXX_STD=ON -DCMAKE_CXX_STANDARD=17 -Dprotobuf_BUILD_TESTS=OFF -DCMAKE_INSTALL_PREFIX=build/install -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" -B build -S . -G "${{ matrix.config.cmake_generator }}"
           cmake --build build --config Release
           cmake --install build
 
