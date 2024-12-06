@@ -2,6 +2,11 @@ project(RG3_PyBind)
 
 set(Boost_USE_STATIC_LIBS ON)
 
+if (MSVC)
+    # Should use this on Windows to enable /MT for boost too
+    set(Boost_USE_STATIC_RUNTIME ON)
+endif()
+
 # ------- LLVM BACKEND
 find_package(Python3 COMPONENTS Interpreter Development.Module REQUIRED)
 #./bootstrap.sh --with-libraries=python,system,filesystem --with-python=/Users/USERNAME/.pyenv/versions/3.10-dev/bin/python3 --with-python-version=3.10 --with-python-root=/Users/USERNAME/.pyenv/versions/3.10-dev/bin/python3
@@ -13,7 +18,7 @@ file(GLOB_RECURSE RG3_PYBIND_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/source/*.cpp")
 add_library(RG3_PyBind SHARED ${RG3_PYBIND_SOURCES})
 add_library(RG3::PyBind ALIAS RG3_PyBind)
 target_include_directories(RG3_PyBind PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
-target_link_libraries(RG3_PyBind PUBLIC RG3::Cpp RG3::LLVM)
+target_link_libraries(RG3_PyBind PUBLIC RG3::Cpp RG3::LLVM RG3::Protobuf)
 
 target_link_libraries(RG3_PyBind PUBLIC ${Boost_LIBRARIES} ${Python3_LIBRARIES} Python3::Module)
 target_link_libraries(RG3_PyBind PRIVATE fmt::fmt)
