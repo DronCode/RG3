@@ -224,11 +224,7 @@ jobs:
           CXX: ${{ matrix.config.cxx }}
         run: |
           mkdir build
-          if [[ "${{ matrix.config.os_id }}" == "windows" ]]; then
-            cmake -DCMAKE_BUILD_TYPE="MinSizeRel" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded -DBoost_USE_STATIC_RUNTIME=ON -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" -B build -G "${{ matrix.config.cmake_generator }}"
-          else
-            cmake -DCMAKE_BUILD_TYPE="MinSizeRel" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" -B build -G "${{ matrix.config.cmake_generator }}"
-          fi
+          cmake -DCMAKE_BUILD_TYPE="MinSizeRel" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" -B build -G "${{ matrix.config.cmake_generator }}"
           cd build
           cmake --build . --config MinSizeRel
 
