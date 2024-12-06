@@ -2,6 +2,11 @@ project(RG3_PyBind)
 
 set(Boost_USE_STATIC_LIBS ON)
 
+if (MSVC)
+    # Should use this on Windows to enable /MT for boost too
+    set(Boost_USE_STATIC_RUNTIME ON)
+endif()
+
 # ------- LLVM BACKEND
 find_package(Python3 COMPONENTS Interpreter Development.Module REQUIRED)
 #./bootstrap.sh --with-libraries=python,system,filesystem --with-python=/Users/USERNAME/.pyenv/versions/3.10-dev/bin/python3 --with-python-version=3.10 --with-python-root=/Users/USERNAME/.pyenv/versions/3.10-dev/bin/python3
