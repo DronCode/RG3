@@ -91,6 +91,17 @@ namespace rg3::llvm::visitors
 		for (const clang::CXXBaseSpecifier& baseSpecifier : cxxRecordDecl->bases()) {
 			cpp::ClassParent& parent = sDef.vParents.emplace_back();
 			Utils::getQualTypeBaseInfo(baseSpecifier.getType(), parent.sTypeBaseInfo, cxxRecordDecl->getASTContext());
+
+			const clang::RecordDecl* recordDecl = baseSpecifier.getType()->getAsRecordDecl();
+			if (recordDecl)
+			{
+				const clang::RawComment* parentClassRawComment = ctx.getRawCommentForDeclNoCache(recordDecl);
+				if (parentClassRawComment)
+				{
+					const auto rawCommentStr = parentClassRawComment->getFormattedText(sm, ctx.getDiagnostics());
+					parent.vTags = cpp::Tag::parseFromCommentString(rawCommentStr);
+				}
+			}
 			
 			if (baseSpecifier.isVirtual())
 			{

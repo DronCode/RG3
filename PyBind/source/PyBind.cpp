@@ -414,6 +414,7 @@ BOOST_PYTHON_MODULE(rg3py)
 
 	class_<rg3::cpp::ClassParent>("ClassParent", "Basic information about parent type")
 	    .add_property("info", make_getter(&rg3::cpp::ClassParent::sTypeBaseInfo), "Information about parent type")
+		.add_property("tags", make_getter(&rg3::cpp::ClassParent::vTags), "Tags of parent class")
 		.add_property("inheritance", make_getter(&rg3::cpp::ClassParent::eModifier), "Inheritance type")
 	;
 

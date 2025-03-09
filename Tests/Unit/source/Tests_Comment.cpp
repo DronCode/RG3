@@ -236,3 +236,57 @@ public:
 	ASSERT_EQ(asClass->getProperties()[0].vTags.hasTag("runtime"), false);
 	ASSERT_EQ(asClass->getProperties()[0].vTags.hasTag("serializer"), false);
 }
+
+TEST_F(Tests_Comments, CommentBetweenInheritedClasses)
+{
+	g_Analyzer->setSourceCode(R"(
+/**
+ * @runtime
+ * @test.case(123)
+ **/
+struct Cool
+{
+};
+
+struct NotCool
+{};
+
+/**
+ * @runtime
+ **/
+struct SUPER_COOL : NotCool, Cool
+{
+};
+)");
+
+	g_Analyzer->getCompilerConfig().cppStandard = rg3::llvm::CxxStandard::CC_14;
+
+	const auto analyzeResult = g_Analyzer->analyze();
+
+	ASSERT_TRUE(analyzeResult.vIssues.empty()) << "No issues should be here";
+	ASSERT_EQ(analyzeResult.vFoundTypes.size(), 2) << "Only 2 type should be here";
+
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getPrettyName(), "Cool");
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getKind(), rg3::cpp::TypeKind::TK_STRUCT_OR_CLASS);
+	ASSERT_TRUE(analyzeResult.vFoundTypes[0]->getTags().hasTag("runtime"));
+	ASSERT_TRUE(analyzeResult.vFoundTypes[0]->getTags().hasTag("test.case"));
+	ASSERT_EQ(analyzeResult.vFoundTypes[0]->getTags().getTag("test.case").getArgumentsCount(), 1);
+
+	ASSERT_EQ(analyzeResult.vFoundTypes[1]->getPrettyName(), "SUPER_COOL");
+	ASSERT_EQ(analyzeResult.vFoundTypes[1]->getKind(), rg3::cpp::TypeKind::TK_STRUCT_OR_CLASS);
+	ASSERT_TRUE(analyzeResult.vFoundTypes[1]->getTags().hasTag("runtime"));
+	ASSERT_FALSE(analyzeResult.vFoundTypes[1]->getTags().hasTag("test.case"));
+
+	auto* asClass1 = reinterpret_cast<rg3::cpp::TypeClass*>(analyzeResult.vFoundTypes[1].get());
+	ASSERT_EQ(asClass1->getParentTypes().size(), 2);
+	ASSERT_EQ(asClass1->getParentTypes()[0].eModifier, rg3::cpp::InheritanceVisibility::IV_PUBLIC);
+	ASSERT_EQ(asClass1->getParentTypes()[0].sTypeBaseInfo.sPrettyName, "NotCool");
+	ASSERT_TRUE(asClass1->getParentTypes()[0].vTags.isEmpty());
+
+	ASSERT_EQ(asClass1->getParentTypes()[1].eModifier, rg3::cpp::InheritanceVisibility::IV_PUBLIC);
+	ASSERT_EQ(asClass1->getParentTypes()[1].sTypeBaseInfo.sPrettyName, "Cool");
+	ASSERT_FALSE(asClass1->getParentTypes()[1].vTags.isEmpty());
+	ASSERT_TRUE(asClass1->getParentTypes()[1].vTags.hasTag("runtime"));
+	ASSERT_TRUE(asClass1->getParentTypes()[1].vTags.hasTag("test.case"));
+	ASSERT_EQ(asClass1->getParentTypes()[1].vTags.getTag("test.case").getArguments()[0].asI64(-1), 123);
+}

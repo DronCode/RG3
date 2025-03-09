@@ -71,6 +71,7 @@ namespace rg3::cpp
 	{
 		TypeBaseInfo sTypeBaseInfo {}; /// Base information about type
 		InheritanceVisibility eModifier { InheritanceVisibility::IV_PRIVATE }; /// modifier mode
+		Tags vTags {}; /// List of tags of that parent type (or empty when unable to reach them)
 	};
 
 	using ClassPropertyVector = std::vector<ClassProperty>;

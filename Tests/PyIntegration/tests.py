@@ -905,3 +905,45 @@ def test_code_eval_check_init_from_cfg():
     assert isinstance(result, dict)
     assert result['r0'] is True
     assert result['r1'] is False
+
+
+def test_check_inheritance_tags():
+    analyzer: rg3py.CodeAnalyzer = rg3py.CodeAnalyzer.make()
+
+    analyzer.set_code("""
+        /**
+         * @runtime
+         * @cool.base
+         **/
+        struct Base
+        {
+        };
+    
+        /// @runtime
+        struct MyCoolStruct : Base 
+        {
+        };
+        """)
+    analyzer.set_cpp_standard(rg3py.CppStandard.CXX_17)
+    analyzer.analyze()
+
+    assert len(analyzer.issues) == 0
+    assert len(analyzer.types) == 2
+
+    type0: rg3py.CppBaseType = analyzer.types[0]
+    type1: rg3py.CppBaseType = analyzer.types[1]
+    assert type0.kind == rg3py.CppTypeKind.TK_STRUCT_OR_CLASS
+    assert type1.kind == rg3py.CppTypeKind.TK_STRUCT_OR_CLASS
+
+    struct0: rg3py.CppClass = type0
+    assert struct0.is_struct
+    assert struct0.name == "Base"
+    assert struct0.pretty_name == "Base"
+    assert struct0.tags.has_tag("cool.base")
+    assert str(struct0.namespace) == ""
+    assert len(struct0.functions) == 0
+    assert len(struct0.properties) == 0
+
+    struct1: rg3py.CppClass = type1
+    assert len(struct1.parent_types) == 1
+    assert struct1.parent_types[0].tags.has_tag("cool.base")

@@ -85,6 +85,18 @@ namespace rg3::llvm::visitors
 			cpp::ClassParent& parent = parentClasses.emplace_back();
 			Utils::getQualTypeBaseInfo(baseSpecifier.getType(), parent.sTypeBaseInfo, cxxRecordDecl->getASTContext());
 
+			// Extract tags
+			const clang::RecordDecl* recordDecl = baseSpecifier.getType()->getAsRecordDecl();
+			if (recordDecl)
+			{
+				const clang::RawComment* parentClassRawComment = ctx.getRawCommentForDeclNoCache(recordDecl);
+				if (parentClassRawComment)
+				{
+					const auto rawCommentStr = parentClassRawComment->getFormattedText(sm, ctx.getDiagnostics());
+					parent.vTags = cpp::Tag::parseFromCommentString(rawCommentStr);
+				}
+			}
+
 			if (baseSpecifier.isVirtual())
 			{
 				parent.eModifier = cpp::InheritanceVisibility::IV_VIRTUAL;

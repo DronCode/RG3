@@ -288,6 +288,9 @@ class ClassParent:
     @property
     def inheritance(self) -> InheritanceVisibility: ...
 
+    @property
+    def tags(self) -> Tags: ...
+
 
 class CppClass:
     @property
