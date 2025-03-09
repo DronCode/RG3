@@ -2,10 +2,17 @@
 
 #include <google/protobuf/compiler/parser.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
+#include <google/protobuf/compiler/code_generator.h>
+#include <google/protobuf/compiler/plugin.h>
+#include <google/protobuf/compiler/cpp/generator.h>
+#include <google/protobuf/compiler/cpp/options.h>
 
+
+#include <unordered_map>
 #include <fstream>
 #include <sstream>
 #include <fstream>
+#include <string>
 #include <memory>
 
 
@@ -73,6 +80,26 @@ namespace rg3::pb
 		}
 	};
 
+	struct InMemoryOutputDirectory : google::protobuf::compiler::OutputDirectory
+	{
+		std::unordered_map<std::string, std::string> mFiles;
+
+		// Write a file
+		google::protobuf::io::ZeroCopyOutputStream* Open(const std::string& filename) override
+		{
+			auto& fileContent = mFiles[filename];
+			fileContent.clear(); // Clear existing content
+			return new google::protobuf::io::StringOutputStream(&fileContent);
+		}
+
+		// Write a file for appending (not used in this example)
+		google::protobuf::io::ZeroCopyOutputStream* OpenForAppend(const std::string& filename) override
+		{
+			auto& fileContent = mFiles[filename];
+			return new google::protobuf::io::StringOutputStream(&fileContent);
+		}
+	};
+
 	template<typename T> constexpr bool always_false_v = false;
 
 	std::pair<std::unique_ptr<std::istream>, std::string> getStream(const ProtobufAnalyzer::CodeSource& source) {
@@ -136,6 +163,43 @@ namespace rg3::pb
 			sIssue.iColumn = sIssue.iLine = 0;
 			return false;
 		}
+
+		// Messages
+//		for (int i = 0; i < pFileDescriptor->message_type_count(); i++)
+//		{
+//			// Need to check for userspace options (there are tags in our interpertation)
+//			const auto* pMessageType = pFileDescriptor->message_type(i);
+//			const auto& sPackage = pFileDescriptor->package().c_str();
+//		}
+//
+//		// Enumerations
+//		for (int i = 0; i < pFileDescriptor->enum_type_count(); i++)
+//		{
+//			//pFileDescriptor->enum_type(i)->value(x)
+//		}
+//
+//		// Services
+		for (int i = 0; i < pFileDescriptor->service_count(); i++)
+		{
+			//pFileDescriptor->service(0)->method(0)->input_type()
+			//pFileDescriptor->service(i)->name()
+		}
+
+		// Run codegen (example, not final code)
+//		google::protobuf::compiler::cpp::CppGenerator sCppGenerator{};
+//		InMemoryOutputDirectory sOutputDirectory{};
+//
+//		const std::string sCliCommand {};
+//
+//		// Generate C++ code
+//		std::string error;
+//		if (!sCppGenerator.Generate(pFileDescriptor, sCliCommand, &sOutputDirectory, &error)) {
+//			CompilerIssue& sIssue = m_aIssues.emplace_back();
+//			sIssue.iLine = 0;
+//			sIssue.iColumn = 0;
+//			sIssue.sMessage = error;
+//			sIssue.eKind = IssueKind::IK_ERROR;
+//		}
 
 		// Done
 		return std::count_if(m_aIssues.begin(), m_aIssues.end(), [](const CompilerIssue& sIssue) -> bool { return sIssue.eKind == IssueKind::IK_ERROR; }) == 0;

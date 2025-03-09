@@ -12,9 +12,9 @@ find_package(Boost COMPONENTS filesystem REQUIRED HINTS $ENV{Boost_ROOT})
 # ------- Protobuf
 # Required to have Protobuf_DIR, absl_DIR and utf8_range_DIR
 
-find_package(absl REQUIRED CONFIG HINTS $ENV{absl_DIR})
-find_package(utf8_range REQUIRED CONFIG HINTS $ENV{utf8_range_DIR})
-find_package(Protobuf REQUIRED CONFIG HINTS $ENV{Protobuf_DIR})
+find_package(absl REQUIRED HINTS $ENV{absl_DIR})
+find_package(utf8_range REQUIRED HINTS $ENV{utf8_range_DIR})
+find_package(Protobuf REQUIRED HINTS $ENV{Protobuf_DIR})
 
 message(STATUS "Found Protobuf ${Protobuf_VERSION} (${Protobuf_DIR})")
 

@@ -283,3 +283,17 @@ namespace core
 	ASSERT_EQ(asEnum1->getEntries()[0].sName, "PT_ADMIN");
 	ASSERT_EQ(asEnum1->getEntries()[1].sName, "PT_USER");
 }
+
+TEST_F(Tests_Enum, CheckCustomProtoInclude)
+{
+	g_Analyzer->setSourceCode(R"(
+#proto_include <Protocol/RPC/Engine.proto>
+)");
+
+	auto& compilerConfig = g_Analyzer->getCompilerConfig();
+	compilerConfig.cppStandard = rg3::llvm::CxxStandard::CC_20;
+
+	const auto analyzeResult = g_Analyzer->analyze();
+
+	//ASSERT_EQ(analyzeResult.vIssues.size(), 0);
+}
