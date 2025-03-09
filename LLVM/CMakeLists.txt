@@ -2,6 +2,11 @@ project(RG3_LLVM)
 
 # ------- Boost
 set(Boost_USE_STATIC_LIBS ON)
+if (MSVC)
+    # Should use this on Windows to enable /MT for boost too
+    set(Boost_USE_STATIC_RUNTIME ON)
+endif()
+
 find_package(Boost COMPONENTS filesystem REQUIRED HINTS $ENV{Boost_ROOT})
 
 # ------- LLVM BACKEND

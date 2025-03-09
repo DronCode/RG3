@@ -9,4 +9,5 @@ add_executable(RG3_Unit ${RG3_UNIT_SOURCES})
 target_link_libraries(RG3_Unit
         gtest
         RG3::LLVM
-        RG3::Cpp)
+        RG3::Cpp
+        RG3::Protobuf)
