@@ -291,6 +291,9 @@ class ClassParent:
     @property
     def tags(self) -> Tags: ...
 
+    @property
+    def class_type(self) -> Optional[CppBaseType]: ...
+
 
 class CppClass:
     @property
@@ -333,6 +336,9 @@ class CodeAnalyzer:
 
     @property
     def definitions(self) -> List[str]: ...
+
+    @property
+    def deep_analysis(self) -> bool: ...
 
     @property
     def ignore_runtime(self) -> bool: ...
@@ -391,6 +397,9 @@ class AnalyzerContext:
 
     @property
     def ignore_runtime_tag(self) -> bool: ...
+
+    @property
+    def deep_analysis(self) -> bool: ...
 
     def set_workers_count(self, count: int): ...
 

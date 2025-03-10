@@ -97,6 +97,16 @@ namespace rg3::pybind
 		return result;
 	}
 
+	void PyCodeAnalyzerBuilder::setUseDeepAnalysis(bool bUseDeepAnalysis)
+	{
+		m_pAnalyzerInstance->getCompilerConfig().bUseDeepAnalysis = bUseDeepAnalysis;
+	}
+
+	bool PyCodeAnalyzerBuilder::isDeepAnalysisEnabled() const
+	{
+		return m_pAnalyzerInstance->getCompilerConfig().bUseDeepAnalysis;
+	}
+
 	void PyCodeAnalyzerBuilder::analyze()
 	{
 		auto analyzeInfo = m_pAnalyzerInstance->analyze();

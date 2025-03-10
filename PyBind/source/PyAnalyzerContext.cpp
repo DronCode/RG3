@@ -455,6 +455,19 @@ namespace rg3::pybind
 		return m_bIgnoreRuntimeTag;
 	}
 
+	void PyAnalyzerContext::setEnableDeepAnalysis(bool bEnableDeepAnalysis)
+	{
+		if (m_bInProgress.load(std::memory_order_relaxed))
+			return;
+
+		m_compilerConfig.bUseDeepAnalysis = bEnableDeepAnalysis;
+	}
+
+	bool PyAnalyzerContext::isDeepAnalysisEnabled() const
+	{
+		return m_compilerConfig.bUseDeepAnalysis;
+	}
+
 	boost::python::object PyAnalyzerContext::pyGetTypeOfTypeReference(const rg3::cpp::TypeReference& typeReference)
 	{
 		// Try to find by type name

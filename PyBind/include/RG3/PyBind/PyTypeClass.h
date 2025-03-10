@@ -10,7 +10,7 @@
 namespace rg3::pybind
 {
 	/**
-	 * @brief Python representation of cpp::TypeEnum. See bindings in PyBind.cpp
+	 * @brief Python representation of cpp::TypeClass. See bindings in PyBind.cpp
 	 */
 	class PyTypeClass : public PyTypeBase
 	{

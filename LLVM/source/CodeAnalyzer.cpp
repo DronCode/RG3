@@ -6,6 +6,8 @@
 #include <RG3/LLVM/CompilerInstanceFactory.h>
 #include <RG3/LLVM/CompilerConfigDetector.h>
 
+#include <RG3/Cpp/TypeClass.h>
+
 #include <algorithm>
 #include <utility>
 
@@ -116,6 +118,47 @@ namespace rg3::llvm
 		}
 
 		// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+		if (m_compilerConfig.bUseDeepAnalysis && result)
+		{
+			resolveDeepReferences(result);
+		}
+
+		// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		return result;
+	}
+
+	void CodeAnalyzer::resolveDeepReferences(AnalyzerResult& result)
+	{
+		for (auto& pType : result.vFoundTypes)
+		{
+			if (pType->getKind() != cpp::TypeKind::TK_STRUCT_OR_CLASS)
+			{
+				continue;
+			}
+
+			auto* pAsClass = reinterpret_cast<cpp::TypeClass*>(pType.get());
+			for (auto& sParent : pAsClass->getParentTypes())
+			{
+				if (sParent.pDeepType)
+					continue;
+
+				auto it = std::find_if(result.vFoundTypes.begin(), result.vFoundTypes.end(), [&sParent](const cpp::TypeBasePtr& pType) -> bool {
+					return pType->getPrettyName() == sParent.sTypeBaseInfo.sPrettyName &&
+						   pType->getDefinition() == sParent.sTypeBaseInfo.sDefLocation;
+				});
+
+				if (it != result.vFoundTypes.end())
+				{
+					auto* pParentAsClass = reinterpret_cast<cpp::TypeClass*>((*it).get());
+
+					sParent.pDeepType = std::make_shared<cpp::TypeClass>(
+						pParentAsClass->getName(), pParentAsClass->getPrettyName(), pParentAsClass->getNamespace(), pParentAsClass->getDefinition(), pParentAsClass->getTags(),
+						pParentAsClass->getProperties(), pParentAsClass->getFunctions(), pParentAsClass->getClassFriends(),
+						pParentAsClass->isStruct(), pParentAsClass->isTrivialConstructible(), pParentAsClass->hasCopyConstructor(), pParentAsClass->hasCopyAssignOperator(), pParentAsClass->hasMoveConstructor(), pParentAsClass->hasMoveAssignOperator(),
+						pParentAsClass->getParentTypes()
+					);
+				}
+			}
+		}
 	}
 }

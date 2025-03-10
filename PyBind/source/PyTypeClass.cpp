@@ -1,4 +1,5 @@
 #include <RG3/PyBind/PyTypeClass.h>
+#include <RG3/PyBind/PyClassParent.h>
 
 
 namespace rg3::pybind
@@ -26,7 +27,7 @@ namespace rg3::pybind
 			// Parents
 			for (const auto& parent : self->getParentTypes())
 			{
-				m_parents.append(parent);
+				m_parents.append(boost::shared_ptr<PyClassParent>(new PyClassParent(parent)));
 			}
 		}
 	}

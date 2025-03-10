@@ -4,9 +4,10 @@
 #include <RG3/Cpp/TypeBase.h>
 #include <RG3/Cpp/TypeReference.h>
 #include <RG3/Cpp/TypeStatement.h>
+#include <optional>
 #include <vector>
 #include <string>
-#include <optional>
+#include <memory>
 
 
 namespace rg3::cpp
@@ -69,9 +70,26 @@ namespace rg3::cpp
 
 	struct ClassParent
 	{
-		TypeBaseInfo sTypeBaseInfo {}; /// Base information about type
-		InheritanceVisibility eModifier { InheritanceVisibility::IV_PRIVATE }; /// modifier mode
-		Tags vTags {}; /// List of tags of that parent type (or empty when unable to reach them)
+		/**
+		 * @brief Basic information about type
+		 */
+		TypeBaseInfo sTypeBaseInfo {};
+
+		/**
+		 * @brief A kind of inheritance
+		 */
+		InheritanceVisibility eModifier { InheritanceVisibility::IV_PRIVATE };
+
+		/**
+		 * @brief List of tags of that parent type (or empty when unable to reach them)
+		 */
+		Tags vTags {};
+
+		/**
+		 * @brief a pointer to fully traversed type
+		 * @note it's available only with deep analysis
+		 */
+		std::shared_ptr<TypeBase> pDeepType { nullptr };
 	};
 
 	using ClassPropertyVector = std::vector<ClassProperty>;

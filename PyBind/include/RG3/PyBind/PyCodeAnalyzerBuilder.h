@@ -33,6 +33,9 @@ namespace rg3::pybind
 		void setCompilerDefinitions(const boost::python::list& compilerDefs);
 		[[nodiscard]] boost::python::list getCompilerDefinitions() const;
 
+		void setUseDeepAnalysis(bool bUseDeepAnalysis);
+		bool isDeepAnalysisEnabled() const;
+
 		void analyze();
 
 		const boost::python::list& getFoundTypes() const;

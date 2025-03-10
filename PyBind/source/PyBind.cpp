@@ -4,8 +4,8 @@
 #include <fmt/format.h>
 
 #define BOOST_PYTHON_STATIC_LIB  // required because we using boost.python as static library
-#include <boost/python.hpp>
 #include <boost/python/dict.hpp>
+#include <boost/python.hpp>
 
 #include <RG3/Cpp/CppNamespace.h>
 #include <RG3/Cpp/TypeClass.h>
@@ -20,6 +20,7 @@
 #include <RG3/PyBind/PyTypeClass.h>
 #include <RG3/PyBind/PyAnalyzerContext.h>
 #include <RG3/PyBind/PyClangRuntime.h>
+#include <RG3/PyBind/PyClassParent.h>
 
 
 using namespace boost::python;
@@ -412,10 +413,11 @@ BOOST_PYTHON_MODULE(rg3py)
 		.value("IV_VIRTUAL", rg3::cpp::InheritanceVisibility::IV_VIRTUAL)
 	;
 
-	class_<rg3::cpp::ClassParent>("ClassParent", "Basic information about parent type")
-	    .add_property("info", make_getter(&rg3::cpp::ClassParent::sTypeBaseInfo), "Information about parent type")
-		.add_property("tags", make_getter(&rg3::cpp::ClassParent::vTags), "Tags of parent class")
-		.add_property("inheritance", make_getter(&rg3::cpp::ClassParent::eModifier), "Inheritance type")
+	class_<rg3::pybind::PyClassParent, boost::noncopyable, boost::shared_ptr<rg3::pybind::PyClassParent>>("ClassParent", "Basic information about parent type", no_init)
+		.add_property("info", make_function(&rg3::pybind::PyClassParent::getBaseInfo, return_value_policy<copy_const_reference>()), "Information about parent type")
+		.add_property("tags", make_function(&rg3::pybind::PyClassParent::getTags, return_value_policy<copy_const_reference>()), "Tags of parent class")
+		.add_property("inheritance", make_function(&rg3::pybind::PyClassParent::getInheritanceKind, return_value_policy<return_by_value>()), "Inheritance type")
+		.add_property("class_type", make_function(&rg3::pybind::PyClassParent::getClassType, return_value_policy<copy_const_reference>()), "Optional data about type (unlike 'info' this field contains all data about class)")
 	;
 
 	class_<rg3::cpp::EnumEntry>("CppEnumEntry", "A single element of enum")
@@ -560,6 +562,10 @@ BOOST_PYTHON_MODULE(rg3py)
 					  &rg3::pybind::PyCodeAnalyzerBuilder::getCompilerDefinitions,
 					  &rg3::pybind::PyCodeAnalyzerBuilder::setCompilerDefinitions,
 					  "A list of compiler definitions like -D option in cmake")
+		.add_property("deep_analysis",
+					  &rg3::pybind::PyCodeAnalyzerBuilder::isDeepAnalysisEnabled,
+					  &rg3::pybind::PyCodeAnalyzerBuilder::setUseDeepAnalysis,
+					  "Should rg3py use deep analysis (extract more information, but use more analysis time)")
 
 		.def("set_ignore_non_runtime_types", &rg3::pybind::PyCodeAnalyzerBuilder::setAllowToCollectNonRuntimeTypes)
 		.def("is_non_runtime_types_ignored", &rg3::pybind::PyCodeAnalyzerBuilder::isNonRuntimeTypesAllowedToBeCollected)
@@ -590,6 +596,7 @@ BOOST_PYTHON_MODULE(rg3py)
 		.add_property("cpp_standard", &rg3::pybind::PyAnalyzerContext::getCppStandard, &rg3::pybind::PyAnalyzerContext::setCppStandard, "Set C++ standard")
 		.add_property("compiler_args", &rg3::pybind::PyAnalyzerContext::getCompilerArgs, "Set clang compiler arguments list")
 		.add_property("ignore_runtime_tag", &rg3::pybind::PyAnalyzerContext::isRuntimeTagIgnored, &rg3::pybind::PyAnalyzerContext::setIgnoreRuntimeTag, "Should context ignore @runtime tag on 'collect types' stage")
+		.add_property("deep_analysis", &rg3::pybind::PyAnalyzerContext::isDeepAnalysisEnabled, &rg3::pybind::PyAnalyzerContext::setEnableDeepAnalysis, "Should rg3py use deep analysis (extract more information, but use more analysis time)")
 		.add_property("compiler_defs", &rg3::pybind::PyAnalyzerContext::getCompilerDefs, "Compiler definitions")
 
 		// Functions

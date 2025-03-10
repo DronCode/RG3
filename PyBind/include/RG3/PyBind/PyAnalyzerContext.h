@@ -72,6 +72,9 @@ namespace rg3::pybind
 		void setIgnoreRuntimeTag(bool bIgnoreRT);
 		bool isRuntimeTagIgnored() const;
 
+		void setEnableDeepAnalysis(bool bEnableDeepAnalysis);
+		bool isDeepAnalysisEnabled() const;
+
 		boost::python::object pyGetTypeOfTypeReference(const rg3::cpp::TypeReference& typeReference);
 
 		[[nodiscard]] const boost::python::list& getFoundIssues() const;
