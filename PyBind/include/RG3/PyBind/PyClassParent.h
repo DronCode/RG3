@@ -28,6 +28,9 @@ namespace rg3::pybind
 		[[nodiscard]] const cpp::TypeBaseInfo& getBaseInfo() const;
 		[[nodiscard]] const boost::shared_ptr<PyTypeClass>& getClassType() const;
 
+	 public: // Resolver only
+		void setParentClassDataReference(const boost::shared_ptr<PyTypeClass>& pPyClass);
+
 	 protected:
 		cpp::ClassParent m_sClassParent {};
 		boost::shared_ptr<PyTypeClass> m_pClassType { nullptr };

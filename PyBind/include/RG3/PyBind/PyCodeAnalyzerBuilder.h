@@ -1,6 +1,8 @@
 #pragma once
 
 #include <RG3/LLVM/CodeAnalyzer.h>
+#include <RG3/PyBind/PyTypeBase.h>
+#include <unordered_map>
 
 #define BOOST_PYTHON_STATIC_LIB  // required because we using boost.python as static library
 #include <boost/python.hpp>
@@ -45,6 +47,7 @@ namespace rg3::pybind
 
 	 private:
 		std::unique_ptr<llvm::CodeAnalyzer> m_pAnalyzerInstance { nullptr };
+		std::unordered_map<std::string, boost::shared_ptr<PyTypeBase>> m_mFoundTypesMap {};
 		boost::python::list m_foundTypes {};
 		boost::python::list m_foundIssues {};
 	};

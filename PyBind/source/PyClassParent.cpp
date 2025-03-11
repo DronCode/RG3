@@ -18,22 +18,7 @@ namespace rg3::pybind
 
 		m_repr = boost::python::str(repr.c_str());
 		m_str = boost::python::str(m_sClassParent.sTypeBaseInfo.sPrettyName.c_str());
-
-		if (m_sClassParent.pDeepType)
-		{
-			auto pSource = std::dynamic_pointer_cast<cpp::TypeClass>(m_sClassParent.pDeepType);
-			if (pSource)
-			{
-				std::unique_ptr<cpp::TypeClass> pClassData = std::make_unique<cpp::TypeClass>(
-					pSource->getName(), pSource->getPrettyName(), pSource->getNamespace(), pSource->getDefinition(), pSource->getTags(),
-					pSource->getProperties(), pSource->getFunctions(), pSource->getClassFriends(),
-					pSource->isStruct(), pSource->isTrivialConstructible(), pSource->hasCopyConstructor(), pSource->hasCopyAssignOperator(), pSource->hasMoveConstructor(), pSource->hasMoveAssignOperator(),
-					pSource->getParentTypes()
-				);
-
-				m_pClassType = boost::shared_ptr<PyTypeClass>(new PyTypeClass(std::move(pClassData)));
-			}
-		}
+		m_pClassType = nullptr;
 	}
 
 	const boost::python::str& PyClassParent::__str__() const
@@ -59,6 +44,11 @@ namespace rg3::pybind
 	const cpp::TypeBaseInfo& PyClassParent::getBaseInfo() const
 	{
 		return m_sClassParent.sTypeBaseInfo;
+	}
+
+	void PyClassParent::setParentClassDataReference(const boost::shared_ptr<PyTypeClass>& pPyClass)
+	{
+		m_pClassType = pPyClass;
 	}
 
 	const boost::shared_ptr<PyTypeClass>& PyClassParent::getClassType() const

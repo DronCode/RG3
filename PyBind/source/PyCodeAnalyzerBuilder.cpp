@@ -1,4 +1,5 @@
 #include <RG3/PyBind/PyCodeAnalyzerBuilder.h>
+#include <RG3/PyBind/PyClassParent.h>
 #include <RG3/PyBind/PyTypeClass.h>
 #include <RG3/PyBind/PyTypeBase.h>
 #include <RG3/PyBind/PyTypeEnum.h>
@@ -121,6 +122,7 @@ namespace rg3::pybind
 
 		for (auto&& type : analyzeInfo.vFoundTypes)
 		{
+			const std::string sPrettyName = type->getPrettyName();
 			switch (type->getKind())
 			{
 				case cpp::TypeKind::TK_NONE:
@@ -128,20 +130,56 @@ namespace rg3::pybind
 				{
 					auto object = boost::shared_ptr<PyTypeBase>(new PyTypeBase(std::move(type)));
 					m_foundTypes.append(object);
+					m_mFoundTypesMap[sPrettyName] = object;
 				}
 				break;
 				case cpp::TypeKind::TK_ENUM:
 				{
 					auto object = boost::shared_ptr<PyTypeEnum>(new PyTypeEnum(std::move(type)));
 					m_foundTypes.append(object);
+					m_mFoundTypesMap[sPrettyName] = object;
 				}
 				break;
 				case cpp::TypeKind::TK_STRUCT_OR_CLASS:
 				{
 					auto object = boost::shared_ptr<PyTypeClass>(new PyTypeClass(std::move(type)));
 					m_foundTypes.append(object);
+					m_mFoundTypesMap[sPrettyName] = object;
 				}
 				break;
+			}
+		}
+
+		if (m_pAnalyzerInstance->getCompilerConfig().bUseDeepAnalysis)
+		{
+			// Need to do deep analysis
+			for (const auto& [_, pType] : m_mFoundTypesMap)
+			{
+				if (pType->pyGetTypeKind() == cpp::TypeKind::TK_STRUCT_OR_CLASS)
+				{
+					// ok, need cast
+					auto pAsClass = boost::static_pointer_cast<PyTypeClass>(pType);
+
+					const boost::python::list& parents = pAsClass->pyGetClassParentTypeRefs();
+					const size_t amountOfParents = boost::python::len(parents);
+
+					for (size_t parentId = 0; parentId < amountOfParents; ++parentId)
+					{
+						boost::python::object parentObj = parents[parentId];
+						boost::python::extract<boost::shared_ptr<PyClassParent>> classParentExtraction(parentObj);
+						if (classParentExtraction.check())
+						{
+							boost::shared_ptr<PyClassParent> pClassParent = classParentExtraction();
+
+							auto it = m_mFoundTypesMap.find(pClassParent->getBaseInfo().sPrettyName);
+							if (it != m_mFoundTypesMap.end())
+							{
+								// Resolved!
+								pClassParent->setParentClassDataReference(boost::static_pointer_cast<PyTypeClass>(it->second));
+							}
+						}
+					}
+				}
 			}
 		}
 	}

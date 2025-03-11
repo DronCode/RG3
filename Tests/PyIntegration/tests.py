@@ -167,6 +167,8 @@ def test_check_analyzer_context_error_handling():
 def test_check_parent_types_resolver():
     analyzer_context: rg3py.AnalyzerContex = rg3py.AnalyzerContext.make()
 
+    assert analyzer_context.deep_analysis is False
+
     analyzer_context.set_headers(["samples/HeaderWithMultipleInheritance.h"])
     analyzer_context.set_include_directories([rg3py.CppIncludeInfo("samples", rg3py.CppIncludeKind.IK_PROJECT)])
 
@@ -189,12 +191,7 @@ def test_check_parent_types_resolver():
 
     assert len(c1.parent_types) == 0
     assert len(c2.parent_types) == 1
-
-    # Commented because parent_types are not TypeReference since last fix. Instead of that I'll rewrite this test to check more cases, but later. Sorry)
-    #c_parent: Optional[rg3py.CppBaseType] = analyzer_context.get_type_by_reference(c2.parent_types[0].info.name)
-    #assert c_parent is not None
-    #assert c_parent.hash == analyzer_context.types[0].hash
-    #assert c_parent.pretty_name == analyzer_context.types[0].pretty_name
+    assert c2.parent_types[0].class_type is None
 
 
 def test_check_base_types():
@@ -1020,3 +1017,40 @@ def test_check_inheritance_deep_data():
     assert len(struct1.parent_types[0].class_type.functions) == 1
     assert struct1.parent_types[0].class_type.functions[0].name == 'DoFoo'
     # I guess it's done here
+
+def test_check_parent_types_resolver_but_with_deep_analysis():
+    analyzer_context: rg3py.AnalyzerContex = rg3py.AnalyzerContext.make()
+
+    assert analyzer_context.deep_analysis is False
+    analyzer_context.deep_analysis = True
+    assert analyzer_context.deep_analysis is True
+
+    analyzer_context.set_headers(["samples/HeaderWithMultipleInheritance.h"])
+    analyzer_context.set_include_directories([rg3py.CppIncludeInfo("samples", rg3py.CppIncludeKind.IK_PROJECT)])
+
+    analyzer_context.cpp_standard = rg3py.CppStandard.CXX_20
+    analyzer_context.set_compiler_args(["-x", "c++-header"])
+
+    analyzer_context.analyze()
+
+    assert len(analyzer_context.issues) == 0
+    assert len(analyzer_context.types) == 2
+
+    assert analyzer_context.types[0].pretty_name == "Parent"
+    assert analyzer_context.types[0].kind == rg3py.CppTypeKind.TK_STRUCT_OR_CLASS
+
+    assert analyzer_context.types[1].pretty_name == "Child"
+    assert analyzer_context.types[1].kind == rg3py.CppTypeKind.TK_STRUCT_OR_CLASS
+
+    c1: rg3py.CppClass = analyzer_context.types[0]
+    c2: rg3py.CppClass = analyzer_context.types[1]
+
+    assert len(c1.parent_types) == 0
+    assert len(c2.parent_types) == 1
+    assert c2.parent_types[0].class_type is not None
+    assert c2.parent_types[0].class_type.pretty_name == "Parent"
+    assert c2.parent_types[0].class_type.tags.has_tag("runtime")
+    assert c2.parent_types[0].class_type.tags.has_tag("script") is True
+    assert c2.parent_types[0].class_type.tags.has_tag("serializer") is False
+    assert c2.parent_types[0].class_type.kind == rg3py.CppTypeKind.TK_STRUCT_OR_CLASS
+    assert c2.parent_types[0].class_type.is_struct is True

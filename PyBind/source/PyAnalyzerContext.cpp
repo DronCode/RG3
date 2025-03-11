@@ -1,4 +1,5 @@
 #include <RG3/PyBind/PyAnalyzerContext.h>
+#include <RG3/PyBind/PyClassParent.h>
 #include <RG3/PyBind/PyTypeBase.h>
 #include <RG3/PyBind/PyTypeClass.h>
 #include <RG3/PyBind/PyTypeEnum.h>
@@ -26,7 +27,7 @@ namespace rg3::pybind
 	 * Stop current thread. Just return from internal loop
 	 */
 	struct StopWorkerTask
-	{;
+	{
 	};
 
 	/**
@@ -198,6 +199,42 @@ namespace rg3::pybind
 			// now we've done
 		}
 
+		void resolveReferences()
+		{
+			const size_t amountOfTypes = boost::python::len(pAnalyzerStorage->pyFoundTypes);
+			for (size_t typeId = 0; typeId < amountOfTypes; ++typeId)
+			{
+				boost::python::object typeObj = pAnalyzerStorage->pyFoundTypes[typeId];
+				boost::python::extract<boost::shared_ptr<PyTypeClass>> classExtraction(typeObj);
+
+				if (classExtraction.check())
+				{
+					const boost::shared_ptr<PyTypeClass>& pAsClass = classExtraction();
+
+					// Need to resolve parent refs
+					const boost::python::list& parents = pAsClass->pyGetClassParentTypeRefs();
+					const size_t amountOfParents = boost::python::len(parents);
+
+					for (size_t parentId = 0; parentId < amountOfParents; ++parentId)
+					{
+						boost::python::object parentObj = parents[parentId];
+						boost::python::extract<boost::shared_ptr<PyClassParent>> classParentExtraction(parentObj);
+						if (classParentExtraction.check())
+						{
+							const boost::shared_ptr<PyClassParent>& pClassParent = classParentExtraction();
+
+							auto it = pAnalyzerStorage->vFoundTypeInstances.find(pClassParent->getBaseInfo().sPrettyName);
+							if (it != pAnalyzerStorage->vFoundTypeInstances.end())
+							{
+								// Resolved!
+								pClassParent->setParentClassDataReference(boost::static_pointer_cast<PyTypeClass>(it->second));
+							}
+						}
+					}
+				}
+			}
+		}
+
 	 private:
 		void workerEntryPoint(size_t iWorkerId, const std::optional<rg3::llvm::CompilerEnvironment>& sCompilerEnvironment)
 		{
@@ -281,6 +318,7 @@ namespace rg3::pybind
 
 									if (bInserted)
 									{
+
 										pAnalyzerStorage->pyFoundTypes.append(object);
 									}
 								}
@@ -570,131 +608,16 @@ namespace rg3::pybind
 			if (m_pContext->runWorkers(m_iWorkersAmount))
 			{
 				m_pContext->waitAll();
-#if 0  // This stage marked as 'deprecated' and will be removed later.
-				// Everything is fine
-				bResult = resolveTypeReferences();
-#else
 				bResult = true;
-#endif
 			}
+		}
+
+		// Need to do this outside of GIL guard
+		if (bResult && m_compilerConfig.bUseDeepAnalysis)
+		{
+			m_pContext->resolveReferences();
 		}
 
 		return bResult;
-	}
-
-	void PyAnalyzerContext::pushResolverIssue(const ResolverContext& context, std::string&& errorMessage)
-	{
-		auto spaceToString = [](ResolverContext::ContextSpace eSpace) -> std::string
-		{
-			switch (eSpace)
-			{
-				case ResolverContext::ContextSpace::CS_UNDEFINED: return "UNDEFINED";
-				case ResolverContext::ContextSpace::CS_TYPE: return "CXX_TYPE";
-				case ResolverContext::ContextSpace::CS_PROPERTY: return "CXX_PROPERTY";
-				case ResolverContext::ContextSpace::CS_FUNCTION: return "CXX_TYPE_FUNC";
-			}
-
-			return "UNKNOWN";
-		};
-
-		rg3::llvm::AnalyzerResult::CompilerIssue issue;
-		issue.kind = rg3::llvm::AnalyzerResult::CompilerIssue::IssueKind::IK_ERROR;
-		issue.sSourceFile = context.pOwner->getDefinition().getPath();
-		issue.sMessage = fmt::format("RG3|ResolveTypeREF failed: {} (space {})", errorMessage, spaceToString(context.eSpace));
-
-		m_pySubjects.pyFoundIssues.append(issue);
-	}
-
-	bool PyAnalyzerContext::resolveTypeReferences()
-	{
-		// So, here we need to resolve cross-references between types.
-		// Known places where we have X-refs:
-		// 1. Tags - each tag could have full qualified type reference. Example: /// @my_cool_ref(@ecs::Entity)
-		// 2. ClassProperties - has own tags collection
-		// 3. ClassFunction - has own tags collection
-		//
-		for (const auto& [typeName, typeInstance] : m_pySubjects.vFoundTypeInstances)
-		{
-			const boost::shared_ptr<rg3::cpp::TypeBase> pNative = typeInstance->getNative();
-			ResolverContext resolverContext {};
-
-			// Switch to type
-			resolverContext.eSpace = ResolverContext::ContextSpace::CS_TYPE;
-			resolverContext.pOwner = pNative;
-
-			// Resolve tags
-			if (!resolveTags(resolverContext, pNative->getTags()))
-			{
-				return false;
-			}
-
-			// Ok, tags resolved. Now we've need to check what kind of type do we have
-			if (pNative->getKind() == cpp::TypeKind::TK_STRUCT_OR_CLASS)
-			{
-				auto pClassNative = boost::static_pointer_cast<cpp::TypeClass>(pNative);
-
-				// Oh, here we need to resolve 'abstract' references to parent types, aren't we?
-
-				// Resolve properties
-				for (auto& classProperty : pClassNative->getProperties())
-				{
-					// Push 'properties' space
-					resolverContext.eSpace = ResolverContext::ContextSpace::CS_PROPERTY;
-
-					if (!resolveTags(resolverContext, classProperty.vTags))
-					{
-						return false;
-					}
-				}
-
-				// Resolve functions
-				for (auto& classFunction : pClassNative->getFunctions())
-				{
-					// Push 'functions' space
-					resolverContext.eSpace = ResolverContext::ContextSpace::CS_FUNCTION;
-
-					if (!resolveTags(resolverContext, classFunction.vTags))
-					{
-						return false;
-					}
-				}
-
-				// Push context back
-				resolverContext.eSpace = ResolverContext::ContextSpace::CS_TYPE;
-			}
-		}
-
-		// Everything is fine
-		return true;
-	}
-
-	bool PyAnalyzerContext::resolveTags(const ResolverContext& context, rg3::cpp::Tags& tagsToResolve)
-	{
-		for (auto& [tagName, tag] : tagsToResolve.getTags())
-		{
-			if (!tag.hasArguments())
-				continue;
-
-			for (auto& tagArg : tag.getArguments())
-			{
-				if (auto pTypeRef = tagArg.asTypeRefMutable(); pTypeRef && pTypeRef->get() == nullptr)
-				{
-					// Ok, it holds type reference - need resolve if not resolved yet
-					if (auto it = m_pySubjects.vFoundTypeInstances.find(pTypeRef->getRefName()); it != m_pySubjects.vFoundTypeInstances.end())
-					{
-						// Resolved, push pointer to typeRef
-						pTypeRef->setResolvedType(it->second->getNative().get());
-					}
-					else
-					{
-						// Type reference not found in context of ...
-						pushResolverIssue(context, fmt::format("Reference '{}' not found in types db", pTypeRef->getRefName()));
-						return false;
-					}
-				}
-			}
-		}
-
-		return true;
 	}
 }

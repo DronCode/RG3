@@ -84,12 +84,6 @@ namespace rg3::cpp
 		 * @brief List of tags of that parent type (or empty when unable to reach them)
 		 */
 		Tags vTags {};
-
-		/**
-		 * @brief a pointer to fully traversed type
-		 * @note it's available only with deep analysis
-		 */
-		std::shared_ptr<TypeBase> pDeepType { nullptr };
 	};
 
 	using ClassPropertyVector = std::vector<ClassProperty>;

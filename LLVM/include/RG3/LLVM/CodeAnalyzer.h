@@ -48,9 +48,6 @@ namespace rg3::llvm
 		AnalyzerResult analyze();
 
 	 private:
-		void resolveDeepReferences(AnalyzerResult& result);
-
-	 private:
 		std::variant<std::filesystem::path, std::string> m_source;
 		std::optional<CompilerEnvironment> m_env;
 		CompilerConfig m_compilerConfig;

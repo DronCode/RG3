@@ -2,6 +2,7 @@
 
 /**
  * @runtime
+ * @script
  **/
 struct Parent {};
 

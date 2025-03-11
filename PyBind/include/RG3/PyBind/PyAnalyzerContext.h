@@ -99,24 +99,6 @@ namespace rg3::pybind
 	 private:
 		bool runAnalyze();
 
-		struct ResolverContext
-		{
-			enum class ContextSpace {
-				CS_UNDEFINED,
-				CS_TYPE,
-				CS_PROPERTY,
-				CS_FUNCTION,
-			};
-
-			ContextSpace eSpace { ContextSpace::CS_UNDEFINED };
-			boost::shared_ptr<rg3::cpp::TypeBase> pOwner { nullptr };
-		};
-
-		void pushResolverIssue(const ResolverContext& context, std::string&& errorMessage);
-
-		bool resolveTypeReferences();
-		bool resolveTags(const ResolverContext& context, rg3::cpp::Tags& tagsToResolve);
-
 	 private:
 		struct RuntimeContext;
 		std::unique_ptr<RuntimeContext> m_pContext { nullptr };
