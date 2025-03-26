@@ -10,9 +10,10 @@ endif()
 
 add_subdirectory(ThirdParty/fmt)
 
-add_subdirectory(Cpp)
-add_subdirectory(LLVM)
-add_subdirectory(PyBind)
+add_subdirectory(Cpp) # Base entities & logic
+add_subdirectory(LLVM) # LLVM driver & AST parsing
+add_subdirectory(Protobuf) # Protobuf driver & analyzer
+add_subdirectory(PyBind) # Python bindings
 
 # Unit tests
 add_subdirectory(ThirdParty/googletest)

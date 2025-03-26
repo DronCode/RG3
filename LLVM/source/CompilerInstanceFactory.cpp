@@ -9,6 +9,8 @@
 #include <clang/Frontend/CompilerInvocation.h>
 #include <clang/Frontend/FrontendActions.h>
 #include <clang/Lex/PreprocessorOptions.h>
+#include <clang/Lex/PPCallbacks.h>
+#include <clang/Lex/Preprocessor.h>
 #include <clang/Tooling/Tooling.h>
 #include <clang/Basic/LangOptions.h>
 #include <clang/Basic/TargetInfo.h>
@@ -214,6 +216,7 @@ namespace rg3::llvm
 #endif
 
 		pOutInstance->setInvocation(invocation);
+		pOutInstance->createPreprocessor(clang::TranslationUnitKind::TU_Complete);
 
 		// Set up FrontendOptions
 		clang::FrontendOptions &opts = pOutInstance->getFrontendOpts();
@@ -285,5 +288,6 @@ namespace rg3::llvm
 		assert(pOutInstance->hasDiagnostics() && "Diagnostics not set up!");
 		assert(pOutInstance->hasTarget() && "Target not set up!");
 		assert(pOutInstance->hasFileManager() && "FileManager not set up!");
+		assert(pOutInstance->hasPreprocessor() && "Preprocessor not set up!");
 	}
 }
